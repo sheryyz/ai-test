@@ -229,3 +229,30 @@ def test_compare_writes_a_regression_report(tmp_path: Path, capsys: pytest.Captu
     assert code == 0 and "回归对比" in capsys.readouterr().out
     md = (tmp_path / "rep" / "rec-a__rec-b" / "regression.md").read_text(encoding="utf-8")
     assert "# 回归对比：V1 → V1" in md and "不变" in md
+
+
+def test_draft_contract_scores_a_draft_and_rescores_it_offline(
+    tmp_path: Path, capsys: pytest.CaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from consenttrace.config import LLMSettings
+    from consenttrace.core.loader import load_contract
+    from consenttrace.llm.client import OpenAICompatClient
+    from tests.unit.test_contract_drafter import Fake, renamed
+
+    gold = load_contract(ROOT / "configs" / "travel_contract.yaml")
+    client = Fake([json.dumps({"contract": renamed(gold), "rationale": {}})])
+    monkeypatch.setattr(LLMSettings, "from_env", classmethod(lambda cls, *a, **k: LLMSettings("http://x", "drafter", "k")))
+    monkeypatch.setattr(OpenAICompatClient, "from_settings", classmethod(lambda cls, *a, **k: client))
+    runs = tmp_path / "runs"
+    recorded = record_run(runs)
+    code = cli_main("--runs-dir", str(runs), "draft-contract", "--target", "travel", "--run-id", "d1", "--on-run", recorded.name)
+    out = capsys.readouterr().out
+    assert code == 0 and "F09 契约起草" in out and "0 处" in out
+    folder = runs / "contract_drafts" / "d1"
+    assert (folder / "draft-1.yaml").exists() and (folder / "evaluation.json").exists()
+
+    monkeypatch.setattr(LLMSettings, "from_env", classmethod(lambda cls, *a, **k: None))
+    code = cli_main(
+        "--runs-dir", str(runs), "draft-contract", "--target", "travel", "--from-drafts", str(folder), "--run-id", "d2"
+    )
+    assert code == 0 and (runs / "contract_drafts" / "d2" / "evaluation.json").exists()

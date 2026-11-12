@@ -361,6 +361,17 @@ class TestContract(_Model):
         raise KeyError(name)
 
 
+class AgentDescription(_Model):
+    """What an adapter can tell about its agent without running a case (input to F09 contract drafting)."""
+
+    target: str
+    version: str
+    tools: list[dict[str, Any]]  # function-calling schemas, exactly as the model sees them
+    system_prompt: str = ""
+    state_schema: dict[str, dict[str, list[str]]] = Field(default_factory=dict)  # table -> {columns, pk}
+    notes: str = ""
+
+
 # --------------------------------------------------------------------------- verdicts
 
 

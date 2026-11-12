@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
-from consenttrace.schemas import AdapterCapabilities, StateSnapshot, TraceEvent, TurnResult
+from consenttrace.schemas import AdapterCapabilities, AgentDescription, StateSnapshot, TraceEvent, TurnResult
 from consenttrace.sdk.toolbox import ToolInterceptor
 
 
@@ -45,3 +45,10 @@ class AgentAdapter(Protocol):
         ...
 
     def close(self) -> None: ...
+
+
+@runtime_checkable
+class DescribableAdapter(Protocol):
+    """Optional: an adapter that can describe its agent's tools, prompt and state schema (F09)."""
+
+    def describe(self) -> AgentDescription: ...

@@ -653,6 +653,138 @@ def cmd_compare(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_draft_contract(args: argparse.Namespace) -> int:
+    """F09: draft a contract from the adapter's own description, score it against the gold contract."""
+    import yaml
+
+    from consenttrace.adapters.base import DescribableAdapter
+    from consenttrace.ai.contract_drafter import PROMPT_VERSION, Draft, draft_contract, score_structure, verdict_agreement
+    from consenttrace.config import LLMSettings
+    from consenttrace.llm.client import OpenAICompatClient
+
+    spec = load_targets(args.targets)[args.target]
+    version = args.version or spec.versions[0]
+    adapter = spec.adapter_class()(lambda: None, version=version)
+    if not isinstance(adapter, DescribableAdapter):
+        console.print(f"[red]目标 {args.target} 的适配器不支持 describe()，无法起草契约[/]")
+        return 2
+    desc = adapter.describe()
+    gold = load_contract(spec.contract)
+    settings = LLMSettings.from_env(args.env, model_var="JUDGE_MODEL")
+    if settings is None and not args.from_drafts:
+        console.print("[red]起草契约需要 .env 中的 LLM_API_KEY[/]")
+        return 2
+    if settings is not None and args.model:
+        settings = LLMSettings(base_url=settings.base_url, model=args.model, api_key=settings.api_key)
+    client = (
+        OpenAICompatClient.from_settings(settings, timeout=args.timeout, response_format={"type": "json_object"})
+        if settings is not None and not args.from_drafts
+        else None
+    )
+    model_name = settings.model if settings is not None else "?"
+
+    execs = []
+    for real in args.on_run or []:
+        source = Path(args.runs_dir) / real
+        config = json.loads((source / "config.json").read_text(encoding="utf-8"))
+        cases = {c.case_id: c for c in load_cases(spec.suite(config["suite"]), gold)}
+        execs += [ex for _, _, ex in executions(source, cases, fallback_capabilities=_declared_capabilities(spec))]
+
+    run_id = args.run_id or f"draft-{args.target}-{datetime.now():%m%d%H%M%S}"
+    out = Path(args.runs_dir) / "contract_drafts" / run_id
+    out.mkdir(parents=True, exist_ok=True)
+    write_json(out / "description.json", desc.model_dump(mode="json"))
+    rows = []
+    saved = sorted(Path(args.from_drafts).glob("draft-*.json")) if args.from_drafts else []
+    for i in range(1, (len(saved) if args.from_drafts else args.n) + 1):
+        if args.from_drafts:  # re-score drafts made earlier; no model call
+            old_row = json.loads((Path(args.from_drafts) / f"draft-{i}.json").read_text(encoding="utf-8"))
+            yaml_path = Path(args.from_drafts) / f"draft-{i}.yaml"
+            d = Draft(
+                contract=load_contract(yaml_path) if yaml_path.exists() else None,
+                rationale=old_row.get("rationale", {}),
+                attempts=old_row.get("attempts", 0),
+                errors=old_row.get("errors", []),
+                prompt_tokens=old_row.get("usage", {}).get("prompt_tokens", 0),
+                completion_tokens=old_row.get("usage", {}).get("completion_tokens", 0),
+                raw=old_row.get("raw", []),
+                model=old_row.get("model", ""),
+            )
+        else:
+            assert client is not None
+            with console.status(f"起草契约 {i}/{args.n}（{model_name}）"):
+                d = draft_contract(client, desc)
+        row: dict[str, Any] = {
+            "draft": i,
+            "valid": d.contract is not None,
+            "attempts": d.attempts,
+            "errors": d.errors,
+            "rationale": d.rationale,
+            "model": d.model,
+            "usage": {"prompt_tokens": d.prompt_tokens, "completion_tokens": d.completion_tokens},
+        }
+        if d.contract is not None:
+            (out / f"draft-{i}.yaml").write_text(
+                yaml.safe_dump(d.contract.model_dump(mode="json", exclude_defaults=True), allow_unicode=True, sort_keys=False),
+                encoding="utf-8",
+            )
+            row["structure"] = score_structure(d.contract, gold)
+            if execs:
+                row["verdicts"] = verdict_agreement(d.contract, gold, execs)
+        write_json(out / f"draft-{i}.json", {**row, "raw": d.raw})
+        rows.append(row)
+    write_json(
+        out / "evaluation.json",
+        {
+            "target": args.target,
+            "version": version,
+            "model": next((r["model"] for r in rows if r["model"]), model_name),
+            "prompt_version": PROMPT_VERSION,
+            "gold": str(spec.contract),
+            "on_runs": args.on_run or [],
+            "drafts": rows,
+        },
+    )
+
+    def pr(x: dict[str, Any]) -> str:
+        return f"P {x['tp']}/{x['tp'] + x['fp']} · R {x['tp']}/{x['tp'] + x['fn']}"
+
+    drafted_by = next((r["model"] for r in rows if r["model"]), model_name)
+    table = Table(
+        title=f"F09 契约起草：{args.target} {version}（{drafted_by}，与金标准 {Path(spec.contract).name} 比较）",
+        title_style="bold",
+    )
+    for col in ("草稿", "校验", "敏感动作", "参数映射", "规则", "改到金标准", "越权判定一致", "虚假陈述判定一致", "结果一致"):
+        table.add_column(col)
+    for row in rows:
+        if not row["valid"]:
+            table.add_row(str(row["draft"]), Text("无效", style="red"), *["—"] * 7)
+            continue
+        st = row["structure"]
+        v = row.get("verdicts")
+        table.add_row(
+            str(row["draft"]),
+            f"{row['attempts']} 轮",
+            pr(st["sensitive_actions"]),
+            pr(st["args_mapping"]),
+            pr(st["rules"]),
+            f"{st['edits_to_gold']['total']} 处",
+            *(
+                f"{v[k]['num']}/{v[k]['den']}" if v else "—"
+                for k in ("same_authorization_verdict", "same_claim_verdict", "same_outcome")
+            ),
+        )
+    console.print(table)
+    for row in rows:
+        if row["valid"]:
+            st = row["structure"]["rules"]
+            if st["missing"] or st["extra"]:
+                console.print(f"  草稿 {row['draft']}：缺少规则 {st['missing'] or '—'}；多出规则 {st['extra'] or '—'}")
+    tokens = sum(r["usage"]["prompt_tokens"] for r in rows), sum(r["usage"]["completion_tokens"] for r in rows)
+    console.print(f"token：输入 {tokens[0]} / 输出 {tokens[1]}　草稿与评估：{out}")
+    return 0 if all(r["valid"] for r in rows) else 1
+
+
 def cmd_serve(args: argparse.Namespace) -> int:  # pragma: no cover - blocks on a server
     import uvicorn
 
@@ -735,6 +867,17 @@ def build_parser() -> argparse.ArgumentParser:
     cmp_.add_argument("--b", required=True, help="对比运行（如 V2.1）")
     cmp_.add_argument("--reports-dir", default="reports")
 
+    dc = sub.add_parser("draft-contract", help="F09：由 AI 根据被测 Agent 的工具定义起草测试契约，并与金标准比较")
+    dc.add_argument("--target", required=True)
+    dc.add_argument("--version", help="描述哪个版本的 Agent（默认注册表中的第一个）")
+    dc.add_argument("-n", type=int, default=1, help="起草次数（衡量稳定性）")
+    dc.add_argument("--on-run", action="append", help="在这次运行的轨迹上比较草稿与金标准的判定（可重复）")
+    dc.add_argument("--run-id")
+    dc.add_argument("--from-drafts", help="重新评分一个已有草稿目录（不调用模型）")
+    dc.add_argument("--model")
+    dc.add_argument("--timeout", type=float, default=300.0)
+    dc.add_argument("--env", default=".env")
+
     serve = sub.add_parser("serve", help="启动 Web 控制台（FastAPI + 前端）")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8765)
@@ -755,6 +898,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "augment": cmd_augment,
         "phrasing": cmd_phrasing,
         "compare": cmd_compare,
+        "draft-contract": cmd_draft_contract,
     }
     try:
         return handlers[args.command](args)

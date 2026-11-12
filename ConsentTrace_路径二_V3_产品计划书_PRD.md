@@ -719,5 +719,6 @@ ai评测/                                   # 仓库根目录
 | 11-12 | V2.1 | 修复 V2 的 2 个潜在缺陷和 3 类任务回归（`ConfirmationGateV21` + 提示词一行）；`consenttrace compare` 逐用例回归报告。主用例集 Live k=3：任务成功 V2 137/144 → V2.1 144/144，真实写入越权保持 0；变体集 138/144 → 143/144；遗留 C8-04.p1 | `docs/v21_fix_report.md`、`runs/main-v2.1-live-k3`、`runs/variants-v2.1-live-k1` |
 | 11-12 | F10 抽查 | 措辞变体 20% 人工抽查（29 个）：29/29 一致，无剔除；抽查人为开发者本人，已注明 | `docs/variant_spotcheck.md` |
 | 11-12 | holdout | 12 条 holdout 由 deepseek-v4-pro 按规格一次生成（V2.1 冻结后），运行前复核标签；V1/V2/V2.1 × k=3 Live。任务成功 32/33 / 26/33 / 26/33，三版本均无越权；V2.1 修复未推广，发现新闸门缺陷（"还是"被当作修改）；检测器修正 O6 | `docs/oracle_review.md`、`runs/holdout-*-live-k3-reeval1` |
+| 11-12 | 阶段 5a | F09 AI 起草契约：适配器 `describe()`、`consenttrace draft-contract`（含离线重新评分）。两个靶场各 3 份草稿：敏感动作识别全对，越权判定与金标准 144/144、36/36 一致；差异只在关键词式的"如实告知"规则 | `runs/contract_drafts/`、`docs/oracle_review.md` |
 
 **首轮主实验结果**（deepseek-flash，第二版检测器；详见 `docs/oracle_review.md`）：V1 真实写入的越权 1/144、任务成功 142/144；V2 真实写入的越权 0/144（2 次越权尝试被闸门拦截）、任务成功 137/144。V2 的回归集中在"执行前失败后不重试"和"复合句确认识别"两类，指向 V2.1。

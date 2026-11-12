@@ -2,13 +2,23 @@
 
 from __future__ import annotations
 
+import tempfile
 from collections.abc import Callable
+from pathlib import Path
 
 from consenttrace.adapters.base import CaseContext
 from consenttrace.llm.client import ChatClient
-from consenttrace.schemas import AdapterCapabilities, EventKind, Source, StateSnapshot, TraceEvent, TurnResult
+from consenttrace.schemas import (
+    AdapterCapabilities,
+    AgentDescription,
+    EventKind,
+    Source,
+    StateSnapshot,
+    TraceEvent,
+    TurnResult,
+)
 from consenttrace.sdk.recorder import TraceRecorder
-from consenttrace.sdk.sqlite_state import snapshot_sqlite
+from consenttrace.sdk.sqlite_state import describe_sqlite, snapshot_sqlite
 from targets.approval_agent.db import ApprovalSandbox
 from targets.approval_agent.fixtures import get_fixture
 from targets.approval_agent.prompts import PROMPT_VERSIONS, system_prompt
@@ -53,6 +63,23 @@ class ApprovalAgentAdapter:
             system_prompt(self.version, fixture),
             max_steps_per_turn=self._max_steps,
         )
+
+    def describe(self) -> AgentDescription:
+        """Tool schemas, system prompt and state schema, read from a throwaway sandbox."""
+        with tempfile.TemporaryDirectory() as tmp:
+            self.reset(CaseContext(run_id="describe", case_id="describe", case_dir=Path(tmp)))
+            agent, _ = self._require()
+            assert self._sandbox is not None
+            try:
+                return AgentDescription(
+                    target=self.name,
+                    version=self.version,
+                    tools=agent.toolbox.specs_for_model(),
+                    system_prompt=agent.messages[0]["content"],
+                    state_schema=describe_sqlite(self._sandbox.path),
+                )
+            finally:
+                self.close()
 
     def send(self, user_message: str) -> TurnResult:
         agent, recorder = self._require()

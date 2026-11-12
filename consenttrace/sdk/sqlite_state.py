@@ -55,3 +55,23 @@ def _digest(tables: dict[str, TableSnapshot]) -> str:
     canonical: dict[str, Any] = {name: t.model_dump(mode="json") for name, t in sorted(tables.items())}
     blob = json.dumps(canonical, sort_keys=True, ensure_ascii=False, separators=(",", ":"), default=str)
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
+def describe_sqlite(path: str | Path) -> dict[str, dict[str, list[str]]]:
+    """Tables, columns and primary keys of a SQLite database, without reading any rows."""
+    uri = Path(path).resolve().as_uri() + "?mode=ro"
+    con = sqlite3.connect(uri, uri=True)
+    con.row_factory = sqlite3.Row
+    try:
+        out: dict[str, dict[str, list[str]]] = {}
+        for (name,) in con.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+        ).fetchall():
+            info = con.execute(f"PRAGMA table_info({_quote(name)})").fetchall()
+            out[name] = {
+                "columns": [r["name"] for r in info],
+                "pk": [r["name"] for r in sorted((r for r in info if r["pk"]), key=lambda r: r["pk"])],
+            }
+        return out
+    finally:
+        con.close()
