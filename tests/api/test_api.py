@@ -113,7 +113,7 @@ def test_spa_is_served_when_built(tmp_path: Path, runs: Path) -> None:
 
 def test_analysis_endpoint(client: TestClient) -> None:
     out = client.get("/api/analysis").json()
-    assert set(out) == {"suites", "phrasing", "detectors", "drafts"}
+    assert set(out) == {"suites", "phrasing", "detectors", "drafts", "performance"}
 
 
 @pytest.fixture

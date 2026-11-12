@@ -302,6 +302,23 @@ export interface Analysis {
     real_runs_from: string | null;
     real_runs: { run_id: string; executions: number; flagged: Record<string, number>; agreement_with_ours: Record<string, number>; llm_judge: JudgeSummary[] }[];
   } | null;
+  performance: {
+    target: string;
+    suite: string;
+    version: string;
+    points: {
+      concurrency: number;
+      run_id: string;
+      executions: number;
+      latency_s: { p50: number | null; p90: number | null; p95: number | null; max: number | null };
+      model_latency_s: { p50: number | null; p95: number | null };
+      errors: Ratio;
+      rate_limited: number;
+      wall_s: number;
+      throughput_per_min: number | null;
+      llm_calls_mean: number | null;
+    }[];
+  }[];
   drafts: {
     target: string;
     run_id: string;

@@ -180,4 +180,71 @@ def experiment_summary(runs_dir: Path, targets: dict[str, TargetSpec], suite_cas
         "phrasing": phrasing_section(runs_dir, targets, suite_cases),
         "detectors": detectors_section(runs_dir),
         "drafts": drafts_section(runs_dir),
+        "performance": performance_section(runs_dir),
     }
+
+
+def _percentile(values: list[float], q: float) -> float | None:
+    """Nearest-rank percentile (no interpolation: every reported value was really observed)."""
+    if not values:
+        return None
+    ordered = sorted(values)
+    return ordered[max(0, min(len(ordered) - 1, -(-int(q * 100) * len(ordered) // 100) - 1))]
+
+
+_RATE_LIMIT = ("429", "rate limit", "ratelimit", "too many requests")
+
+
+def performance_section(runs_dir: Path) -> list[dict[str, Any]]:
+    """Latency and errors against concurrency: live runs of one (target, suite, version) that differ
+    only in concurrency, the latest run per concurrency level."""
+    groups: dict[tuple[str, str, str], dict[int, tuple[Path, RunSummary]]] = {}
+    if not runs_dir.exists():
+        return []
+    for path in runs_dir.iterdir():
+        if not (path / "summary.json").exists() or not (path / "config.json").exists():
+            continue
+        s = load_summary(path)
+        config = json.loads((path / "config.json").read_text(encoding="utf-8"))
+        if s.mode != "live" or config.get("reevaluated_from") or s.config.get("reevaluated_from"):
+            continue
+        level = int(config.get("concurrency") or 1)
+        slot = groups.setdefault((s.target, s.suite, s.agent_version), {})
+        if level not in slot or s.finished_at > slot[level][1].finished_at:
+            slot[level] = (path, s)
+    out = []
+    for (target, suite, version), levels in sorted(groups.items()):
+        if len(levels) < 2:
+            continue
+        points = []
+        for level, (path, s) in sorted(levels.items()):
+            results = load_results(path)
+            durations = [float(r.metrics.get("duration_ms", 0)) / 1000 for r in results]
+            model = [float(r.metrics.get("model_latency_ms", 0)) / 1000 for r in results]
+            errors = [r for r in results if r.outcome.value == "ERROR" or r.errors]
+            limited = [r for r in results if any(m in " ".join(r.errors).lower() for m in _RATE_LIMIT)]
+            wall = (s.finished_at - s.started_at).total_seconds()
+            points.append(
+                {
+                    "concurrency": level,
+                    "run_id": path.name,
+                    "executions": len(results),
+                    "latency_s": {
+                        q: _percentile(durations, p) for q, p in (("p50", 0.5), ("p90", 0.9), ("p95", 0.95), ("max", 1.0))
+                    },
+                    "model_latency_s": {q: _percentile(model, p) for q, p in (("p50", 0.5), ("p95", 0.95))},
+                    "errors": {
+                        "num": len(errors),
+                        "den": len(results),
+                        "rate": round(len(errors) / len(results), 4) if results else None,
+                    },
+                    "rate_limited": len(limited),
+                    "wall_s": round(wall, 1),
+                    "throughput_per_min": round(len(results) / wall * 60, 2) if wall > 0 else None,
+                    "llm_calls_mean": round(sum(int(r.metrics.get("llm_calls", 0)) for r in results) / len(results), 2)
+                    if results
+                    else None,
+                }
+            )
+        out.append({"target": target, "suite": suite, "version": version, "points": points})
+    return out

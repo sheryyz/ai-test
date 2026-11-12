@@ -77,4 +77,22 @@ def test_detector_and_draft_sections_read_the_newest_files(tmp_path: Path) -> No
 
 def test_summary_has_every_section(tmp_path: Path) -> None:
     out = experiment_summary(tmp_path, TARGETS, suite_cases)
-    assert set(out) == {"suites", "phrasing", "detectors", "drafts"} and out["suites"] == []
+    assert set(out) == {"suites", "phrasing", "detectors", "drafts", "performance"} and out["suites"] == []
+
+
+def test_performance_groups_runs_that_differ_only_in_concurrency(tmp_path: Path) -> None:
+    from consenttrace.core.experiments import _percentile, performance_section
+
+    runs = tmp_path / "runs"
+    for name, level in (("c1", 1), ("c4", 4)):
+        run = record_run(runs, name)
+        as_live(run)
+        config = json.loads((run / "config.json").read_text(encoding="utf-8"))
+        (run / "config.json").write_text(json.dumps({**config, "concurrency": level}), encoding="utf-8")
+    as_live(record_run(runs, "other"), "v2")  # a single concurrency level: no curve
+    (group,) = performance_section(runs)
+    assert (group["version"], [p["concurrency"] for p in group["points"]]) == ("v1", [1, 4])
+    point = group["points"][0]
+    assert point["executions"] > 0 and point["errors"]["den"] == point["executions"] and point["rate_limited"] == 0
+    assert point["latency_s"]["p50"] <= point["latency_s"]["p95"] <= point["latency_s"]["max"]
+    assert _percentile(list(range(1, 28)), 0.95) == 26 and _percentile([], 0.5) is None

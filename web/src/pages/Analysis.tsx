@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { DataTable, GroupedBars } from "../components/charts";
+import { DataTable, GroupedBars, LineChart } from "../components/charts";
 import { Card, ErrorNote, Loading, Pill, Segmented } from "../components/ui";
 import { api, type Analysis as AnalysisData, type Confusion, type Ratio, type SuiteVersion } from "../lib/api";
 import { frac, pct, useAsync, versionColor } from "../lib/util";
@@ -61,10 +61,11 @@ export function Analysis() {
       <Judge a={a} />
       <Phrasing a={a} />
       <Drafts a={a} />
+      <Performance a={a} />
       <Card title="尚未完成" subtitle="不在这里放占位图表">
         <ul className="list-disc space-y-1 pl-5 text-sm text-ink-2">
           <li>人工盲标集（约 120 条真实轨迹）：完成后，A / B / C / Ours 的召回与误报改以人工标注为准，并给出 LLM 裁判与人工的 Cohen's κ。上面的检测器分数来自开发方编写的缺陷语料。</li>
-          <li>延迟与并发曲线（冒烟套件，并发 1 / 4 / 8）。</li>
+          {a.performance.length === 0 && <li>延迟与并发曲线（冒烟套件，并发 1 / 4 / 8）。</li>}
         </ul>
       </Card>
     </div>
@@ -225,6 +226,49 @@ function Drafts({ a }: { a: AnalysisData }) {
                   : [d.draft, "无效", "—", "—", "—", "—", "—", "—"],
               )}
             />
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function Performance({ a }: { a: AnalysisData }) {
+  if (a.performance.length === 0) return null;
+  return (
+    <Card title="延迟与并发" subtitle="同一套件、同一版本，只改变并发度；分位数为最近秩（报出的每个值都真实出现过），N 为执行次数">
+      <div className="space-y-6">
+        {a.performance.map((g) => (
+          <div key={`${g.target}-${g.suite}-${g.version}`}>
+            <div className="mb-2 text-xs text-muted">
+              {g.target} · {SUITE_NAMES[g.suite] ?? g.suite} · Agent {g.version}
+            </div>
+            <LineChart
+              x={g.points.map((p) => p.concurrency)}
+              xLabel="并发度"
+              unit="s"
+              series={[
+                { key: "p50", label: "单次执行耗时 p50", color: "var(--muted)", values: g.points.map((p) => p.latency_s.p50) },
+                { key: "p95", label: "单次执行耗时 p95", color: "var(--ink)", values: g.points.map((p) => p.latency_s.p95) },
+              ]}
+            />
+            <div className="mt-3">
+              <DataTable
+                head={["并发度", "N", "p50", "p95", "最大", "错误", "429 限流", "墙钟时间", "吞吐（次/分）", "运行"]}
+                rows={g.points.map((p) => [
+                  p.concurrency,
+                  p.executions,
+                  `${p.latency_s.p50?.toFixed(1)} s`,
+                  `${p.latency_s.p95?.toFixed(1)} s`,
+                  `${p.latency_s.max?.toFixed(1)} s`,
+                  frac(p.errors),
+                  p.rate_limited,
+                  `${p.wall_s} s`,
+                  p.throughput_per_min ?? "—",
+                  p.run_id,
+                ])}
+              />
+            </div>
           </div>
         ))}
       </div>

@@ -351,3 +351,96 @@ export function DataTable({ head, rows }: { head: string[]; rows: ReactNode[][] 
     </div>
   );
 }
+
+// ------------------------------------------------------------------ small line chart (few x points)
+
+export interface LineSeries {
+  key: string;
+  label: string;
+  color: string;
+  values: (number | null)[];
+}
+
+/** Lines over a handful of ordered x positions, direct-labelled at the last point; hover any point. */
+export function LineChart({ x, xLabel, series, unit, height = 220 }: { x: (string | number)[]; xLabel: string; series: LineSeries[]; unit: string; height?: number }) {
+  const tip = useTooltip();
+  const W = 640;
+  const pad = { l: 44, r: 64, t: 12, b: 34 };
+  const peak = Math.max(0, ...series.flatMap((s) => s.values.map((v) => v ?? 0)));
+  const step = [1, 2, 5, 10, 20, 30, 60, 120].find((m) => peak / m <= 5) ?? Math.ceil(peak / 5);
+  const top = Math.max(step, Math.ceil(peak / step) * step);
+  const ticks = Array.from({ length: Math.round(top / step) + 1 }, (_, i) => i * step);
+  const px = (i: number) => pad.l + (x.length === 1 ? 0.5 : i / (x.length - 1)) * (W - pad.l - pad.r);
+  const py = (v: number) => pad.t + (1 - v / top) * (height - pad.t - pad.b);
+  return (
+    <div>
+      <div className="mb-2 flex flex-wrap items-center gap-3 text-[11px] text-ink-2">
+        {series.map((s) => (
+          <span key={s.key} className="inline-flex items-center gap-1.5">
+            <span aria-hidden className="h-[2px] w-4" style={{ background: s.color }} />
+            {s.label}
+          </span>
+        ))}
+      </div>
+      <svg viewBox={`0 0 ${W} ${height}`} className="h-auto w-full" role="img" aria-label={`${series.map((s) => s.label).join("、")}随${xLabel}的变化`}>
+        {ticks.map((t) => (
+          <g key={t}>
+            <line x1={pad.l} x2={W - pad.r} y1={py(t)} y2={py(t)} stroke="var(--grid)" strokeWidth={1} />
+            <text x={pad.l - 6} y={py(t)} textAnchor="end" dominantBaseline="middle" fontSize={10} fill="var(--muted)" className="tabular">
+              {t}
+              {unit}
+            </text>
+          </g>
+        ))}
+        {x.map((label, i) => (
+          <text key={String(label)} x={px(i)} y={height - pad.b + 16} textAnchor="middle" fontSize={11} fill="var(--ink-2)">
+            {label}
+          </text>
+        ))}
+        <text x={(pad.l + W - pad.r) / 2} y={height - 4} textAnchor="middle" fontSize={10} fill="var(--muted)">
+          {xLabel}
+        </text>
+        {series.map((s) => {
+          const pts = s.values.map((v, i) => (v == null ? null : ([px(i), py(v)] as const)));
+          const path = pts.filter(Boolean).map((p, i) => `${i ? "L" : "M"}${p![0]},${p![1]}`).join(" ");
+          const lastIdx = pts.map((p, i) => (p ? i : -1)).filter((i) => i >= 0).pop();
+          return (
+            <g key={s.key}>
+              <path d={path} fill="none" stroke={s.color} strokeWidth={2} strokeLinejoin="round" />
+              {pts.map((p, i) =>
+                p ? (
+                  <circle
+                    key={i}
+                    cx={p[0]}
+                    cy={p[1]}
+                    r={4}
+                    fill={s.color}
+                    stroke="var(--surface)"
+                    strokeWidth={2}
+                    tabIndex={0}
+                    {...tipHandlers(tip, () => (
+                      <div>
+                        <div className="text-sm font-semibold">
+                          {s.values[i]!.toFixed(1)}
+                          {unit}
+                        </div>
+                        <div className="text-ink-2">
+                          {s.label} · {xLabel} {x[i]}
+                        </div>
+                      </div>
+                    ))}
+                  />
+                ) : null,
+              )}
+              {lastIdx !== undefined && pts[lastIdx] && (
+                <text x={pts[lastIdx]![0] + 9} y={pts[lastIdx]![1]} dominantBaseline="middle" fontSize={11} fill="var(--ink-2)">
+                  {s.label}
+                </text>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
