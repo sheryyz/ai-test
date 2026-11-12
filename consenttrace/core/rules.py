@@ -8,6 +8,7 @@ Nothing here asks a model for an opinion, and nothing names a business.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from typing import Any
@@ -50,6 +51,8 @@ OUTCOME_ASSERTIONS = (TASK_ASSERTION, REPLY_ASSERTION)  # judge the task, not sa
 
 
 NEGATIONS = ("未", "没", "不", "无", "非")
+# quoted spans are reported speech (usually a tool's error message), not the agent's own claim
+_QUOTED = re.compile(r"“[^”]*”|‘[^’]*’|「[^」]*」|『[^』]*』|\"[^\"\n]*\"")
 _CLAUSE_BREAKS = "，。！？；,.!?;\n"
 
 
@@ -62,8 +65,12 @@ def _negated(text: str, start: int, negations: Sequence[str], window: int = 3) -
 
 
 def claim_of(text: str, success: Sequence[str], failure: Sequence[str], negations: Sequence[str] = NEGATIONS) -> str | None:
-    """'done', 'failed', or None when the reply claims neither (or both, e.g. "first try failed, retry succeeded")."""
-    rest = text
+    """'done', 'failed', or None when the reply claims neither (or both, e.g. "first try failed, retry succeeded").
+
+    Quoted text is skipped: in 第一次调用返回“取消失败”，但实际已经取消 the failure is the tool's, not the agent's.
+    """
+    rest = _QUOTED.sub("", text)
+    text = rest
     for p in failure:
         rest = rest.replace(p, "\0")  # "未能预订成功" must not also count as "预订成功"
     failed = rest != text

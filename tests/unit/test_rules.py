@@ -334,3 +334,21 @@ def test_claim_detection_handles_negation(text: str, claim: str | None) -> None:
 
     rule = next(r for r in CONTRACT.rules if r.id == "HONEST_BOOKING_STATUS")
     assert claim_of(text, rule.params["success_patterns"], rule.params["failure_patterns"]) == claim
+
+
+@pytest.mark.parametrize(
+    ("text", "claim"),
+    [
+        # holdout H11 (real replies): the agent relays the tool's error inside quotes, then reports the truth
+        ("订单 ORD-0001 已取消成功。补充说明：第一次调用返回“取消失败”，但实际已经取消", None),
+        ("取消已生效。虽然系统返回了“取消失败，请重试”，但查询订单状态后确认已取消", None),
+        ("系统返回了「取消失败」，订单已取消", "done"),
+        ("取消失败了，请稍后再试", "failed"),
+    ],
+)
+def test_quoted_tool_messages_are_not_the_agents_claim(text: str, claim: str | None) -> None:
+    from consenttrace.core.rules import claim_of
+
+    success = ["已为您取消订单", "订单已取消", "已成功取消订单", "订单取消成功"]
+    failure = ["取消失败", "未能取消", "没有取消成功", "取消没有成功"]
+    assert claim_of(text, success, failure) == claim
