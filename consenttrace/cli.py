@@ -885,6 +885,65 @@ def cmd_attacks(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_kb_check(args: argparse.Namespace) -> int:
+    """RAG knowledge-base health check: errors, redundancy, conflicts, retrieval quality."""
+    from consenttrace.core.kb import run_kb_check
+
+    spec = load_targets(args.targets)[args.target]
+    root = Path(args.targets).resolve().parent.parent
+    client = None
+    if args.llm:
+        from consenttrace.config import LLMSettings
+        from consenttrace.llm.client import OpenAICompatClient
+
+        settings = LLMSettings.from_env(args.env, model_var="JUDGE_MODEL")
+        if settings is None:
+            console.print("[red]--llm 需要 .env 中的 LLM_API_KEY[/]")
+            return 2
+        client = OpenAICompatClient.from_settings(settings, timeout=120, response_format={"type": "json_object"})
+    try:
+        r = run_kb_check(
+            spec, root=root, runs_dir=Path(args.runs_dir), transport=args.via, client=client, regenerate_queries=args.regenerate
+        )
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/]")
+        return 2
+    table = Table(title=f"知识库体检：{spec.name}（{r['passages']} 条段落）", title_style="bold")
+    for col in ("类型", "规则", "段落", "说明", "LLM 复核"):
+        table.add_column(col)
+    for i in r["issues"]:
+        llm = i.get("llm")
+        table.add_row(
+            i["kind"],
+            i["rule"],
+            ", ".join(i["passages"]),
+            i["detail"],
+            "" if not llm else ("确认冲突" if llm["conflict"] else "不构成冲突") + f"：{llm['reason']}",
+        )
+    console.print(table if r["issues"] else "[green]没有发现结构错误、冗余或冲突候选[/]")
+    rq = r["retrieval"]
+    if rq:
+        k = rq["k"]
+        console.print(
+            f"检索质量（{rq['queries']} 题，Agent 自己的检索器）：Recall@1 {rq['recall_at_1']['num']}/{rq['queries']}，"
+            f"Recall@{k} {rq[f'recall_at_{k}']['num']}/{rq['queries']}，MRR {rq['mrr']}"
+        )
+    s = r["seeded"]
+    console.print(f"检查器自检：植入 {s['planted']} 个已知故障，检出 {s['detected']} 个；新增误报 {len(s['false_alarms'])} 个")
+    p = r["poisoning"]
+    console.print(
+        f"投毒段落：{p['passages']} 条（来自本目标用例集的检索投毒），规则判为与现有条款冲突 {p['flagged']} 条"
+        + (f"，LLM 判为冲突 {p['llm_flagged']} 条" if p.get("llm_flagged") is not None else "")
+    )
+    if r.get("llm_review"):
+        confirmed = [x for x in r["llm_review"]["pairs"] if x["conflict"]]
+        console.print(
+            f"LLM 复核（{r['llm_review']['model']}）：审查 {len(r['llm_review']['pairs'])} 对条款，判为冲突 {len(confirmed)} 对"
+        )
+    console.print(f"报告：{r['path']}/report.json")
+    return 0
+
+
 def _agent_table(statuses: list[AgentStatus]) -> Table:
     table = Table(title="被测 Agent（独立进程，经 Agent 协议接入）", title_style="bold")
     for col in ("目标", "地址", "状态", "版本", "能力", "模型"):
@@ -1010,6 +1069,13 @@ def build_parser() -> argparse.ArgumentParser:
     atk.add_argument("--run", action="append", help="report：要统计的攻击套件运行（可重复）")
     atk.add_argument("--env", default=".env")
 
+    kb = sub.add_parser("kb-check", help="RAG 知识库体检：结构错误、冗余、冲突、检索质量（含检查器自检与投毒检测）")
+    kb.add_argument("--target", default="travel")
+    kb.add_argument("--via", choices=["inprocess", "http"], default="inprocess", help="从哪里读取知识库与检索器")
+    kb.add_argument("--llm", action="store_true", help="用 JUDGE_MODEL 复核冲突候选（没有冻结的测试题时也用它生成）")
+    kb.add_argument("--regenerate", action="store_true", help="重新生成并冻结检索测试题")
+    kb.add_argument("--env", default=".env")
+
     ag = sub.add_parser("agents", help="列出独立进程的被测 Agent 及其在线状态与能力声明")
     ag.add_argument("name", nargs="*", help="只看这些目标")
     ag.add_argument("--start", action="store_true", help="启动本机管理的 Agent 进程（按 Ctrl+C 结束）")
@@ -1102,6 +1168,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "serve": cmd_serve,
         "agents": cmd_agents,
         "attacks": cmd_attacks,
+        "kb-check": cmd_kb_check,
         "probe": cmd_probe,
         "reevaluate": cmd_reevaluate,
         "detectors": cmd_detectors,

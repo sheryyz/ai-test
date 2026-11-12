@@ -6,6 +6,7 @@ import { Attacks } from "./pages/Attacks";
 import { Compare } from "./pages/Compare";
 import { Console } from "./pages/Console";
 import { DefectDetail, Defects } from "./pages/Defects";
+import { KnowledgeCheck } from "./pages/KnowledgeCheck";
 import { Overview } from "./pages/Overview";
 import { RunDetail } from "./pages/RunDetail";
 import { Runs } from "./pages/Runs";
@@ -50,6 +51,7 @@ export function App() {
   else if (section === "defects" && route[1]) page = <DefectDetail id={route[1]} />;
   else if (section === "defects") page = <Defects />;
   else if (section === "attacks") page = <Attacks />;
+  else if (section === "kb") page = <KnowledgeCheck />;
   else if (section === "compare") page = <Compare />;
   else if (section === "analysis") page = <Analysis />;
   else if (section === "workbench") page = <Workbench />;
@@ -75,6 +77,7 @@ export function App() {
       items: [
         { key: "workbench", label: "契约工作台" },
         { key: "attacks", label: "对抗用例生成" },
+        { key: "kb", label: "RAG 知识库体检" },
         { key: "suite", label: "用例库" },
       ],
     },

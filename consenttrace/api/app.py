@@ -576,6 +576,18 @@ def create_app(
             "runs": reports,
         }
 
+    # ------------------------------------------------------------ RAG knowledge-base health check
+
+    @app.get("/api/kb/{name}")
+    def kb_report(name: str) -> dict[str, Any]:
+        from consenttrace.core.kb import latest_kb_report
+
+        target(name)
+        found = latest_kb_report(runs_dir, name)
+        if found is None:
+            raise HTTPException(404, f"{name} 还没有知识库体检报告（consenttrace kb-check --target {name}）")
+        return found
+
     @app.get("/api/analysis")
     def analysis() -> dict[str, Any]:
         return experiment_summary(runs_dir, targets(), suite_cases)

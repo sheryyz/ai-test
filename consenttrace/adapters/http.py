@@ -100,6 +100,12 @@ class HttpAgentAdapter:
     def describe(self) -> AgentDescription:
         return AgentDescription.model_validate(call(self._client, "GET", "/describe", params={"version": self.version}))
 
+    def knowledge(self) -> list[dict[str, str]]:
+        return list(call(self._client, "GET", "/knowledge")["passages"])
+
+    def search_knowledge(self, query: str, k: int) -> list[str]:
+        return list(call(self._client, "POST", "/knowledge/search", json={"query": query, "k": k})["ids"])
+
     # ---------------------------------------------------------------- one case
 
     def reset(self, ctx: CaseContext) -> None:

@@ -13,6 +13,8 @@ Endpoints (all JSON, prefix /ct/v1; the full contract is docs/agent_protocol.md)
 
     GET    /info                         name, versions, capabilities, model availability
     GET    /describe?version=            tool schemas, system prompt, state schema (optional)
+    GET    /knowledge                    retrieval knowledge base passages (optional, RAG agents)
+    POST   /knowledge/search             the agent's own retriever: {query, k} -> ranked ids (optional)
     POST   /sessions                     start an isolated session for one case execution
     POST   /sessions/{id}/messages       one trusted user turn -> TurnResult
     GET    /sessions/{id}/events?since=  trace events with step_id > since (non-destructive)
@@ -41,7 +43,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
-from consenttrace.adapters.base import AgentAdapter, CaseContext, DescribableAdapter
+from consenttrace.adapters.base import AgentAdapter, CaseContext, DescribableAdapter, KnowledgeAdapter
 from consenttrace.config import LLMSettings
 from consenttrace.llm.client import AssistantTurn, ChatClient, OpenAICompatClient, ScriptedClient
 from consenttrace.llm.replay import RecordingClient, ReplayClient
@@ -77,6 +79,11 @@ class SessionRequest(BaseModel):
     seed: int = 0
     injections: list[InjectionSpec] = Field(default_factory=list)
     llm: LLMOptions = Field(default_factory=LLMOptions)
+
+
+class SearchRequest(BaseModel):
+    query: str = Field(min_length=1)
+    k: int = Field(default=10, ge=1, le=100)
 
 
 class MessageRequest(BaseModel):
@@ -195,6 +202,20 @@ def create_agent_app(
         if not isinstance(adapter, DescribableAdapter):
             raise HTTPException(404, "this agent does not describe itself")
         return adapter.describe().model_dump(mode="json")
+
+    def knowledge_adapter() -> KnowledgeAdapter:
+        adapter = factory(_probe_client, versions[0])
+        if not isinstance(adapter, KnowledgeAdapter):
+            raise HTTPException(404, "this agent has no retrieval knowledge base")
+        return adapter
+
+    @app.get(f"{PREFIX}/knowledge")
+    def knowledge() -> dict[str, Any]:
+        return {"passages": knowledge_adapter().knowledge()}
+
+    @app.post(f"{PREFIX}/knowledge/search")
+    def knowledge_search(req: SearchRequest) -> dict[str, Any]:
+        return {"ids": knowledge_adapter().search_knowledge(req.query, req.k)}
 
     @app.post(f"{PREFIX}/sessions")
     def open_session(req: SessionRequest) -> dict[str, str]:

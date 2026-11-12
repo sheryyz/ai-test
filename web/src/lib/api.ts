@@ -388,6 +388,32 @@ export interface AttackData {
   }[];
 }
 
+export interface KBReport {
+  target: string;
+  transport: string;
+  checked_at: string;
+  passages: number;
+  knowledge: { id: string; title: string; text: string }[];
+  issues: { kind: string; rule: string; passages: string[]; detail: string; llm: { conflict: boolean | null; reason: string } | null }[];
+  counts: { error: number; redundancy: number; conflict: number };
+  retrieval: ({
+    k: number;
+    queries: number;
+    recall_at_1: Ratio;
+    mrr: number | null;
+    rows: { query: string; gold: string; rank: number | null; top: string[] }[];
+  } & Record<string, unknown>) | null;
+  queries_source: { model?: string; path: string; count: number };
+  llm_review: { model: string; pairs: { pair: string[]; conflict: boolean | null; reason: string }[] } | null;
+  seeded: { planted: number; detected: number; faults: { kind: string; rule: string; passages: string[]; detected: boolean }[]; false_alarms: unknown[] };
+  poisoning: {
+    passages: number;
+    flagged: number;
+    llm_flagged: number | null;
+    rows: { id: string; title: string; text: string; flagged: boolean; against: string[]; llm?: { pair: string[]; conflict: boolean | null; reason: string }[]; llm_flagged?: boolean }[];
+  };
+}
+
 export interface Workspace {
   agents: WorkspaceAgent[];
   defects: { summary: DefectSummary; recent: Defect[] };
@@ -606,6 +632,7 @@ export const api = {
   acceptContract: (target: string, body: { yaml: string; draft_run: string | null; draft: number | null }) =>
     post<{ edits_from_draft: Record<string, number>; accepted_at: string }>(`/api/targets/${target}/contract/accept`, body),
   workspace: () => get<Workspace>("/api/workspace"),
+  kb: (target: string) => get<KBReport>(`/api/kb/${encodeURIComponent(target)}`),
   attacks: (target: string) => get<AttackData>(`/api/attacks/${encodeURIComponent(target)}`),
   agents: () => get<AgentStatus[]>("/api/agents"),
   startAgent: (name: string) => post<AgentStatus>(`/api/agents/${encodeURIComponent(name)}/start`, {}),

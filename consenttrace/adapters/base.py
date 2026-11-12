@@ -53,3 +53,16 @@ class DescribableAdapter(Protocol):
     """Optional: an adapter that can describe its agent's tools, prompt and state schema (F09)."""
 
     def describe(self) -> AgentDescription: ...
+
+
+@runtime_checkable
+class KnowledgeAdapter(Protocol):
+    """Optional: an agent with a retrieval knowledge base lets ConsentTrace check it (RAG health check)."""
+
+    def knowledge(self) -> list[dict[str, str]]:
+        """Every passage as {id, title, text}."""
+        ...
+
+    def search_knowledge(self, query: str, k: int) -> list[str]:
+        """Passage ids ranked by the agent's own retriever."""
+        ...

@@ -87,6 +87,19 @@ def _run(report: ProbeReport, client: httpx.Client, version: str | None) -> None
     except ValidationError as exc:
         add(ProbeCheck("describe", "自我描述", "FAIL", f"返回内容不符合 AgentDescription：{exc.error_count()} 处错误"))
 
+    try:
+        passages = call(client, "GET", "/knowledge")["passages"]
+        add(ProbeCheck("knowledge", "知识库", "PASS", f"{len(passages)} 条段落，可做 RAG 知识库体检"))
+    except AgentProtocolError as exc:
+        add(
+            ProbeCheck(
+                "knowledge",
+                "知识库",
+                "SKIP" if "HTTP 404" in str(exc) else "FAIL",
+                "没有检索知识库" if "HTTP 404" in str(exc) else str(exc),
+            )
+        )
+
     sessions: list[str] = []
     try:
         first = _open(client, version, "probe-1")

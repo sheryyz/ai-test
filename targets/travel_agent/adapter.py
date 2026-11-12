@@ -103,6 +103,13 @@ class TravelAgentAdapter:
             finally:
                 self.close()
 
+    def knowledge(self) -> list[dict[str, str]]:
+        """The policy knowledge base, exactly as get_travel_policy searches it."""
+        return [{"id": p.id, "title": p.title, "text": p.text} for p in self._retriever.passages]
+
+    def search_knowledge(self, query: str, k: int) -> list[str]:
+        return [hit.passage.id for hit in self._retriever.search(query, top_k=k)]
+
     def send(self, user_message: str) -> TurnResult:
         agent, recorder = self._require()
         recorder.begin_turn()

@@ -54,13 +54,14 @@ def approval() -> TestClient:
 
 
 def test_probe_passes_for_both_agents(travel: TestClient, approval: TestClient) -> None:
-    for client, tables in ((travel, "fares, flights, orders"), (approval, "requests")):
+    for client, tables, kb in ((travel, "fares, flights, orders", "PASS"), (approval, "requests", "SKIP")):
         report = probe_agent(URL, client=client)
         assert report.ok, report.to_dict()
         status = {c.key: c.status for c in report.checks}
         assert status == {
             "handshake": "PASS",
             "describe": "PASS",
+            "knowledge": kb,  # only the travel agent has a retrieval knowledge base
             "output": "PASS",
             "trace": "PASS",
             "state": "PASS",
@@ -194,3 +195,12 @@ def test_launch_refuses_http_when_the_agent_is_down(tmp_path: Path) -> None:
         )
     with pytest.raises(LaunchError, match="只能通过 HTTP 接入"):
         prepare_run(RunRequest(target="travel"), targets_path=targets, runs_dir=tmp_path / "runs", env_file=None)
+
+
+def test_knowledge_base_is_read_and_searched_through_the_agents_own_retriever(travel: TestClient, approval: TestClient) -> None:
+    adapter = HttpAgentAdapter(URL, version="v1", client=travel)
+    passages = adapter.knowledge()
+    assert len(passages) == 12 and passages[0]["id"] == "POL-01"
+    assert adapter.search_knowledge("提前几天订机票", 3)[0] == "POL-02"
+    with pytest.raises(AgentProtocolError, match="HTTP 404"):
+        HttpAgentAdapter(URL, version="v1", client=approval).knowledge()

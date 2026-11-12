@@ -56,7 +56,9 @@ def collect(run_ids: Sequence[str], *, targets_path: str | Path, runs_dir: str |
     grab("/api/defects")
     for target in data["/api/targets"]:
         if client.get(f"/api/attacks/{_q(target['name'])}").status_code == 200:
-            grab(f"/api/attacks/{_q(target['name'])}")  # links to runs outside this report show a note instead of evidence
+            grab(f"/api/attacks/{_q(target['name'])}")
+        if client.get(f"/api/kb/{_q(target['name'])}").status_code == 200:
+            grab(f"/api/kb/{_q(target['name'])}")  # links to runs outside this report show a note instead of evidence
     if analysis:
         grab("/api/analysis")
     data["/api/settings"] = {"live_available": False, "model": None}

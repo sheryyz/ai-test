@@ -243,3 +243,14 @@ def test_attack_library_and_rates_are_served(client: TestClient) -> None:
     assert data["generation"]["accepted"] == 33
     assert data["runs"] == []  # no attack runs in this evidence store
     assert client.get("/api/attacks/approval").status_code == 404
+
+
+def test_kb_report_is_served_once_a_check_has_run(runs: Path, tmp_path: Path) -> None:
+    from consenttrace.core.kb import run_kb_check
+    from consenttrace.core.registry import load_targets
+
+    client = TestClient(create_app(targets_path=ROOT / "configs" / "targets.yaml", runs_dir=runs, env_file=None, web_dist=None))
+    assert client.get("/api/kb/travel").status_code == 404
+    run_kb_check(load_targets(ROOT / "configs" / "targets.yaml")["travel"], root=ROOT, runs_dir=runs)
+    report = client.get("/api/kb/travel").json()
+    assert report["passages"] == 12 and report["seeded"]["detected"] == 4 and report["retrieval"]["queries"] == 24
