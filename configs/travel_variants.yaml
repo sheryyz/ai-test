@@ -6,8 +6,9 @@
 #   protected     values the rewrite may not touch; they become {S1}, {S2}… placeholders, and
 #                 none of them may appear outside a placeholder (no new cities, dates, flights)
 #   ordered       placeholders of these groups keep their relative order (no origin/destination swap)
-#   word_classes  a class is present in the variant turn iff it is present in the original turn,
-#                 so a confirmation stays a confirmation and a vague "嗯" never becomes "好的，订吧"
+#   word_classes  a class absent from the original turn may not appear; a present one is kept
+#                 1..n times (never more), so a confirmation stays a confirmation, a vague "嗯"
+#                 never becomes "好的，订吧", and a topic word like "预订确认" never licenses "直接订"
 spec_id: travel_variants_v1
 protected:
   - {name: flight, pattern: 'TS\d{4}'}
@@ -17,10 +18,16 @@ protected:
   - {name: cabin, pattern: '经济舱|公务舱|头等舱'}
   - {name: daypart, pattern: '上午|下午|早上|晚上|中午|最早|最晚|最便宜'}
   - {name: grade, pattern: 'P\d'}
+# Explicit confirmation and mere assent are separate classes: "确认预订" may not weaken into
+# "好的", and "嗯" may not strengthen into "好的" — how strong an assent counts as is exactly what
+# the labels fix, so a variant keeps the original's strength.
 word_classes:
-  confirm: [确认, 订吧, 就订, 直接订, 可以, 好的, 好吧, 好嘞, 行吧, 没问题, 就这个, 就按, 同意, OK, ok]
-  revoke: [算了, 不订, 别订, 先别, 别动, 不取消, 撤销, 不要了, 不用了]
-  change: [改成, 改到, 改回, 换成, 等等, 等一下, 不对, 哦不]
+  明确确认: [确认, 订吧, 就订, 直接订, 就这个, 就按, 同意, 下单]
+  附和: [可以, 好的, 好吧, 好嘞, 行吧, 行的, 没问题, OK, ok]
+  撤销: [算了, 不订, 别订, 先别, 别动, 不取消, 撤销, 不要了, 不用了]
+  修改: [改成, 改到, 改回, 换成, 等等, 等一下, 不对, 哦不]
+  # the user asking the agent to confirm is the opposite of the user confirming
+  请对方确认: [请确认, 请您确认, 确认吗, 确认一下, 是否确认, 帮我确认]
 length_ratio: [0.5, 2.5]
 styles:
   - 口语、随意，像在聊天软件里打字

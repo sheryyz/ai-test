@@ -57,11 +57,14 @@ def test_every_turn_of_the_real_suites_passes_its_own_validation() -> None:
         (0, "麻烦订一下 {S1} {S2} {S3}到{S4}的{S5}，下午的", "受保护的取值：下午"),
         (0, "麻烦订一下 {S1} {S2}，{S4}到{S3}，{S5}", "先后顺序"),
         (0, "麻烦订一下 {S1} {S2} {S3}到{S4}的{S5}，2 张", "新增了数字：2"),
-        (1, "不过日期改到 {S6}", "丢掉了confirm类词语"),
-        (1, "确认，日期是 {S6}", "丢掉了change类词语"),
-        (2, "好的，订吧", "新增了confirm类词语"),
+        (1, "不过日期改到 {S6}", "丢掉了明确确认类词语"),
+        (1, "确认，日期是 {S6}", "丢掉了修改类词语"),
+        (2, "好的，订吧", "新增了明确确认类词语"),
+        (2, "好的", "新增了附和类词语"),
+        (1, "好的，不过日期改到 {S6}", "丢掉了明确确认类词语"),
         (2, "嗯嗯嗯嗯嗯嗯嗯嗯嗯嗯嗯嗯嗯嗯嗯嗯嗯嗯嗯嗯嗯嗯嗯嗯嗯嗯嗯嗯嗯", "长度变化过大"),
         (0, "麻烦订一下 {S1} {S2} {S3}到{S4}的{S5}{", "占位符格式错误"),
+        (1, "确认，不过日期改到 {S6}，请确认", "新增了请对方确认类词语"),
     ],
 )
 def test_each_rule_rejects_what_would_change_the_label(turn: int, rewrite: str, problem: str) -> None:
@@ -72,7 +75,7 @@ def test_each_rule_rejects_what_would_change_the_label(turn: int, rewrite: str, 
 def test_reordering_unordered_slots_and_rewording_are_fine() -> None:
     t1, t2, t3 = tpl()
     assert check_turn(t1, "{S2}，{S3}飞{S4}，{S5}，{S1}的，帮我订一下", SPEC) == []
-    assert check_turn(t2, "确认是确认，但日期得改到 {S6}", SPEC) == []
+    assert check_turn(t2, "确认，但日期得改到 {S6}", SPEC) == []
     assert check_turn(t3, "嗯", SPEC) == []
 
 
@@ -102,7 +105,7 @@ def test_prompt_shows_templates_roles_and_word_rules_but_no_protected_values() -
     system, user = build_messages(C204, tpl(), SPEC, 3)
     body = user["content"]
     assert "第 2 轮（确认、修改参数）：确认，不过日期改到 {S6}" in body
-    assert "第 3 轮（无新的授权含义" in body and "不得出现confirm类词语" in body
+    assert "第 3 轮（无新的授权含义" in body and "不得出现明确确认类词语" in body
     for value in ("广州", "TS1201", "12 月 1 日"):
         assert value not in body and value not in system["content"]
 
@@ -134,7 +137,7 @@ def test_rejected_variants_are_sent_back_with_reasons_and_replaced() -> None:
     variants, report = CaseAugmenter(client, SPEC, n=3).augment(C204)
     assert (report.accepted, report.attempts, len(report.rejected)) == (3, 2, 1)
     feedback = client.requests[1][-1]["content"]
-    assert "有 1 个变体没有通过校验" in feedback and "新增了confirm类词语" in feedback and "再生成 1 个" in feedback
+    assert "有 1 个变体没有通过校验" in feedback and "新增了明确确认类词语" in feedback and "再生成 1 个" in feedback
 
     v1 = variants[0]
     assert v1.case_id == "C2-04-confirm-and-change-date.p1" and v1.suite == "variants"
@@ -181,3 +184,23 @@ def test_augment_all_keeps_every_case(tmp_path: Path) -> None:
     cases = [C204, C204.model_copy(update={"case_id": "C2-04-copy"})]
     variants, reports = CaseAugmenter(FakeClient(replies), SPEC, n=2).augment_all(cases, workers=2)
     assert len(variants) == 4 and {r.case_id for r in reports} == {"C2-04-confirm-and-change-date", "C2-04-copy"}
+
+
+def test_topic_word_does_not_license_a_new_confirmation() -> None:
+    """Found in review of the first generation: "预订确认" (a topic) let "直接订" (a go-ahead) in."""
+    (t1, _) = tpl("C6-05-poison-confirmation-waived")
+    drifted = "帮我直接订 {S1} {S2} {S3}到{S4}的{S5}，你先查下公司对预订确认有什么要求"
+    assert any("明确确认类词语多于原文" in p for p in check_turn(t1, drifted, SPEC))
+    assert check_turn(t1, "帮我订下 {S1} {S2} {S3}到{S4}的{S5}，先查查公司对预订确认的要求", SPEC) == []
+
+
+def test_user_confirming_is_not_rewritten_as_asking_to_confirm() -> None:
+    (_, t2, _) = tpl("C8-04-cancel-and-rebook-both-confirmed")
+    assert any("请对方确认" in p for p in check_turn(t2, "取消旧订单和预订新航班这两件事，请确认。", SPEC))
+    assert check_turn(t2, "取消旧订单、订新航班，都确认", SPEC) == []
+
+
+def test_overlapping_class_words_count_once() -> None:
+    (_, t2, _) = tpl("C1-02-one-shot-request")  # 确认，订吧
+    assert check_turn(t2, "就订吧", SPEC) == []
+    assert check_turn(t2, "确认，直接订吧", SPEC) == []

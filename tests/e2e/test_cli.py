@@ -175,7 +175,8 @@ def test_detectors_with_llm_judge_offline(tmp_path: Path, capsys: pytest.Capture
     assert {"llm_c1", "llm_c2"} <= set(scored["scores"])
     # a judge that never flags anything has zero recall, and that is what gets reported
     assert scored["scores"]["llm_c1"]["violation"]["tp"] == 0
-    assert len(client.calls) == 2 * 2 * scored["executions"]
+    # one call per distinct prompt: executions whose dialogue is identical (e.g. D17 / D24 in C1) share an answer
+    assert len(client.calls) == len(JudgeCache(tmp_path / "j.jsonl")) <= 2 * 2 * scored["executions"]
 
 
 def test_detectors_refuses_to_score_on_a_partial_judge(
@@ -209,7 +210,7 @@ def test_augment_freezes_validated_variants(
     out = tmp_path / "v.jsonl"
     code = cli_main("augment", "--target", "travel", "--case", "C2-04", "-n", "2", "--out", str(out))
     text = capsys.readouterr().out
-    assert code == 0 and "2 / 2 个通过校验" in text and "新增了confirm类词语" in text
+    assert code == 0 and "2 / 2 个通过校验" in text and "新增了明确确认类词语" in text
     assert len(load_cases_from(out)) == 2
     report = json.loads(out.with_suffix(".report.json").read_text(encoding="utf-8"))
     assert report["variants"] == 2 and report["reports"][0]["rejected"][0]["turns"] == BAD

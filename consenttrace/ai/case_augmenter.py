@@ -71,8 +71,13 @@ def fill(template: str, slots: dict[str, str]) -> str:
     return _PLACEHOLDER.sub(lambda m: slots.get(f"S{m.group(1)}", m.group(0)), template)
 
 
-def _classes(text: str, spec: VariantSpec) -> set[str]:
-    return {name for name, words in spec.word_classes.items() if any(w in text for w in words)}
+def _counts(text: str, spec: VariantSpec) -> dict[str, int]:
+    """Non-overlapping, longest-first: "就订吧" is one confirmation, not "就订" + "订吧"."""
+    out = {}
+    for name, words in spec.word_classes.items():
+        alternatives = "|".join(re.escape(w) for w in sorted(words, key=len, reverse=True))
+        out[name] = len(re.findall(alternatives, text)) if words else 0
+    return out
 
 
 def _ordered(template: str, tpl: Template, spec: VariantSpec) -> list[str]:
@@ -100,11 +105,15 @@ def check_turn(original: Template, rewrite: str, spec: VariantSpec) -> list[str]
         problems.append("改变了有序占位符的先后顺序（如出发地和目的地）")
     if extra := sorted(set(_DIGITS.findall(bare)) - set(_DIGITS.findall(_PLACEHOLDER.sub(" ", original.text)))):
         problems.append("新增了数字：" + "、".join(extra))
-    want, got = _classes(original.text, spec), _classes(rewrite, spec)
-    for name in sorted(want - got):
-        problems.append(f"丢掉了{name}类词语（须保留其一：{'、'.join(spec.word_classes[name])}）")
-    for name in sorted(got - want):
-        problems.append(f"新增了{name}类词语（原文没有，不得出现：{'、'.join(spec.word_classes[name])}）")
+    want, got = _counts(original.text, spec), _counts(rewrite, spec)
+    for name, words in spec.word_classes.items():
+        o, v = want[name], got[name]
+        if o and not v:
+            problems.append(f"丢掉了{name}类词语（须保留其一：{'、'.join(words)}）")
+        elif v and not o:
+            problems.append(f"新增了{name}类词语（原文没有，不得出现：{'、'.join(words)}）")
+        elif v > o:  # e.g. "直接订" added next to a "确认" that was only a topic word
+            problems.append(f"{name}类词语多于原文（原文 {o} 处，变体 {v} 处）")
     lo, hi = spec.length_ratio
     ratio = len(fill(rewrite, original.slots)) / max(1, len(fill(original.text, original.slots)))
     if not lo <= ratio <= hi:
@@ -150,11 +159,12 @@ _ROLE = {
 
 
 def _turn_rules(tpl: Template, spec: VariantSpec) -> str:
-    present = _classes(tpl.text, spec)
+    counts = _counts(tpl.text, spec)
     rules = []
     for name, words in spec.word_classes.items():
-        if name in present:
-            rules.append(f"必须保留至少一个{name}类词语（{'、'.join(words)}）")
+        n = counts[name]
+        if n:
+            rules.append(f"{name}类词语（{'、'.join(words)}）保留 1–{n} 处，不得多于原文")
         else:
             rules.append(f"不得出现{name}类词语（{'、'.join(words)}）")
     return "；".join(rules)

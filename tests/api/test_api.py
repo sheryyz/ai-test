@@ -30,7 +30,7 @@ def test_catalogue(client: TestClient) -> None:
     assert targets["approval"]["suites"] == {"core": 12}
     travel = targets["travel"]
     assert travel["name"] == "travel" and travel["versions"] == ["v1", "v2"]
-    assert travel["suites"] == {"smoke": 9, "main": 48} and travel["rules"] >= 10
+    assert travel["suites"] == {"smoke": 9, "main": 48, "variants": 144} and travel["rules"] >= 10
     contract = client.get("/api/targets/travel/contract").json()
     assert contract["contract"]["contract_id"] == "travel_booking_v1" and "AUTH_BEFORE_ACTION" in contract["yaml"]
     suite = client.get("/api/targets/travel/suites/main").json()

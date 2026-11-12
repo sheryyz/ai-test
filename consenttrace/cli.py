@@ -555,6 +555,48 @@ def cmd_augment(args: argparse.Namespace) -> int:
     return 0 if len(variants) == args.n * len(cases) else 1
 
 
+def cmd_phrasing(args: argparse.Namespace) -> int:
+    """F10 metamorphic check on a variants run, against the base run's repetitions."""
+    from consenttrace.core.analysis import phrasing_sensitivity
+
+    source = Path(args.runs_dir) / args.run
+    config = json.loads((source / "config.json").read_text(encoding="utf-8"))
+    spec = load_targets(args.targets)[config["target"]]
+    contract = load_contract(spec.contract)
+    cases = {c.case_id: c for c in load_cases(spec.suite(config["suite"]), contract)}
+    base = load_results(Path(args.runs_dir) / args.base) if args.base else []
+    out = phrasing_sensitivity(load_results(source), cases, base)
+    write_json(source / "phrasing_sensitivity.json", {**out, "base_run": args.base})
+
+    def show(r: dict[str, Any]) -> str:
+        return f"{r['num']}/{r['den']}" if r["den"] else "—"
+
+    console.rule(f"[bold]措辞不变性[/] {args.run}（{out['bases']} 条主用例，{out['variants']} 个变体）")
+    console.print(
+        f"变体之间结果不一致：{show(out['variant_outcome_split'])}　越权判定不一致：{show(out['variant_violation_split'])}"
+    )
+    if args.base:
+        console.print(
+            f"对照 · 同一措辞重复执行（{args.base}）结果不一致：{show(out['rep_outcome_split'])}　"
+            f"越权判定不一致：{show(out['rep_violation_split'])}"
+        )
+        console.print(f"变体出现了原措辞 k 次都没出现过的结果：{show(out['outside_base'])}")
+    table = Table(title="结果不一致的主用例", title_style="bold")
+    for col in ("主用例", "变体结果", "原措辞各次结果", "变体违规规则"):
+        table.add_column(col)
+    for row in out["rows"]:
+        if not (row["variant_outcome_split"] or row["outside_base"]):
+            continue
+        table.add_row(
+            row["base"],
+            " ".join(Text(v["outcome"], style=OUTCOME_STYLE[v["outcome"]]).markup for v in row["variants"]),
+            " ".join(r["outcome"] for r in row["reps"]) or "—",
+            "; ".join(",".join(v["rules"]) or "—" for v in row["variants"]),
+        )
+    console.print(table)
+    return 0
+
+
 def cmd_serve(args: argparse.Namespace) -> int:  # pragma: no cover - blocks on a server
     import uvicorn
 
@@ -628,6 +670,10 @@ def build_parser() -> argparse.ArgumentParser:
     aug.add_argument("--timeout", type=float, default=180.0)
     aug.add_argument("--env", default=".env")
 
+    phr = sub.add_parser("phrasing", help="F10：措辞不变性分析（变体之间 vs 原措辞重复执行）")
+    phr.add_argument("--run", required=True, help="变体套件的运行")
+    phr.add_argument("--base", help="同一版本在原用例集上的运行（k≥2，作为采样噪声对照）")
+
     serve = sub.add_parser("serve", help="启动 Web 控制台（FastAPI + 前端）")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8765)
@@ -646,6 +692,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "reevaluate": cmd_reevaluate,
         "detectors": cmd_detectors,
         "augment": cmd_augment,
+        "phrasing": cmd_phrasing,
     }
     try:
         return handlers[args.command](args)

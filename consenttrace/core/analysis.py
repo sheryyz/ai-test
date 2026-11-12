@@ -120,3 +120,68 @@ def run_breakdown(run_dir: Path, cases: dict[str, TestCase]) -> dict[str, Any]:
         "cases": case_rows,
         "rule_hits": dict(Counter(rule for f in facts for rule in f["rules"])),
     }
+
+
+def base_of(case: TestCase) -> str | None:
+    """The base case a phrasing variant was derived from (tag `base:<case_id>`), if any."""
+    return next((t.split(":", 1)[1] for t in case.tags if t.startswith("base:")), None)
+
+
+def phrasing_sensitivity(
+    variant_results: Iterable[RunResult],
+    variant_cases: dict[str, TestCase],
+    base_results: Iterable[RunResult] = (),
+) -> dict[str, Any]:
+    """F10 metamorphic check: variants share trusted events, so their verdicts should agree.
+
+    Disagreement among variants mixes two causes: wording, and the model's own sampling
+    noise. The base run's repetitions (same wording, k times) measure the noise alone, so
+    both rates are reported side by side and neither is read without the other.
+    """
+    variants: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for r in variant_results:
+        case = variant_cases.get(r.case_id)
+        base = base_of(case) if case else None
+        if base is not None:
+            style = next((t.split(":", 1)[1] for t in case.tags if t.startswith("style:")), "") if case else ""
+            variants[base].append({**execution_facts(r), "style": style})
+    reps: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for r in base_results:
+        reps[r.case_id].append(execution_facts(r))
+
+    def split(rows: list[dict[str, Any]], key: str) -> bool:
+        return len({row[key] for row in rows}) > 1
+
+    rows = []
+    for base, vs in sorted(variants.items()):
+        vs = sorted(vs, key=lambda f: f["case_id"])
+        rs = sorted(reps.get(base, []), key=lambda f: f["rep"])
+        rep_outcomes = {f["outcome"] for f in rs}
+        category = variant_cases[vs[0]["case_id"]].category
+        rows.append(
+            {
+                "base": base,
+                "category": category,
+                "variants": [
+                    {k: f[k] for k in ("case_id", "style", "outcome", "auth_violation", "task_ok", "rules")} for f in vs
+                ],
+                "reps": [{k: f[k] for k in ("rep", "outcome", "auth_violation", "task_ok", "rules")} for f in rs],
+                "variant_outcome_split": split(vs, "outcome"),
+                "variant_violation_split": split(vs, "auth_violation"),
+                "rep_outcome_split": split(rs, "outcome") if len(rs) > 1 else None,
+                "rep_violation_split": split(rs, "auth_violation") if len(rs) > 1 else None,
+                # a variant ended in an outcome the base wording never produced in k tries
+                "outside_base": sorted(f["case_id"] for f in vs if rs and f["outcome"] not in rep_outcomes),
+            }
+        )
+    with_reps = [r for r in rows if r["rep_outcome_split"] is not None]
+    return {
+        "bases": len(rows),
+        "variants": sum(len(r["variants"]) for r in rows),
+        "variant_outcome_split": ratio(sum(r["variant_outcome_split"] for r in rows), len(rows)),
+        "variant_violation_split": ratio(sum(r["variant_violation_split"] for r in rows), len(rows)),
+        "rep_outcome_split": ratio(sum(bool(r["rep_outcome_split"]) for r in with_reps), len(with_reps)),
+        "rep_violation_split": ratio(sum(bool(r["rep_violation_split"]) for r in with_reps), len(with_reps)),
+        "outside_base": ratio(sum(len(r["outside_base"]) for r in with_reps), sum(len(r["variants"]) for r in with_reps)),
+        "rows": rows,
+    }

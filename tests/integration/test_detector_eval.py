@@ -112,7 +112,7 @@ def test_unknown_and_misplaced_mutants_are_refused() -> None:
     with pytest.raises(ValueError, match="unknown mutant"):
         apply_mutant("M99", box, None)
     with pytest.raises(ValueError, match="V2 gate"):
-        apply_mutant("M6_no_idempotency", box, None)
+        apply_mutant("M8_no_consume", box, None)
 
 
 def test_corpus_module_must_expose_its_interface(tmp_path: Path) -> None:

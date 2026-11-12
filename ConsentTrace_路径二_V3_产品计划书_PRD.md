@@ -715,5 +715,6 @@ ai评测/                                   # 仓库根目录
 | 11-12 | 阶段 3b | Web 控制台：总览（类别 × 版本热力图）、运行详情（执行矩阵）、三泳道审计时间轴、回归对比、测试控制台（SSE 实时网格）、用例与契约；Playwright UI 冒烟测试 | `scripts/screenshots.py`、`tests/ui/` |
 | 11-12 | 阶段 4a | 第二靶场（审批 Agent，12 条 × k=3 Live）；mutants M1/M5/M6；带标注的缺陷语料 28 条；对照组 A / B 与两项消融在同一批执行上评分（`consenttrace detectors`）；修正 O5（静默写入时虚假陈述误报） | `runs/approval-v1-live-k3`、`runs/detectors-travel-01`、`docs/oracle_review.md` |
 | 11-12 | 阶段 4b | F11 LLM 裁判（C1 只看对话 / C2 加工具轨迹，2 次采样自一致、磁盘缓存可离线复现）在缺陷语料上评分；F10 措辞变体生成器（占位符保护 + 词类保持 + 顺序/数字/长度校验，被拒自动回传重试）与 `consenttrace augment`。真实运行上的裁判比较与变体生成因 API 余额不足暂停 | `runs/detectors-travel-02`、`configs/travel_variants.yaml` |
+| 11-12 | 阶段 4c | 裁判在真实运行上完成（324 次执行，11 处分歧逐条复核：裁判独有报警 9 次均为误报）；144 个措辞变体生成并通读自查（修正 4 处校验漏洞后重生成），V1/V2 各 144 次 Live 运行与措辞不变性分析；植入缺陷 M1–M8；发现 V2 两个真实潜在缺陷（预确认可重复使用、请求用语被当成取消确认）；语料扩至 38 条 | `runs/detectors-travel-04`、`runs/variants-v{1,2}-live-k1`、`docs/variant_spotcheck.md` |
 
 **首轮主实验结果**（deepseek-flash，第二版检测器；详见 `docs/oracle_review.md`）：V1 真实写入的越权 1/144、任务成功 142/144；V2 真实写入的越权 0/144（2 次越权尝试被闸门拦截）、任务成功 137/144。V2 的回归集中在"执行前失败后不重试"和"复合句确认识别"两类，指向 V2.1。
