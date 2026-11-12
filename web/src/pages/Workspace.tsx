@@ -46,6 +46,8 @@ export function Workspace() {
 
       <AcceptancePath steps={w.acceptance} />
 
+      <ToolMap w={w} />
+
       <Card title="被测 Agent" subtitle="每个都是独立进程中的测试对象；同一个测试内核，只换契约与用例" right={<a className="text-xs text-s1 hover:underline" href={href("agents")}>接入检查与管理 →</a>}>
         <div className="grid gap-3 md:grid-cols-2">
           {w.agents.map((a) => (
@@ -59,6 +61,70 @@ export function Workspace() {
         <RecentRuns w={w} />
       </div>
     </div>
+  );
+}
+
+function ToolMap({ w }: { w: WorkspaceData }) {
+  const attacks = useAsync(() => api.attacks("travel").catch(() => null), []);
+  const kb = useAsync(() => api.kb("travel").catch(() => null), []);
+  const a = attacks.data;
+  const k = kb.data;
+  const s = w.defects.summary;
+  const tools = [
+    {
+      title: "智能体自动化测试框架",
+      what: "批量执行多轮授权用例，规则引擎逐步判定，缺陷归并与修复复测，版本回归对比",
+      stat: `${s.total} 个缺陷 · ${s.by_status.fixed_verified} 个复测通过`,
+      links: [
+        ["测试任务", href("console")],
+        ["缺陷与复测", href("defects")],
+        ["回归对比", href("compare")],
+      ],
+    },
+    {
+      title: "RAG 知识库测试工具",
+      what: "检测冲突、冗余与结构错误，用 Agent 自己的检索器评估 Recall@k / MRR，识别检索投毒段落",
+      stat: k ? `Recall@1 ${k.retrieval?.recall_at_1.num}/${k.retrieval?.queries} · 投毒识别 ${k.poisoning.llm_flagged ?? k.poisoning.flagged}/${k.poisoning.passages}` : "尚未体检",
+      links: [["RAG 知识库体检", href("kb")]],
+    },
+    {
+      title: "对抗性用例自动生成器",
+      what: "大模型按攻击样式 × 目标生成间接注入，确定性校验后冻结，挂到载体用例上测注入攻击成功率",
+      stat: a ? `注入库 ${a.library.entries.length} 条 · 已测 ${a.runs.map((r) => r.version).join("/") || "—"}` : "尚未生成",
+      links: [
+        ["对抗用例生成", href("attacks")],
+        ["契约工作台（AI 起草契约）", href("workbench")],
+      ],
+    },
+    {
+      title: "智能体行为可视化与审计平台",
+      what: "三泳道时间轴：可信用户通道、Agent 与工具通道（含可见推理）、业务状态通道；首个违规步骤与数据库差分",
+      stat: "每次执行都可回放审计",
+      links: [
+        ["运行记录", href("runs")],
+        ["实验分析", href("analysis")],
+      ],
+    },
+  ];
+  return (
+    <Card title="路径二的四类测试工具" subtitle="同一个测试内核，四个方向的能力都作用在独立进程中的被测 Agent 上；数字来自最近一次真实运行">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {tools.map((t) => (
+          <div key={t.title} className="flex flex-col rounded-lg p-3.5" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
+            <div className="text-[14px] font-semibold text-ink">{t.title}</div>
+            <p className="mt-1 flex-1 text-xs leading-relaxed text-ink-2">{t.what}</p>
+            <div className="mono mt-2 text-[11px] text-ink">{t.stat}</div>
+            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+              {t.links.map(([label, to]) => (
+                <a key={to} href={to} className="text-s1 hover:underline">
+                  {label} →
+                </a>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }
 
