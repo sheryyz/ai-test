@@ -10,6 +10,8 @@ dependencies = [
     "openai>=1.40",
     "python-dotenv>=1.0",
     "rich>=15.0.0",
+    "fastapi>=0.162.5",
+    "uvicorn>=0.30",
 ]
 
 [project.scripts]
@@ -21,6 +23,7 @@ dev = [
     "pytest-cov>=5.0",
     "hypothesis>=6.100",
     "ruff>=0.17.4",
+    "httpx>=0.28.1",
 ]
 
 [build-system]

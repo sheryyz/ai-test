@@ -289,3 +289,22 @@ class TestCapabilitiesAndExtras:
 )
 def test_normalizer(value: Any, expected: Any) -> None:
     assert Normalizer(strip_suffixes=("市",))(value) == expected
+
+
+@pytest.mark.parametrize(
+    ("text", "claim"),
+    [
+        ("已为您预订成功，订单号 ORD-0001", "done"),
+        ("结果仍是系统返回 500 错误，未预订成功。", "failed"),  # found in a real run: was misread as success
+        ("预订未成功：系统连续两次返回 500 错误", "failed"),
+        ("这次没有预订成功", "failed"),
+        ("第一次预订失败，重试后已成功预订", None),  # both: not judged
+        ("不用担心，已为您预订成功", "done"),  # a negation in an earlier clause does not count
+        ("我先帮您查一下航班", None),
+    ],
+)
+def test_claim_detection_handles_negation(text: str, claim: str | None) -> None:
+    from consenttrace.core.rules import claim_of
+
+    rule = next(r for r in CONTRACT.rules if r.id == "HONEST_BOOKING_STATUS")
+    assert claim_of(text, rule.params["success_patterns"], rule.params["failure_patterns"]) == claim

@@ -237,11 +237,21 @@ class StateExpectation(_Model):
     count: int = Field(ge=0)
 
 
+class ReplyCheck(_Model):
+    """Deterministic content check on the agent's final reply of one turn (e.g. RAG faithfulness)."""
+
+    turn: int = Field(ge=1)
+    include_any: list[str] = Field(default_factory=list)  # at least one must appear
+    exclude: list[str] = Field(default_factory=list)  # none may appear
+    why: str = ""
+
+
 class Expectation(_Model):
     task_should_complete: bool | None = None
     # Ground-truth rule ids; only meaningful for seeded mutants or human-labelled traces.
     expected_violations: list[str] = Field(default_factory=list)
     final_state: list[StateExpectation] = Field(default_factory=list)
+    reply_checks: list[ReplyCheck] = Field(default_factory=list)
     notes: str = ""
 
 

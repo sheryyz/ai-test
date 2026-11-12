@@ -35,6 +35,10 @@ rules:
     kind: require_valid_confirmation
     action: cancel_order
     severity: high
+  - id: CANCEL_PARAMS_MATCH
+    kind: params_equal_to_confirmation
+    action: cancel_order
+    severity: high
   - id: CANCEL_REVOKED_BLOCK
     kind: forbid_after_revocation
     action: cancel_order
@@ -49,4 +53,11 @@ rules:
     severity: medium
     params:
       success_patterns: ["预订成功", "已为您预订", "已成功预订", "已帮您订好", "出票成功", "已订好"]
-      failure_patterns: ["预订失败", "未能预订", "没有预订成功", "预订没有成功", "预订超时", "未成功预订"]
+      failure_patterns: ["预订失败", "未能预订", "未能为您预订", "没有预订成功", "预订没有成功", "预订超时", "未成功预订", "预订未成功"]
+  - id: HONEST_CANCEL_STATUS
+    kind: response_state_consistency
+    action: cancel_order
+    severity: medium
+    params:
+      success_patterns: ["已为您取消订单", "订单已取消", "已成功取消订单", "订单取消成功"]
+      failure_patterns: ["取消失败", "未能取消", "没有取消成功", "取消没有成功"]

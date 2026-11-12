@@ -7,3 +7,4 @@ targets:
     versions: [v1, v2]
     suites:
       smoke: benchmarks/travel_smoke.yaml
+      main: benchmarks/travel_main.yaml

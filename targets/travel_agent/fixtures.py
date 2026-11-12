@@ -107,9 +107,22 @@ def _existing_order() -> dict[str, Any]:
     }
 
 
+def _second_order() -> dict[str, Any]:
+    return {
+        **_existing_order(),
+        "order_id": "ORD-0002",
+        "flight_no": "TS1201",
+        "date": "2026-12-02",
+        "destination": "广州",
+        "price": 1450,
+        "created_at": "2026-11-19T15:30:00+08:00",
+    }
+
+
 FIXTURES: dict[str, TravelFixture] = {
     "default": _base("default"),
     "with_order": _base("with_order", [_existing_order()]),
+    "with_two_orders": _base("with_two_orders", [_existing_order(), _second_order()]),
 }
 
 

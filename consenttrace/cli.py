@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 import sys
-import uuid
 from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
@@ -16,13 +14,12 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
-from consenttrace.config import LLMSettings
 from consenttrace.core.evidence import EvidenceStore, load_results, load_summary, load_trace
+from consenttrace.core.launch import LaunchError, RunRequest, prepare_run
 from consenttrace.core.loader import LoadError, load_cases, load_contract
-from consenttrace.core.registry import TargetSpec, load_targets
-from consenttrace.core.runner import CaseJob, RunConfig, Runner, outcome_exit_code
-from consenttrace.llm.client import OpenAICompatClient
-from consenttrace.llm.replay import RecordingClient, ReplayClient
+from consenttrace.core.reevaluate import reevaluate_run
+from consenttrace.core.registry import load_targets
+from consenttrace.core.runner import outcome_exit_code
 from consenttrace.schemas import EventKind, RunResult, TraceEvent
 
 console = Console()
@@ -81,102 +78,22 @@ def cmd_validate(args: argparse.Namespace) -> int:
 # ---------------------------------------------------------------- run
 
 
-def _new_run_id(target: str, version: str, mode: str) -> str:
-    return f"{datetime.now():%Y%m%d-%H%M%S}-{target}-{version}-{mode}-{uuid.uuid4().hex[:4]}"
-
-
-def build_make_adapter(
-    spec: TargetSpec, version: str, mode: str, *, settings: LLMSettings | None, replay_dir: Path | None, timeout: float
-):
-    adapter_cls = spec.adapter_class()
-
-    def make(job: CaseJob):
-        cassette = job.case_dir / "cassette.jsonl"
-        if mode == "live":
-            assert settings is not None
-
-            def factory():
-                return RecordingClient(OpenAICompatClient.from_settings(settings, timeout=timeout), cassette)
-
-        else:
-            assert replay_dir is not None
-            source = replay_dir / "cases" / job.case.case_id / f"r{job.rep}" / "cassette.jsonl"
-            if not source.exists():
-                raise FileNotFoundError(f"no recording for {job.case.case_id} r{job.rep} in {replay_dir}")
-            job.case_dir.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(source, cassette)
-
-            def factory():
-                return ReplayClient.from_file(cassette)
-
-        return adapter_cls(factory, version=version)
-
-    return make
-
-
 def cmd_run(args: argparse.Namespace) -> int:
-    targets = load_targets(args.targets)
-    if args.target not in targets:
-        console.print(f"[red]未知目标 {args.target}；可选：{', '.join(targets)}[/]")
-        return 2
-    spec = targets[args.target]
-    if args.version not in spec.versions:
-        console.print(f"[red]目标 {spec.name} 没有版本 {args.version}；可选：{', '.join(spec.versions)}[/]")
-        return 2
-    contract = load_contract(spec.contract)
-    cases = load_cases(spec.suite(args.suite), contract)
-    if args.case:
-        cases = [c for c in cases if any(c.case_id == k or c.case_id.startswith(k) for k in args.case)]
-        if not cases:
-            console.print("[red]没有匹配 --case 的用例[/]")
-            return 2
-
-    settings, replay_dir, model_id = None, None, None
-    if args.mode == "live":
-        settings = LLMSettings.from_env(args.env)
-        if settings is None:
-            console.print("[red]Live 模式需要在 .env 中配置 LLM_API_KEY；离线请用 --mode replay --replay-from <run_id>[/]")
-            return 2
-        model_id = settings.model
-    else:
-        if not args.replay_from:
-            console.print("[red]Replay 模式需要 --replay-from <run_id>[/]")
-            return 2
-        replay_dir = Path(args.runs_dir) / args.replay_from
-        if not (replay_dir / "summary.json").exists():
-            console.print(f"[red]找不到被回放的运行：{replay_dir}[/]")
-            return 2
-        source = load_summary(replay_dir)
-        model_id = source.model_id
-        recorded = json.loads((replay_dir / "config.json").read_text(encoding="utf-8")).get("cases", [])
-        if not args.case:  # by default replay exactly what was recorded
-            cases = [c for c in cases if c.case_id in recorded]
-        if args.reps is None:
-            args.reps = source.reps
-    if args.reps is None:
-        args.reps = 1
-
-    run_id = args.run_id or _new_run_id(spec.name, args.version, args.mode)
-    config = RunConfig(
-        run_id=run_id,
-        target=spec.name,
-        agent_version=args.version,
-        mode=args.mode,
+    request = RunRequest(
+        target=args.target,
+        version=args.version,
         suite=args.suite,
+        mode=args.mode,
         reps=args.reps,
         concurrency=args.concurrency,
-        model_id=model_id,
-        max_total_tokens=args.max_tokens,
-        extra={"replay_from": args.replay_from},
-    )
-    store = EvidenceStore(args.runs_dir, run_id)
-    total = len(cases) * args.reps
-    console.rule(f"[bold]ConsentTrace run[/] {run_id}")
-    console.print(
-        f"目标 [bold]{spec.name}[/] {args.version} · 模式 [bold]{args.mode}[/] · 模型 {model_id} · 套件 {args.suite}"
-        f" · {len(cases)} 条用例 × {args.reps} 次 · 并发 {args.concurrency}"
+        cases=args.case,
+        replay_from=args.replay_from,
+        run_id=args.run_id,
+        max_tokens=args.max_tokens,
+        timeout=args.timeout,
     )
     done = 0
+    total = 0
 
     def on_result(result: RunResult) -> None:
         nonlocal done
@@ -192,16 +109,20 @@ def cmd_run(args: argparse.Namespace) -> int:
             Text(f"  {tok} tok · {result.metrics.get('duration_ms', 0) / 1000:.1f}s", style="bright_black"),
         )
 
-    runner = Runner(
-        make_adapter=build_make_adapter(
-            spec, args.version, args.mode, settings=settings, replay_dir=replay_dir, timeout=args.timeout
-        ),
-        contract=contract,
-        store=store,
-        config=config,
-        on_result=on_result,
+    try:
+        prepared = prepare_run(request, targets_path=args.targets, runs_dir=args.runs_dir, env_file=args.env, on_result=on_result)
+    except LaunchError as exc:
+        console.print(f"[red]{exc}[/]")
+        return 2
+    config, cases = prepared.config, prepared.cases
+    store = prepared.runner.store
+    total = prepared.total
+    console.rule(f"[bold]ConsentTrace run[/] {config.run_id}")
+    console.print(
+        f"目标 [bold]{prepared.spec.name}[/] {config.agent_version} · 模式 [bold]{config.mode}[/] · 模型 {config.model_id} · 套件 {config.suite}"
+        f" · {len(cases)} 条用例 × {config.reps} 次 · 并发 {config.concurrency}"
     )
-    summary = runner.run(cases)
+    summary = prepared.runner.run(cases)
     _print_results(load_results(store.run_dir))
     counts = " · ".join(f"{k} {v}" for k, v in sorted(summary.counts.items()))
     console.print(
@@ -373,6 +294,66 @@ def cmd_runs(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_reevaluate(args: argparse.Namespace) -> int:
+    source = Path(args.runs_dir) / args.run
+    if not (source / "summary.json").exists():
+        console.print(f"[red]找不到运行 {source}[/]")
+        return 2
+    config = json.loads((source / "config.json").read_text(encoding="utf-8"))
+    spec = load_targets(args.targets).get(config.get("target", ""))
+    if spec is None or config.get("suite") not in spec.suites:
+        console.print(f"[red]运行 {args.run} 的目标或套件已不在注册表中：{config.get('target')} / {config.get('suite')}[/]")
+        return 2
+    contract = load_contract(spec.contract)
+    cases = {c.case_id: c for c in load_cases(spec.suite(config["suite"]), contract)}
+    try:
+        fallback = spec.adapter_class()(lambda: None).capabilities()
+    except Exception:
+        fallback = None
+    new_id = args.as_run or f"{args.run}-reeval-{datetime.now():%m%d%H%M%S}"
+    changes: list[tuple[RunResult, RunResult]] = []
+
+    def on_result(old: RunResult, new: RunResult) -> None:
+        if old.outcome != new.outcome or {f.rule_id for f in old.findings} != {f.rule_id for f in new.findings}:
+            changes.append((old, new))
+
+    summary = reevaluate_run(
+        source,
+        EvidenceStore(args.runs_dir, new_id),
+        contract=contract,
+        cases=cases,
+        fallback_capabilities=fallback,
+        on_result=on_result,
+    )
+    console.rule(f"[bold]重新判定[/] {args.run} → {new_id}")
+    table = Table(title=f"判定发生变化的执行（{len(changes)} / {summary.executions}）", title_style="bold")
+    for col in ("用例", "rep", "原结果", "新结果", "原违规规则", "新违规规则"):
+        table.add_column(col)
+    for old, new in changes:
+        table.add_row(
+            old.case_id,
+            str(old.rep),
+            Text(old.outcome.value, style=OUTCOME_STYLE[old.outcome.value]),
+            Text(new.outcome.value, style=OUTCOME_STYLE[new.outcome.value]),
+            ", ".join(sorted({f.rule_id for f in old.findings})) or "—",
+            ", ".join(sorted({f.rule_id for f in new.findings})) or "—",
+        )
+    console.print(table)
+    console.print(f"新结果：{summary.counts}（原始运行保持不变：{source}）")
+    return outcome_exit_code(summary.counts)
+
+
+def cmd_serve(args: argparse.Namespace) -> int:  # pragma: no cover - blocks on a server
+    import uvicorn
+
+    from consenttrace.api.app import create_app
+
+    app = create_app(targets_path=args.targets, runs_dir=args.runs_dir, env_file=args.env)
+    console.print(f"ConsentTrace 控制台：[underline]http://{args.host}:{args.port}[/]")
+    uvicorn.run(app, host=args.host, port=args.port, log_level="warning")
+    return 0
+
+
 # ---------------------------------------------------------------- entry
 
 
@@ -405,12 +386,28 @@ def build_parser() -> argparse.ArgumentParser:
     show.add_argument("-v", "--verbose", action="store_true", help="同时显示每次模型调用")
 
     sub.add_parser("runs", help="列出运行记录")
+
+    reeval = sub.add_parser("reevaluate", help="用当前契约与用例重新判定一次已完成的运行（不调用模型）")
+    reeval.add_argument("--run", required=True)
+    reeval.add_argument("--as", dest="as_run", help="新运行的 run_id")
+
+    serve = sub.add_parser("serve", help="启动 Web 控制台（FastAPI + 前端）")
+    serve.add_argument("--host", default="127.0.0.1")
+    serve.add_argument("--port", type=int, default=8765)
+    serve.add_argument("--env", default=".env")
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    handlers = {"validate": cmd_validate, "run": cmd_run, "show": cmd_show, "runs": cmd_runs}
+    handlers = {
+        "validate": cmd_validate,
+        "run": cmd_run,
+        "show": cmd_show,
+        "runs": cmd_runs,
+        "serve": cmd_serve,
+        "reevaluate": cmd_reevaluate,
+    }
     try:
         return handlers[args.command](args)
     except LoadError as exc:

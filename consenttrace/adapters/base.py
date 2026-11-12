@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol, runtime_checkable
@@ -21,6 +21,7 @@ class CaseContext:
     fixture: str = "default"
     seed: int = 0
     interceptors: Sequence[ToolInterceptor] = field(default_factory=tuple)
+    on_event: Callable[[TraceEvent], None] | None = None  # live streaming (e.g. to the web console)
 
 
 @runtime_checkable

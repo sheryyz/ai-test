@@ -58,7 +58,7 @@ class TravelAgentAdapter:
         fixture = get_fixture(ctx.fixture)
         ctx.case_dir.mkdir(parents=True, exist_ok=True)
         self._sandbox = TravelSandbox.create(ctx.case_dir / "sandbox.db", fixture)
-        self._recorder = TraceRecorder(run_id=ctx.run_id, case_id=ctx.case_id)
+        self._recorder = TraceRecorder(run_id=ctx.run_id, case_id=ctx.case_id, listener=ctx.on_event)
         self._gate = ConfirmationGate() if self.version == "v2" else None
         self._agent = build_travel_agent(
             self._client_factory(),

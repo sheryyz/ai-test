@@ -17,15 +17,17 @@ from consenttrace.adapters.base import AgentAdapter, CaseContext
 from consenttrace.core.auth_state import CaseScriptError
 from consenttrace.core.evidence import EvidenceStore
 from consenttrace.core.injector import InjectionController
-from consenttrace.core.rules import TASK_ASSERTION, Evaluation, RuleEngine
+from consenttrace.core.rules import OUTCOME_ASSERTIONS, Evaluation, RuleEngine
 from consenttrace.core.state_diff import diff_snapshots
 from consenttrace.core.verdict import aggregate
 from consenttrace.schemas import (
+    AdapterCapabilities,
     AssertionStatus,
     EventKind,
     Outcome,
     RunResult,
     RunSummary,
+    StateDiff,
     StateSnapshot,
     TestCase,
     TestContract,
@@ -73,6 +75,7 @@ class Runner:
         store: EvidenceStore,
         config: RunConfig,
         on_result: Callable[[RunResult], None] | None = None,
+        on_event: Callable[[CaseJob, TraceEvent], None] | None = None,
     ) -> None:
         if config.reps < 1 or config.concurrency < 1:
             raise ValueError("reps and concurrency must be >= 1")
@@ -82,6 +85,7 @@ class Runner:
         self.store = store
         self.config = config
         self.on_result = on_result
+        self.on_event = on_event
         self._usage = Usage()
         self._llm_calls = 0
         self._lock = threading.Lock()
@@ -146,6 +150,7 @@ class Runner:
             fixture=job.case.fixture,
             seed=self.config.seed + job.rep,
             interceptors=interceptors,
+            on_event=(lambda e: self.on_event(job, e)) if self.on_event is not None else None,
         )
         try:
             adapter.reset(ctx)
@@ -170,22 +175,7 @@ class Runner:
         finally:
             adapter.close()
 
-        diff = diff_snapshots(before, after) if before is not None and after is not None else None
-        try:
-            evaluation = self.engine.evaluate(job.case, events, capabilities=caps, after=after, diff=diff)
-        except CaseScriptError as exc:
-            errors.append(f"case script error: {exc}")
-            evaluation = Evaluation([], [], [], [])
-        if errors:
-            # An unfinished conversation cannot fail its task, only error. Safety findings stay:
-            # a violation that happened before the crash is still real evidence.
-            evaluation.assertions = [
-                a.model_copy(update={"status": AssertionStatus.ERROR, "detail": f"执行未完成，无法判定：{a.detail}"})
-                if a.rule_id == TASK_ASSERTION and a.status is AssertionStatus.FAIL
-                else a
-                for a in evaluation.assertions
-            ]
-
+        evaluation, diff, errors = judge(self.engine, job.case, events, caps, before=before, after=after, errors=errors)
         usage = _usage_of(events)
         llm_calls = sum(1 for e in events if e.kind is EventKind.LLM_CALL)
         with self._lock:
@@ -195,26 +185,14 @@ class Runner:
             "turns_sent": turns_sent,
             "llm_calls": llm_calls,
             "tool_calls": sum(1 for e in events if e.kind is EventKind.TOOL_CALL_ATTEMPT),
-            "sensitive_attempts": len(evaluation.attempts),
-            "unauthorized_attempts": sum(1 for a in evaluation.attempts if not a.authorized),
-            "unauthorized_writes": sum(1 for a in evaluation.attempts if not a.authorized and a.wrote),
             "usage": usage.model_dump(),
             "model_latency_ms": round(sum(e.meta.get("latency_ms", 0) for e in events if e.kind is EventKind.LLM_CALL), 1),
             "duration_ms": round((time.perf_counter() - started) * 1000, 1),
-            "first_bad_step": evaluation.first_bad_step,
-            "injections_reached": evaluation.injections_reached,
-            "injections_skipped": evaluation.injections_skipped,
             "variant": self.config.variant,
+            "capabilities": caps.model_dump(),
+            **evaluation_metrics(evaluation),
         }
-        files = {
-            "state_before.json": before,
-            "state_after.json": after,
-            "state_diff.json": diff,
-            "auth_timeline.json": {
-                "transitions": [t.model_dump(mode="json") for t in evaluation.transitions],
-                "attempts": [a.model_dump(mode="json") for a in evaluation.attempts],
-            },
-        }
+        files = evidence_files(before, after, diff, evaluation)
         return self._finish(job, evaluation, errors=errors, events=events, metrics=metrics, files=files)
 
     def _finish(
@@ -254,6 +232,61 @@ class Runner:
         limit = self.config.max_total_tokens
         with self._lock:
             return limit is not None and self._usage.total_tokens >= limit
+
+
+def judge(
+    engine: RuleEngine,
+    case: TestCase,
+    events: list[TraceEvent],
+    caps: AdapterCapabilities,
+    *,
+    before: StateSnapshot | None,
+    after: StateSnapshot | None,
+    errors: list[str],
+) -> tuple[Evaluation, StateDiff | None, list[str]]:
+    """Evaluate one execution's evidence. Shared by live runs and offline re-evaluation."""
+    errors = list(errors)
+    diff = diff_snapshots(before, after) if before is not None and after is not None else None
+    try:
+        evaluation = engine.evaluate(case, events, capabilities=caps, after=after, diff=diff)
+    except CaseScriptError as exc:
+        errors.append(f"case script error: {exc}")
+        evaluation = Evaluation([], [], [], [])
+    if errors:
+        # An unfinished conversation cannot fail its task, only error. Safety findings stay:
+        # a violation that happened before the crash is still real evidence.
+        evaluation.assertions = [
+            a.model_copy(update={"status": AssertionStatus.ERROR, "detail": f"执行未完成，无法判定：{a.detail}"})
+            if a.rule_id.startswith(OUTCOME_ASSERTIONS) and a.status is AssertionStatus.FAIL
+            else a
+            for a in evaluation.assertions
+        ]
+    return evaluation, diff, errors
+
+
+def evaluation_metrics(evaluation: Evaluation) -> dict:
+    return {
+        "sensitive_attempts": len(evaluation.attempts),
+        "unauthorized_attempts": sum(1 for a in evaluation.attempts if not a.authorized),
+        "unauthorized_writes": sum(1 for a in evaluation.attempts if not a.authorized and a.wrote),
+        "first_bad_step": evaluation.first_bad_step,
+        "injections_reached": evaluation.injections_reached,
+        "injections_skipped": evaluation.injections_skipped,
+    }
+
+
+def evidence_files(
+    before: StateSnapshot | None, after: StateSnapshot | None, diff: StateDiff | None, evaluation: Evaluation
+) -> dict:
+    return {
+        "state_before.json": before,
+        "state_after.json": after,
+        "state_diff.json": diff,
+        "auth_timeline.json": {
+            "transitions": [t.model_dump(mode="json") for t in evaluation.transitions],
+            "attempts": [a.model_dump(mode="json") for a in evaluation.attempts],
+        },
+    }
 
 
 def _usage_of(events: list[TraceEvent]) -> Usage:

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import contextlib
 import time
+from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
@@ -10,8 +12,11 @@ from consenttrace.schemas import EventKind, Source, TraceEvent
 
 
 class TraceRecorder:
-    def __init__(self, run_id: str | None = None, case_id: str | None = None) -> None:
+    def __init__(
+        self, run_id: str | None = None, case_id: str | None = None, listener: Callable[[TraceEvent], None] | None = None
+    ) -> None:
         self.run_id = run_id
+        self._listener = listener
         self.case_id = case_id
         self.turn_id = 0
         self._next_step = 1
@@ -38,6 +43,9 @@ class TraceRecorder:
         self._next_step += 1
         self._history.append(event)
         self._pending.append(event)
+        if self._listener is not None:
+            with contextlib.suppress(Exception):  # a broken viewer must never break the agent under test
+                self._listener(event)
         return event
 
     def drain(self) -> list[TraceEvent]:

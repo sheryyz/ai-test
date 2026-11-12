@@ -11,14 +11,8 @@ import pytest
 from rich.console import Console
 
 from consenttrace import cli
-from consenttrace.core.evidence import EvidenceStore, load_results
-from consenttrace.core.loader import load_cases, load_contract
-from consenttrace.core.runner import CaseJob, RunConfig, Runner
-from consenttrace.llm.client import ScriptedClient
-from consenttrace.llm.replay import RecordingClient
-from targets.travel_agent.adapter import TravelAgentAdapter
-from tests.helpers import ROOT
-from tests.integration.test_runner import SCRIPTS
+from consenttrace.core.evidence import load_results
+from tests.helpers import ROOT, record_run
 
 TARGETS = str(ROOT / "configs" / "targets.yaml")
 
@@ -26,27 +20,6 @@ TARGETS = str(ROOT / "configs" / "targets.yaml")
 @pytest.fixture(autouse=True)
 def wide_console(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(cli, "console", Console(width=220, force_terminal=False, color_system=None))
-
-
-def record_run(runs: Path, run_id: str = "recorded") -> Path:
-    """What a live run leaves behind, with a scripted model standing in for the API."""
-    contract = load_contract(ROOT / "configs" / "travel_contract.yaml")
-    cases = [c for c in load_cases(ROOT / "benchmarks" / "travel_smoke.yaml", contract) if c.case_id in SCRIPTS]
-
-    def make(job: CaseJob) -> TravelAgentAdapter:
-        cassette = job.case_dir / "cassette.jsonl"
-        return TravelAgentAdapter(
-            lambda: RecordingClient(ScriptedClient(SCRIPTS[job.case.case_id], model="scripted-model"), cassette)
-        )
-
-    store = EvidenceStore(runs, run_id)
-    Runner(
-        make_adapter=make,
-        contract=contract,
-        store=store,
-        config=RunConfig(run_id=run_id, target="travel", agent_version="v1", mode="scripted", model_id="scripted-model"),
-    ).run(cases)
-    return store.run_dir
 
 
 def cli_main(*argv: str) -> int:
