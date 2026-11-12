@@ -24,6 +24,7 @@ dev = [
     "hypothesis>=6.100",
     "ruff>=0.17.4",
     "httpx>=0.28.1",
+    "playwright>=1.65.1",
 ]
 
 [build-system]
@@ -36,9 +37,10 @@ packages = ["consenttrace", "targets"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
-addopts = "-m 'not live'"
+addopts = "-m 'not live and not ui'"
 markers = [
     "live: calls a real LLM API; needs LLM_API_KEY (run with -m live)",
+    "ui: drives the built web console in Chromium (run with -m ui)",
 ]
 
 [tool.coverage.run]

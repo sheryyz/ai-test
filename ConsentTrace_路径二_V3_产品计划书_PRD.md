@@ -28,7 +28,7 @@
 | R2 | 缺陷来源改为真实模型行为：V1 是"按普通写法、只靠提示词约束"的 Agent；V2 是代码级授权闸门；主实验全量 Live 运行、每例重复 k 次；人工植入缺陷的变体（mutants）**只用于评估检测器本身**，与"被测 Agent 的真实发现"分开报告 | 避免"自己挖坑自己填"；结论来自真实模型 | §9，§10 |
 | R3 | 新增相关工作与差异化（τ-bench、AgentDojo、ToolEmu、InjecAgent、DeepEval 等）；查到一篇与原工作名同名的论文 | 懂行的评委会联想到这些工作 | §2，§20 |
 | R4 | RAG：`get_travel_policy` 改为差旅制度知识库检索；新增"检索段投毒"用例类别 | 覆盖评分中的 RAG 维度 | §9.1，§10.1 |
-| R5 | 前端由 Streamlit 改为 **FastAPI + React/TypeScript + ECharts** 单页应用，共 6 个页面，核心是"三泳道授权审计时间轴"；静态 HTML 报告复用同一前端 | 可视化表现力、演示视频质量 | §6 |
+| R5 | 前端由 Streamlit 改为 **FastAPI + React/TypeScript** 单页应用（图表为自研 SVG 组件），共 6 个页面，核心是"三泳道授权审计时间轴"；静态 HTML 报告复用同一前端 | 可视化表现力、演示视频质量 | §6 |
 | R6 | 新增平台自身质量保障：测试金字塔、覆盖率门槛、属性测试、架构约束测试、适配器一致性测试、变异测试、Playwright | 评委是测试专家，"测试工具自身是否可靠"是加分项 | §11 |
 | R7 | 用例规模：36 条 → 48 条主用例（8 类 × 6）+ 每例 3 个 AI 措辞变体 + 审批 12 条 + holdout 12 条 | 测试饱满度 | §10 |
 | R8 | 架构：各靶场的适配器移到 `targets/` 下；`consenttrace/` 不得 import `targets/`（由测试强制）；新增 `consenttrace.sdk` 插桩包 | 让"通用内核"这个说法有可验证的证据 | §7，§13 |
@@ -151,7 +151,7 @@
 ### 6.1 技术栈
 
 - 后端：**FastAPI**。REST 接口 + **SSE** 实时推送执行事件；`python -m consenttrace.cli serve` 一条命令启动。
-- 前端：**React 18 + TypeScript + Vite + Tailwind CSS + ECharts**。构建产物 `consenttrace/web/dist/` 随仓库提交，评委不安装 Node 也能运行。
+- 前端：**React 19 + TypeScript + Vite + Tailwind CSS**；图表为自研 SVG 组件（不引入 ECharts，打包后 gzip 约 90KB），遵循统一的数据可视化规范：经脚本校验的色盲安全色板（深浅两套）、状态色专用且总配图标与文字、单色相顺序色阶、每张图都有悬停提示和表格视图。构建产物 `consenttrace/web/dist/` 随仓库提交，评委不安装 Node 也能运行。
 - 前端只读取 API 和运行证据文件，**不允许在前端写任何判定逻辑**；所有数字都来自后端计算的结果文件。
 
 ### 6.2 视觉语言
@@ -185,7 +185,7 @@
 
 ```mermaid
 flowchart TB
-  subgraph UI["Web（React + ECharts）/ CLI"]
+  subgraph UI["Web（React + SVG 图表）/ CLI"]
     U1[总览] --- U2[测试控制台] --- U3[轨迹审计] --- U4[实验分析] --- U5[契约工作台]
   end
   UI -->|REST / SSE| API[FastAPI service 层]
@@ -543,7 +543,7 @@ reports/
 | 被测 Agent | 自研的轻量工具调用循环（OpenAI 兼容 API） | 每一步都可控、可插桩；不被框架内部状态遮挡 |
 | LLM API | DeepSeek（主）/ Qwen（备） | 价格低；OpenAI 兼容接口 |
 | 业务存储 | 每个用例一个 SQLite 沙箱 | 轻量，有真实写入和快照 |
-| 后端 / 前端 | FastAPI + SSE / React + TS + Vite + Tailwind + ECharts | 可视化表现力强；构建产物随仓库提交 |
+| 后端 / 前端 | FastAPI + SSE / React + TS + Vite + Tailwind + 自研 SVG 图表 | 可视化完全可控、体积小；构建产物随仓库提交 |
 | 测试 | pytest、pytest-cov、hypothesis；P1：mutmut、Playwright | 平台自身质量保障 |
 | 分析 | pandas | 从运行记录计算真实指标 |
 | 版本管理 | Git（GitHub / Gitee），赛后开源 | 可追溯、赛事鼓励开源 |
@@ -702,3 +702,16 @@ ai评测/                                   # 仓库根目录
 | Q3 | 团队成员与分工 | holdout 用例和人工标注需要一位没有参与开发的队友；如果是单人参赛，就改为隔天盲标，并在报告中说明 |
 | Q4 | API Key 与模型 | 需要在本项目的 `.env` 中配置；主模型和裁判模型尽量不同 |
 | Q5 | 是否开源发布 | 赛事鼓励开源；推送前要扫描仓库中是否含有密钥 |
+
+---
+
+## 21. 进度记录
+
+| 日期 | 阶段 | 交付 | 证据 |
+|---|---|---|---|
+| 11-11 | 阶段 1 | Schema、SDK 插桩、差旅 SQLite 靶场与制度知识库（RAG）、V1 Agent、脚本化模型 | commit 6f405c5 |
+| 11-12 | 阶段 2 | 授权账本、规则引擎（6 类算子）、注入与故障控制、状态差分、Runner、录制回放、CLI、V2 代码级闸门、冒烟套件 | commit 4ebd380；`runs/smoke-v{1,2}-live-k3` |
+| 11-12 | 阶段 3a | 48 条主用例、回答忠实度检查、`reevaluate` 离线重新判定、分析模块、Web API + SSE；首轮主实验 V1/V2 × 48 × k=3（288 次 Live 执行）及检测器人工复核 | commit d12f256；`docs/oracle_review.md` |
+| 11-12 | 阶段 3b | Web 控制台：总览（类别 × 版本热力图）、运行详情（执行矩阵）、三泳道审计时间轴、回归对比、测试控制台（SSE 实时网格）、用例与契约；Playwright UI 冒烟测试 | `scripts/screenshots.py`、`tests/ui/` |
+
+**首轮主实验结果**（deepseek-flash，第二版检测器；详见 `docs/oracle_review.md`）：V1 真实写入的越权 1/144、任务成功 142/144；V2 真实写入的越权 0/144（2 次越权尝试被闸门拦截）、任务成功 137/144。V2 的回归集中在"执行前失败后不重试"和"复合句确认识别"两类，指向 V2.1。

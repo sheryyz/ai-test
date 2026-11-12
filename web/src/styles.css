@@ -1,0 +1,180 @@
+@import "tailwindcss";
+
+/* Design tokens. Chart colours follow the validated reference palette (dataviz skill):
+   categorical slots in fixed order, a one-hue sequential ramp, a reserved status palette.
+   Dark values are selected steps validated against the dark surface, not an automatic flip. */
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --surface-2: #f3f2ee;
+  --surface-3: #ebeae4;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.1);
+  --border-strong: rgba(11, 11, 11, 0.18);
+
+  --s1: #2a78d6; /* blue: V1, user channel */
+  --s2: #eb6834; /* orange: V2 */
+  --s3: #1baf7a; /* aqua: state writes (always labelled; <3:1 on light) */
+  --s7: #4a3aa7; /* violet: injected / low-trust content */
+  --s1-wash: rgba(42, 120, 214, 0.1);
+  --s7-wash: rgba(74, 58, 167, 0.1);
+  --s3-wash: rgba(27, 175, 122, 0.12);
+
+  --good: #0ca30c;
+  --good-text: #006300;
+  --warning: #fab219;
+  --serious: #ec835a;
+  --critical: #d03b3b;
+  --critical-wash: rgba(208, 59, 59, 0.1);
+  --good-wash: rgba(12, 163, 12, 0.1);
+  --warning-wash: rgba(250, 178, 25, 0.16);
+
+  --seq-100: #cde2fb;
+  --seq-200: #9ec5f4;
+  --seq-300: #6da7ec;
+  --seq-400: #3987e5;
+  --seq-500: #256abf;
+  --seq-600: #184f95;
+  --seq-700: #0d366b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-2: #222220;
+    --surface-3: #2c2c2a;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.1);
+    --border-strong: rgba(255, 255, 255, 0.18);
+    --s1: #3987e5;
+    --s2: #d95926;
+    --s3: #199e70;
+    --s7: #9085e9;
+    --s1-wash: rgba(57, 135, 229, 0.16);
+    --s7-wash: rgba(144, 133, 233, 0.16);
+    --s3-wash: rgba(25, 158, 112, 0.18);
+    --good-text: #0ca30c;
+    --critical-wash: rgba(208, 59, 59, 0.2);
+    --good-wash: rgba(12, 163, 12, 0.16);
+    --warning-wash: rgba(250, 178, 25, 0.14);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --surface-2: #222220;
+  --surface-3: #2c2c2a;
+  --ink: #ffffff;
+  --ink-2: #c3c2b7;
+  --muted: #898781;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --s1: #3987e5;
+  --s2: #d95926;
+  --s3: #199e70;
+  --s7: #9085e9;
+  --s1-wash: rgba(57, 135, 229, 0.16);
+  --s7-wash: rgba(144, 133, 233, 0.16);
+  --s3-wash: rgba(25, 158, 112, 0.18);
+  --good-text: #0ca30c;
+  --critical-wash: rgba(208, 59, 59, 0.2);
+  --good-wash: rgba(12, 163, 12, 0.16);
+  --warning-wash: rgba(250, 178, 25, 0.14);
+}
+
+@theme inline {
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-grid: var(--grid);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-s1: var(--s1);
+  --color-s2: var(--s2);
+  --color-s3: var(--s3);
+  --color-s7: var(--s7);
+  --color-good: var(--good);
+  --color-good-text: var(--good-text);
+  --color-warning: var(--warning);
+  --color-serious: var(--serious);
+  --color-critical: var(--critical);
+  --font-sans: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+html,
+body {
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+.mono {
+  font-family: var(--font-mono);
+}
+.hairline-b {
+  border-bottom: 1px solid var(--border);
+}
+.scroll-x {
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+button:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--s1);
+  outline-offset: 2px;
+}
+.lift:hover {
+  filter: brightness(1.08);
+}
+@keyframes pulse-in {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.pop {
+  animation: pulse-in 220ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pop {
+    animation: none;
+  }
+}
