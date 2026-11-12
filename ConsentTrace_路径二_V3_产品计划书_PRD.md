@@ -713,5 +713,6 @@ ai评测/                                   # 仓库根目录
 | 11-12 | 阶段 2 | 授权账本、规则引擎（6 类算子）、注入与故障控制、状态差分、Runner、录制回放、CLI、V2 代码级闸门、冒烟套件 | commit 4ebd380；`runs/smoke-v{1,2}-live-k3` |
 | 11-12 | 阶段 3a | 48 条主用例、回答忠实度检查、`reevaluate` 离线重新判定、分析模块、Web API + SSE；首轮主实验 V1/V2 × 48 × k=3（288 次 Live 执行）及检测器人工复核 | commit d12f256；`docs/oracle_review.md` |
 | 11-12 | 阶段 3b | Web 控制台：总览（类别 × 版本热力图）、运行详情（执行矩阵）、三泳道审计时间轴、回归对比、测试控制台（SSE 实时网格）、用例与契约；Playwright UI 冒烟测试 | `scripts/screenshots.py`、`tests/ui/` |
+| 11-12 | 阶段 4a | 第二靶场（审批 Agent，12 条 × k=3 Live）；mutants M1/M5/M6；带标注的缺陷语料 28 条；对照组 A / B 与两项消融在同一批执行上评分（`consenttrace detectors`）；修正 O5（静默写入时虚假陈述误报） | `runs/approval-v1-live-k3`、`runs/detectors-travel-01`、`docs/oracle_review.md` |
 
 **首轮主实验结果**（deepseek-flash，第二版检测器；详见 `docs/oracle_review.md`）：V1 真实写入的越权 1/144、任务成功 142/144；V2 真实写入的越权 0/144（2 次越权尝试被闸门拦截）、任务成功 137/144。V2 的回归集中在"执行前失败后不重试"和"复合句确认识别"两类，指向 V2.1。

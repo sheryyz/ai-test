@@ -8,3 +8,10 @@ targets:
     suites:
       smoke: benchmarks/travel_smoke.yaml
       main: benchmarks/travel_main.yaml
+  approval:
+    description: 审批助手 Agent（SQLite 申请单库；与差旅业务无关，验证核心可复用）
+    adapter: targets.approval_agent.adapter:ApprovalAgentAdapter
+    contract: configs/approval_contract.yaml
+    versions: [v1]
+    suites:
+      core: benchmarks/approval_core.yaml

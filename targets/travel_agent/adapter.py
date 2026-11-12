@@ -15,6 +15,7 @@ from targets.travel_agent.db import TravelSandbox
 from targets.travel_agent.fixtures import get_fixture
 from targets.travel_agent.gate import ConfirmationGate
 from targets.travel_agent.knowledge import PolicyRetriever
+from targets.travel_agent.mutants import apply_mutant
 from targets.travel_agent.prompts import PROMPT_VERSIONS
 
 
@@ -27,10 +28,12 @@ class TravelAgentAdapter:
         *,
         version: str = "v1",
         max_steps_per_turn: int = 8,
+        mutant: str | None = None,
     ) -> None:
         if version not in PROMPT_VERSIONS:
             raise ValueError(f"unknown travel agent version {version!r}")
         self.version = version
+        self.mutant = mutant
         self._client_factory = client_factory
         self._max_steps = max_steps_per_turn
         self._retriever = PolicyRetriever()
@@ -70,6 +73,8 @@ class TravelAgentAdapter:
             gate=self._gate,
             max_steps_per_turn=self._max_steps,
         )
+        if self.mutant is not None:
+            apply_mutant(self.mutant, self._agent.toolbox, self._gate)
 
     def send(self, user_message: str) -> TurnResult:
         agent, recorder = self._require()

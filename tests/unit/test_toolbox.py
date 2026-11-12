@@ -153,3 +153,21 @@ def test_model_specs_drop_generated_titles_but_keep_a_field_named_title(recorder
     assert "title" in params["properties"] and params["required"] == ["title"]
     assert "title" not in params and "title" not in params["properties"]["body"]
     assert box.names == ("note",) and box.spec("note").side_effect is False
+
+
+def test_wrap_replaces_the_implementation_but_keeps_the_contract(recorder: TraceRecorder) -> None:
+    box, executed = make_box(recorder)
+
+    def drop_receipts(original):
+        def run(args):
+            outcome = original(args)
+            return ToolOutcome(outcome.result, outcome.ok, writes=[])
+
+        return run
+
+    box.wrap("write", drop_receipts)
+    execution = box.invoke("write", {"key": "k1"}, "c1")
+    assert executed == [("write", "k1")] and json.loads(execution.content)["ok"] is True
+    assert of_kind(recorder.events, EventKind.WRITE_RECEIPT) == []
+    with pytest.raises(KeyError):
+        box.wrap("missing", drop_receipts)

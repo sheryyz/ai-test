@@ -26,7 +26,9 @@ def client(runs: Path, tmp_path: Path) -> TestClient:
 
 def test_catalogue(client: TestClient) -> None:
     assert client.get("/api/health").json() == {"ok": True, "web": False}
-    (travel,) = client.get("/api/targets").json()
+    targets = {t["name"]: t for t in client.get("/api/targets").json()}
+    assert targets["approval"]["suites"] == {"core": 12}
+    travel = targets["travel"]
     assert travel["name"] == "travel" and travel["versions"] == ["v1", "v2"]
     assert travel["suites"] == {"smoke": 9, "main": 48} and travel["rules"] >= 10
     contract = client.get("/api/targets/travel/contract").json()

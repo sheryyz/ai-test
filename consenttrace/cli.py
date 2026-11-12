@@ -1,4 +1,4 @@
-"""ConsentTrace command line: validate, run, show, runs."""
+"""ConsentTrace command line: validate, run, show, runs, reevaluate, detectors, serve."""
 
 from __future__ import annotations
 
@@ -14,7 +14,9 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
-from consenttrace.core.evidence import EvidenceStore, load_results, load_summary, load_trace
+from consenttrace.core.baselines import ORACLE_LABELS
+from consenttrace.core.detector_eval import compare_on_run, load_corpus, run_corpus, score_corpus, score_table, write_score_csv
+from consenttrace.core.evidence import EvidenceStore, load_results, load_summary, load_trace, write_json
 from consenttrace.core.launch import LaunchError, RunRequest, prepare_run
 from consenttrace.core.loader import LoadError, load_cases, load_contract
 from consenttrace.core.reevaluate import reevaluate_run
@@ -294,6 +296,14 @@ def cmd_runs(args: argparse.Namespace) -> int:
     return 0
 
 
+def _declared_capabilities(spec: Any) -> Any:
+    """What the target's adapter declares, for runs recorded before capabilities were stored per execution."""
+    try:
+        return spec.adapter_class()(lambda: None).capabilities()
+    except Exception:
+        return None
+
+
 def cmd_reevaluate(args: argparse.Namespace) -> int:
     source = Path(args.runs_dir) / args.run
     if not (source / "summary.json").exists():
@@ -306,10 +316,7 @@ def cmd_reevaluate(args: argparse.Namespace) -> int:
         return 2
     contract = load_contract(spec.contract)
     cases = {c.case_id: c for c in load_cases(spec.suite(config["suite"]), contract)}
-    try:
-        fallback = spec.adapter_class()(lambda: None).capabilities()
-    except Exception:
-        fallback = None
+    fallback = _declared_capabilities(spec)
     new_id = args.as_run or f"{args.run}-reeval-{datetime.now():%m%d%H%M%S}"
     changes: list[tuple[RunResult, RunResult]] = []
 
@@ -341,6 +348,62 @@ def cmd_reevaluate(args: argparse.Namespace) -> int:
     console.print(table)
     console.print(f"新结果：{summary.counts}（原始运行保持不变：{source}）")
     return outcome_exit_code(summary.counts)
+
+
+def _pct(num: int, den: int) -> str:
+    return f"{num}/{den}" if den else "—"
+
+
+def cmd_detectors(args: argparse.Namespace) -> int:
+    """Score every oracle on a labelled defect corpus, and compare them on real (unlabelled) runs."""
+    corpus = load_corpus(args.corpus)
+    spec = load_targets(args.targets)[corpus.TARGET]
+    contract = load_contract(spec.contract)
+    suite = {c.case_id: c for c in load_cases(spec.suite(corpus.SUITE), contract)}
+    run_id = args.run_id or f"detectors-{corpus.TARGET}-{datetime.now():%m%d%H%M%S}"
+    run_dir = run_corpus(corpus, targets_path=args.targets, runs_dir=args.runs_dir, run_id=run_id)
+    scored = score_corpus(run_dir, contract, suite)
+    write_json(run_dir / "detector_eval.json", scored)
+    write_score_csv(score_table(scored), Path(args.reports_dir) / run_id / "benchmark_comparison.csv")
+
+    n, pos = scored["executions"], scored["positives"]
+    console.rule(f"[bold]检测器评估[/] {run_id}（{n} 条带标注执行，{pos} 条含越权）")
+    table = Table(title="同一批执行、只换判定方法（召回 = TP/正例，误报 = FP/负例）", title_style="bold")
+    for col in ("判定方法", "越权 召回", "越权 误报", "副作用 召回", "副作用 误报", "虚假陈述 召回", "首个违规步骤"):
+        table.add_column(col)
+    for name, s in scored["scores"].items():
+        v, se, cl, loc = s["violation"], s["side_effect"], s["claim"], s["localization"]
+        table.add_row(
+            ORACLE_LABELS.get(name, name),
+            _pct(v["tp"], v["tp"] + v["fn"]),
+            _pct(v["fp"], v["fp"] + v["tn"]),
+            _pct(se["tp"], se["tp"] + se["fn"]),
+            _pct(se["fp"], se["fp"] + se["tn"]),
+            _pct(cl["tp"], cl["tp"] + cl["fn"]),
+            _pct(loc["num"], loc["den"]),
+        )
+    console.print(table)
+    console.print("[bright_black]语料为人工编写并预先标注的脚本化行为，只用于度量检测器，不代表真实 Agent 的缺陷率。[/]")
+
+    comparisons = []
+    for real in args.on_run or []:
+        source = Path(args.runs_dir) / real
+        config = json.loads((source / "config.json").read_text(encoding="utf-8"))
+        real_spec = load_targets(args.targets)[config["target"]]
+        real_contract = load_contract(real_spec.contract)
+        real_cases = {c.case_id: c for c in load_cases(real_spec.suite(config["suite"]), real_contract)}
+        cmp = compare_on_run(source, real_contract, real_cases, fallback_capabilities=_declared_capabilities(real_spec))
+        comparisons.append(cmp)
+        t = Table(title=f"真实运行 {real}（{cmp['executions']} 次执行，无标注）", title_style="bold")
+        for col in ("判定方法", "判为越权", "与 ConsentTrace 一致"):
+            t.add_column(col)
+        for name, flagged in cmp["flagged"].items():
+            t.add_row(ORACLE_LABELS.get(name, name), str(flagged), _pct(cmp["agreement_with_ours"][name], cmp["executions"]))
+        console.print(t)
+    if comparisons:
+        write_json(run_dir / "real_run_comparison.json", comparisons)
+    console.print(f"证据：{run_dir}　表格：{Path(args.reports_dir) / run_id / 'benchmark_comparison.csv'}")
+    return 0
 
 
 def cmd_serve(args: argparse.Namespace) -> int:  # pragma: no cover - blocks on a server
@@ -391,6 +454,12 @@ def build_parser() -> argparse.ArgumentParser:
     reeval.add_argument("--run", required=True)
     reeval.add_argument("--as", dest="as_run", help="新运行的 run_id")
 
+    det = sub.add_parser("detectors", help="在带标注的缺陷语料上评估各判定方法（含对照组与消融）")
+    det.add_argument("--corpus", default="benchmarks/travel_defects.py")
+    det.add_argument("--on-run", action="append", help="同时在一次真实运行上比较各判定方法（可重复）")
+    det.add_argument("--run-id")
+    det.add_argument("--reports-dir", default="reports")
+
     serve = sub.add_parser("serve", help="启动 Web 控制台（FastAPI + 前端）")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8765)
@@ -407,6 +476,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "runs": cmd_runs,
         "serve": cmd_serve,
         "reevaluate": cmd_reevaluate,
+        "detectors": cmd_detectors,
     }
     try:
         return handlers[args.command](args)

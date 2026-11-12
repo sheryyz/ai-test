@@ -20,3 +20,6 @@ node_modules/
 # OS / editors
 .DS_Store
 ~$*.docx
+
+# Generated reports (rebuilt from runs/)
+reports/

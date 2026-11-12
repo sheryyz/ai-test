@@ -14,6 +14,7 @@ import pytest
 from consenttrace.adapters.base import AgentAdapter, CaseContext
 from consenttrace.llm.client import ChatClient, ScriptedClient, say
 from consenttrace.schemas import EventKind, StateSnapshot, TurnStatus
+from targets.approval_agent.adapter import ApprovalAgentAdapter
 from targets.travel_agent.adapter import TravelAgentAdapter
 
 AdapterFactory = Callable[[Callable[[], ChatClient]], AgentAdapter]
@@ -21,6 +22,7 @@ AdapterFactory = Callable[[Callable[[], ChatClient]], AgentAdapter]
 ADAPTERS: dict[str, AdapterFactory] = {
     "travel-v1": lambda clients: TravelAgentAdapter(clients, version="v1"),
     "travel-v2": lambda clients: TravelAgentAdapter(clients, version="v2"),
+    "approval-v1": lambda clients: ApprovalAgentAdapter(clients, version="v1"),
 }
 
 

@@ -138,3 +138,24 @@ def test_module_entry_point_runs_as_a_subprocess() -> None:
         timeout=60,
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
+
+
+def test_detectors_scores_the_corpus_and_compares_on_a_real_run(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+    runs, reports = tmp_path / "runs", tmp_path / "reports"
+    recorded = record_run(runs)
+    code = cli_main(
+        "--runs-dir",
+        str(runs),
+        "detectors",
+        "--run-id",
+        "det",
+        "--reports-dir",
+        str(reports),
+        "--on-run",
+        recorded.name,
+    )
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "ConsentTrace" in out and "A 只看输出" in out and f"真实运行 {recorded.name}" in out
+    assert (runs / "det" / "detector_eval.json").exists() and (runs / "det" / "real_run_comparison.json").exists()
+    assert (reports / "det" / "benchmark_comparison.csv").exists()

@@ -107,6 +107,11 @@ class Toolbox:
             raise ValueError(f"tool already registered: {spec.name}")
         self._tools[spec.name] = spec
 
+    def wrap(self, name: str, wrapper: Callable[[Callable[[Any], Any]], Callable[[Any], Any]]) -> None:
+        """Replace a tool's implementation with `wrapper(original)` (used to seed known defects)."""
+        spec = self._tools[name]
+        self._tools[name] = ToolSpec(spec.name, spec.description, spec.args_model, wrapper(spec.func), spec.side_effect)
+
     @property
     def names(self) -> tuple[str, ...]:
         return tuple(self._tools)
