@@ -12,6 +12,7 @@ dependencies = [
     "rich>=15.0.0",
     "fastapi>=0.162.5",
     "uvicorn>=0.30",
+    "httpx>=0.28.1",  # in-process API calls for `consenttrace report`
 ]
 
 [project.scripts]

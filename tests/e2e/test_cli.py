@@ -256,3 +256,39 @@ def test_draft_contract_scores_a_draft_and_rescores_it_offline(
         "--runs-dir", str(runs), "draft-contract", "--target", "travel", "--from-drafts", str(folder), "--run-id", "d2"
     )
     assert code == 0 and (runs / "contract_drafts" / "d2" / "evaluation.json").exists()
+
+
+def test_report_from_a_replay_is_self_contained_and_reproducible(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+    """PRD §11: replay the full flow, build the report, delete it, build it again: identical."""
+    runs = tmp_path / "runs"
+    record_run(runs)
+    replay = [
+        "--runs-dir",
+        str(runs),
+        "run",
+        "--target",
+        "travel",
+        "--mode",
+        "replay",
+        "--replay-from",
+        "recorded",
+        "--run-id",
+        "replayed",
+    ]
+    assert cli_main(*replay) == 1
+    out = tmp_path / "rep" / "index.html"
+    assert cli_main("--runs-dir", str(runs), "report", "--run", "replayed", "--out", str(out)) == 0
+    first = out.read_bytes()
+    html = first.decode("utf-8")
+    assert "<script src=" not in html and 'src="./assets' not in html and 'href="./assets' not in html
+    marker = "window.__CONSENTTRACE_STATIC__="
+    data = json.loads(html[html.index(marker) + len(marker) : html.index(";</script>", html.index(marker))].replace("<\\/", "</"))
+    executions = load_results(runs / "replayed")
+    for r in executions:
+        assert f"/api/runs/replayed/cases/{r.case_id}/{r.rep}" in data
+    assert data["__meta__"]["runs"] == ["replayed"] and data["/api/settings"]["live_available"] is False
+    out.unlink()
+    assert cli_main("--runs-dir", str(runs), "report", "--run", "replayed", "--out", str(out)) == 0
+    assert out.read_bytes() == first
+    assert cli_main("--runs-dir", str(runs), "report", "--run", "nope") == 2
+    assert "找不到运行" in capsys.readouterr().out

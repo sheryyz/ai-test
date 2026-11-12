@@ -34,18 +34,20 @@ export function App() {
   }, [theme]);
 
   const [section] = route;
+  const embedded = typeof window !== "undefined" ? window.__CONSENTTRACE_STATIC__ : undefined;
   let page;
   if (section === "runs" && route[1] && route[2] === "cases" && route[3]) page = <TraceExplorer runId={route[1]} caseId={route[3]} rep={Number(route[4] ?? 0)} />;
   else if (section === "runs" && route[1]) page = <RunDetail runId={route[1]} />;
-  else if (section === "console") page = <Console />;
+  else if (section === "console" && !embedded) page = <Console />;
   else if (section === "compare") page = <Compare />;
   else if (section === "analysis") page = <Analysis />;
   else if (section === "suite") page = <Suite />;
   else page = <Overview />;
 
+  const meta = embedded?.["__meta__"] as { runs: string[] } | undefined;
   const nav = [
     { key: "", label: "总览" },
-    { key: "console", label: "测试控制台" },
+    ...(embedded ? [] : [{ key: "console", label: "测试控制台" }]),
     { key: "compare", label: "回归对比" },
     { key: "analysis", label: "实验分析" },
     { key: "suite", label: "用例与契约" },
@@ -55,6 +57,11 @@ export function App() {
   return (
     <TooltipProvider>
       <div className="min-h-screen">
+        {meta && (
+          <div className="hairline-b px-4 py-1.5 text-center text-xs text-ink-2" style={{ background: "var(--surface-3)" }}>
+            离线静态报告（只读）：运行 {meta.runs.join("、")}；全部数据由 consenttrace report 从运行证据生成并嵌入本文件，不连接服务器。
+          </div>
+        )}
         <header className="sticky top-0 z-40 hairline-b backdrop-blur" style={{ background: "color-mix(in srgb, var(--page) 88%, transparent)" }}>
           <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
             <a href={href()} className="flex items-center gap-2">

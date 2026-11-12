@@ -785,6 +785,20 @@ def cmd_draft_contract(args: argparse.Namespace) -> int:
     return 0 if all(r["valid"] for r in rows) else 1
 
 
+def cmd_report(args: argparse.Namespace) -> int:
+    """Static, offline report of one or more runs (PRD §6.4)."""
+    from consenttrace.api.report import ReportError, build_report
+
+    out = Path(args.out) if args.out else Path(args.reports_dir) / args.run[0] / "index.html"
+    try:
+        path = build_report(args.run, out, targets_path=args.targets, runs_dir=args.runs_dir, analysis=not args.no_analysis)
+    except ReportError as exc:
+        console.print(f"[red]{exc}[/]")
+        return 2
+    console.print(f"静态报告：{path}（{path.stat().st_size / 1e6:.1f} MB，单个文件，可直接用浏览器打开）")
+    return 0
+
+
 def cmd_serve(args: argparse.Namespace) -> int:  # pragma: no cover - blocks on a server
     import uvicorn
 
@@ -878,6 +892,13 @@ def build_parser() -> argparse.ArgumentParser:
     dc.add_argument("--timeout", type=float, default=300.0)
     dc.add_argument("--env", default=".env")
 
+    rep = sub.add_parser("report", help="生成离线静态报告（单个 HTML，内嵌运行数据与前端）")
+    rep.add_argument("--run", action="append", required=True, help="要包含的运行（可重复）")
+    rep.add_argument("--out", help="输出文件（默认 reports/<第一个运行>/index.html）")
+    rep.add_argument("--reports-dir", default="reports")
+    rep.add_argument("--no-analysis", action="store_true", help="不包含实验分析页")
+    rep.add_argument("--html", action="store_true", help="（默认即为 HTML，兼容 PRD 中的写法）")
+
     serve = sub.add_parser("serve", help="启动 Web 控制台（FastAPI + 前端）")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8765)
@@ -899,6 +920,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "phrasing": cmd_phrasing,
         "compare": cmd_compare,
         "draft-contract": cmd_draft_contract,
+        "report": cmd_report,
     }
     try:
         return handlers[args.command](args)

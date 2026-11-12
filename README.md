@@ -48,6 +48,12 @@ uv run consenttrace phrasing --run <变体运行> --base <同版本主用例运�
 
 # 两次运行的逐用例回归对比（如 V2 → V2.1），写出 reports/<a>__<b>/regression.md
 uv run consenttrace compare --a <run_a> --b <run_b>
+
+# F09：AI 根据被测 Agent 的工具定义起草测试契约，并与金标准比较（--from-drafts 可离线重新评分）
+uv run consenttrace draft-contract --target travel -n 3 --on-run <真实运行>
+
+# 离线静态报告：单个 HTML，内嵌所选运行的全部证据与前端，双击即可打开
+uv run consenttrace report --run <run_id> [--run <run_id> ...]
 ```
 
 前端源码在 `web/`（React + TypeScript + Vite），构建产物已提交在 `consenttrace/web/dist/`，运行控制台不需要 Node。修改前端后：`cd web && npm install && npm run build`。
@@ -74,10 +80,10 @@ uv run ruff check . && uv run ruff format --check .
 | `consenttrace/sdk/` | 被测 Agent 侧插桩：`Toolbox`、`TraceRecorder`、`ToolInterceptor`、`snapshot_sqlite` |
 | `consenttrace/core/` | `auth_state`（授权账本）、`rules`（规则引擎）、`injector`、`state_diff`、`runner`、`evidence`、`loader`、`registry`、`verdict`、`baselines`（对照组与消融）、`detector_eval`、`analysis` |
 | `consenttrace/llm/` | `ChatClient`、OpenAI 兼容实现、`ScriptedClient`、录制 / 回放 |
-| `consenttrace/cli.py` | `validate` / `run` / `show` / `runs` / `reevaluate` / `detectors` / `augment` / `phrasing` / `compare` / `serve` |
-| `consenttrace/ai/` | `llm_judge`（F11 LLM 裁判对照组，磁盘缓存可离线复现）、`case_augmenter`（F10 措辞变体） |
-| `consenttrace/api/` | FastAPI：运行与证据的只读接口、启动运行、SSE 实时推送；托管前端 |
-| `web/` | 前端源码（总览、运行详情、三泳道审计时间轴、回归对比、测试控制台、用例与契约） |
+| `consenttrace/cli.py` | `validate` / `run` / `show` / `runs` / `reevaluate` / `detectors` / `augment` / `phrasing` / `compare` / `draft-contract` / `report` / `serve` |
+| `consenttrace/ai/` | `contract_drafter`（F09 AI 起草契约）、`case_augmenter`（F10 措辞变体）、`llm_judge`（F11 LLM 裁判对照组，磁盘缓存可离线复现） |
+| `consenttrace/api/` | FastAPI：运行与证据的只读接口、实验分析汇总、启动运行、SSE 实时推送；托管前端；`report` 生成离线静态报告 |
+| `web/` | 前端源码（总览、运行详情、三泳道审计时间轴、回归对比、实验分析、测试控制台、用例与契约） |
 | `docs/oracle_review.md` | 每轮实验后对所有非 PASS 执行的人工复核与检测器修正记录 |
 | `targets/travel_agent/` | 差旅靶场：SQLite 沙箱、差旅制度知识库（BM25）、工具、V1 提示词、V2 `ConfirmationGate`、V2.1 `ConfirmationGateV21`、植入缺陷 `mutants.py` |
 | `targets/approval_agent/` | 第二靶场：审批 Agent，复用同一内核，只换工具、提示词、数据库和契约 |
