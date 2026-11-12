@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { TooltipProvider } from "./components/ui";
 import { Agents } from "./pages/Agents";
 import { Analysis } from "./pages/Analysis";
+import { Annotate } from "./pages/Annotate";
 import { Attacks } from "./pages/Attacks";
 import { Compare } from "./pages/Compare";
 import { Console } from "./pages/Console";
@@ -52,6 +53,7 @@ export function App() {
   else if (section === "defects") page = <Defects />;
   else if (section === "attacks") page = <Attacks />;
   else if (section === "kb") page = <KnowledgeCheck />;
+  else if (section === "annotate" && !embedded) page = <Annotate />;
   else if (section === "compare") page = <Compare />;
   else if (section === "analysis") page = <Analysis />;
   else if (section === "workbench") page = <Workbench />;
@@ -81,7 +83,13 @@ export function App() {
         { key: "suite", label: "用例库" },
       ],
     },
-    { label: "评估", items: [{ key: "analysis", label: "实验分析" }] },
+    {
+      label: "评估",
+      items: [
+        { key: "analysis", label: "实验分析" },
+        { key: "annotate", label: "人工盲标", live: true },
+      ],
+    },
   ];
   const visible = groups.map((g) => ({ ...g, items: g.items.filter((i) => !(embedded && i.live)) })).filter((g) => g.items.length);
   const current = section === "runs" && route[1] ? "runs" : section ?? "";

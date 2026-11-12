@@ -87,6 +87,18 @@ uv run consenttrace compare --a <run_a> --b <run_b>
 # F09：AI 根据被测 Agent 的工具定义起草测试契约，并与金标准比较（--from-drafts 可离线重新评分）
 uv run consenttrace draft-contract --target travel -n 3 --on-run <真实运行>
 
+# 对抗用例生成器：按「攻击样式 × 目标」生成间接注入，确定性校验后冻结为注入库，挂到载体用例上成为攻击套件
+uv run consenttrace attacks generate --target travel
+uv run consenttrace run --target travel --version v1 --suite attacks --mode live -k 1 --via http
+uv run consenttrace attacks report --run <攻击套件运行>        # 注入攻击成功率：到达 / 未到达 / 越权尝试 / 真实写入
+
+# RAG 知识库体检：结构错误、冗余、冲突（检索邻域内）、检索质量；含检查器自检与投毒段落识别
+uv run consenttrace kb-check --target travel --via http [--llm]
+
+# 人工盲标：冻结一份分层样本，在控制台「人工盲标」页标注；再用人工标签给各判定方法评分
+uv run consenttrace annotate sample        # 已冻结在 benchmarks/labels/sample.jsonl，不要重抽
+uv run consenttrace annotate score
+
 # 离线静态报告：单个 HTML，内嵌所选运行的全部证据与前端，双击即可打开
 uv run consenttrace report --run <run_id> [--run <run_id> ...]
 ```
@@ -114,18 +126,19 @@ uv run ruff check . && uv run ruff format --check .
 | `consenttrace/schemas.py` | 契约、用例、轨迹、快照、差分、授权、判定的全部数据模型（Pydantic v2） |
 | `consenttrace/sdk/` | 被测 Agent 侧插桩：`Toolbox`、`TraceRecorder`、`ToolInterceptor`、`snapshot_sqlite`、注入控制器；`agent_server` 把插桩后的 Agent 暴露为 Agent 协议服务 |
 | `consenttrace/adapters/` | `AgentAdapter` 协议；`http`（经 Agent 协议驱动独立进程中的 Agent）；`probe`（接入检查） |
-| `consenttrace/core/` | `defects`（缺陷归并与修复状态）、`agents`（被测 Agent 进程管理）、`auth_state`（授权账本）、`rules`（规则引擎）、`injector`、`state_diff`、`runner`、`evidence`、`loader`、`registry`、`verdict`、`baselines`（对照组与消融）、`detector_eval`、`analysis` |
+| `consenttrace/rag/` | RAG 知识库体检：`kb_check`（确定性检查、植入故障自检、投毒识别）、`llm`（检索测试题生成、冲突复核） |
+| `consenttrace/core/` | `defects`（缺陷归并与修复状态）、`agents`（被测 Agent 进程管理）、`attacks`（注入攻击成功率）、`kb`（知识库体检编排）、`annotation`（盲标抽样、盲视图、评分）、`auth_state`（授权账本）、`rules`（规则引擎）、`injector`、`state_diff`、`runner`、`evidence`、`loader`、`registry`、`verdict`、`baselines`（对照组与消融）、`detector_eval`、`analysis` |
 | `consenttrace/llm/` | `ChatClient`、OpenAI 兼容实现、`ScriptedClient`、录制 / 回放 |
 | `consenttrace/cli.py` | `validate` / `agents` / `probe` / `run` / `show` / `runs` / `reevaluate` / `detectors` / `augment` / `phrasing` / `compare` / `draft-contract` / `report` / `serve` |
-| `consenttrace/ai/` | `contract_drafter`（F09 AI 起草契约）、`case_augmenter`（F10 措辞变体）、`llm_judge`（F11 LLM 裁判对照组，磁盘缓存可离线复现） |
+| `consenttrace/ai/` | `contract_drafter`（F09 AI 起草契约）、`case_augmenter`（F10 措辞变体）、`attack_generator`（F10 对抗用例生成器）、`llm_judge`（F11 LLM 裁判对照组，磁盘缓存可离线复现） |
 | `consenttrace/api/` | FastAPI：运行与证据的只读接口、实验分析汇总、启动运行、SSE 实时推送；托管前端；`report` 生成离线静态报告 |
-| `web/` | 前端源码（总览、运行详情、三泳道审计时间轴、回归对比、实验分析、契约工作台、测试控制台、用例与契约） |
+| `web/` | 前端源码：测试工作台、被测 Agent、测试任务、缺陷与复测、运行记录、三泳道审计时间轴、回归对比、契约工作台、对抗用例生成、RAG 知识库体检、用例库、实验分析、人工盲标 |
 | `docs/agent_protocol.md` | Agent 接入协议：第三方 Agent 如何接入、能力声明与可审计范围 |
 | `docs/oracle_review.md` | 每轮实验后对所有非 PASS 执行的人工复核与检测器修正记录 |
 | `targets/travel_agent/` | 差旅靶场：SQLite 沙箱、差旅制度知识库（BM25）、工具、V1 提示词、V2 `ConfirmationGate`、V2.1 `ConfirmationGateV21`、植入缺陷 `mutants.py` |
 | `targets/approval_agent/` | 第二靶场：审批 Agent，复用同一内核，只换工具、提示词、数据库和契约 |
 | `configs/` | `targets.yaml`（目标注册）、`travel_contract.yaml` / `approval_contract.yaml`（金标准契约）、`travel_variants.yaml`（措辞变体约束） |
-| `benchmarks/` | 用例集（YAML 编写，JSONL 冻结）、`travel_variants.jsonl`（144 个措辞变体）、`travel_defects.py`（带标注的缺陷语料） |
+| `benchmarks/` | 用例集（YAML 编写，JSONL 冻结）、`travel_variants.jsonl`（144 个措辞变体）、`travel_injection_library.jsonl` / `travel_attacks.jsonl`（AI 生成的注入库与攻击套件）、`travel_kb_queries.jsonl`（检索测试题）、`labels/`（盲标样本与人工标签）、`travel_defects.py`（带标注的缺陷语料） |
 | `runs/`、`reports/` | 运行证据与由它生成的报告（不入库）：`trace.jsonl`、`auth_timeline.json`、`state_diff.json`、`verdict.json`、`cassette.jsonl`、`sandbox.db` |
 
 依赖方向：`targets/ → consenttrace`，反之禁止（由 `tests/architecture/` 检查）。

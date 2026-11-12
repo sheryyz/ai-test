@@ -172,6 +172,7 @@ def create_app(
     env_file: str | Path | None = ".env",
     web_dist: Path | None = WEB_DIST,
     agent_processes: AgentProcesses | None = None,
+    labels_dir: Path | None = None,
 ) -> FastAPI:
     targets_path, runs_dir = Path(targets_path), Path(runs_dir)
     manager = RunManager(targets_path, runs_dir, Path(env_file) if env_file else None)
@@ -587,6 +588,57 @@ def create_app(
         if found is None:
             raise HTTPException(404, f"{name} 还没有知识库体检报告（consenttrace kb-check --target {name}）")
         return found
+
+    # ------------------------------------------------------------ blind human annotation (PRD §10.5)
+
+    labels_dir = labels_dir or targets_path.resolve().parent.parent / "benchmarks" / "labels"
+
+    @app.get("/api/annotation")
+    def annotation_items() -> dict[str, Any]:
+        from consenttrace.core.annotation import LABELS, SAMPLE, latest_labels, read_jsonl
+
+        header, items = read_jsonl(labels_dir / SAMPLE)
+        if not items:
+            raise HTTPException(404, "还没有标注样本（consenttrace annotate sample）")
+        labels = latest_labels(read_jsonl(labels_dir / LABELS)[1])
+        done: dict[str, list[str]] = {}
+        for bid, who in labels:
+            done.setdefault(bid, []).append(who)
+        # strata stay hidden: an annotator must not know why an item was drawn
+        return {
+            "n": len(items),
+            "seed": header.get("seed"),
+            "items": [{"blind_id": i["blind_id"], "labeled_by": sorted(done.get(i["blind_id"], []))} for i in items],
+            "annotators": sorted({who for _, who in labels}),
+        }
+
+    @app.get("/api/annotation/score")
+    def annotation_score(annotator: str | None = None) -> dict[str, Any]:
+        from consenttrace.core.annotation import score
+
+        return score(runs_dir, targets(), suite_cases, labels_dir, annotator=annotator)
+
+    @app.get("/api/annotation/{blind_id}")
+    def annotation_item(blind_id: str, annotator: str | None = None) -> dict[str, Any]:
+        from consenttrace.core.annotation import LABELS, SAMPLE, blind_view, latest_labels, read_jsonl
+
+        item = next((i for i in read_jsonl(labels_dir / SAMPLE)[1] if i["blind_id"] == blind_id), None)
+        if item is None:
+            raise HTTPException(404, f"没有样本 {blind_id}")
+        mine = latest_labels(read_jsonl(labels_dir / LABELS)[1]).get((blind_id, annotator or ""))
+        return {**blind_view(runs_dir, item), "label": mine}
+
+    @app.post("/api/annotation/{blind_id}")
+    def annotate(blind_id: str, body: dict[str, Any]) -> dict[str, Any]:
+        from consenttrace.core.annotation import SAMPLE, Label, append_label, read_jsonl
+
+        if not any(i["blind_id"] == blind_id for i in read_jsonl(labels_dir / SAMPLE)[1]):
+            raise HTTPException(404, f"没有样本 {blind_id}")
+        try:
+            label = Label.model_validate({**body, "blind_id": blind_id})
+        except Exception as exc:
+            raise HTTPException(422, str(exc)) from exc
+        return append_label(labels_dir, label)
 
     @app.get("/api/analysis")
     def analysis() -> dict[str, Any]:

@@ -54,6 +54,8 @@ def collect(run_ids: Sequence[str], *, targets_path: str | Path, runs_dir: str |
         for suite in target["suites"]:
             grab(f"/api/targets/{_q(target['name'])}/suites/{_q(suite)}")
     grab("/api/defects")
+    if client.get("/api/annotation/score").status_code == 200:
+        grab("/api/annotation/score")
     for target in data["/api/targets"]:
         if client.get(f"/api/attacks/{_q(target['name'])}").status_code == 200:
             grab(f"/api/attacks/{_q(target['name'])}")

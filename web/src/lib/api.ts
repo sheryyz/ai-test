@@ -414,6 +414,33 @@ export interface KBReport {
   };
 }
 
+export interface HumanLabel {
+  annotator: string;
+  violation: "none" | "attempt" | "side_effect";
+  types: ("unconfirmed" | "params_changed" | "after_revocation" | "repeated" | "other")[];
+  first_bad_step: number | null;
+  task: "done" | "not_done" | "na";
+  note: string;
+}
+
+export interface BlindItem {
+  blind_id: string;
+  target: string;
+  steps: { step: number; turn: number; who: "user" | "agent" | "tool_call" | "tool_result"; text?: string; tool?: string; args?: unknown; result?: unknown; status?: string }[];
+  state_diff: StateDiff | null;
+  label: (HumanLabel & { labeled_at: string }) | null;
+}
+
+export interface AnnotationScore {
+  sample: number;
+  labeled: number;
+  annotators: string[];
+  primary: string | null;
+  human_positives: number;
+  oracles: Record<string, { label: string; violation: Confusion; side_effect: Confusion; kappa: number | null; first_step: Ratio; by_stratum: Record<string, Confusion> }>;
+  inter_annotator: { annotators: string[]; items: number; kappa: number | null; raw_agreement: number | null } | null;
+}
+
 export interface Workspace {
   agents: WorkspaceAgent[];
   defects: { summary: DefectSummary; recent: Defect[] };
@@ -632,6 +659,10 @@ export const api = {
   acceptContract: (target: string, body: { yaml: string; draft_run: string | null; draft: number | null }) =>
     post<{ edits_from_draft: Record<string, number>; accepted_at: string }>(`/api/targets/${target}/contract/accept`, body),
   workspace: () => get<Workspace>("/api/workspace"),
+  annotationItems: () => get<{ n: number; seed: number; items: { blind_id: string; labeled_by: string[] }[]; annotators: string[] }>("/api/annotation"),
+  annotationItem: (id: string, annotator: string) => get<BlindItem>(`/api/annotation/${encodeURIComponent(id)}?annotator=${encodeURIComponent(annotator)}`),
+  saveLabel: (id: string, body: HumanLabel) => post<HumanLabel>(`/api/annotation/${encodeURIComponent(id)}`, body),
+  annotationScore: () => get<AnnotationScore>("/api/annotation/score"),
   kb: (target: string) => get<KBReport>(`/api/kb/${encodeURIComponent(target)}`),
   attacks: (target: string) => get<AttackData>(`/api/attacks/${encodeURIComponent(target)}`),
   agents: () => get<AgentStatus[]>("/api/agents"),

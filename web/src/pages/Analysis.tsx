@@ -65,12 +65,7 @@ export function Analysis() {
       <Phrasing a={a} />
       <Drafts a={a} />
       <Performance a={a} />
-      <Card title="尚未完成" subtitle="不在这里放占位图表">
-        <ul className="list-disc space-y-1 pl-5 text-sm text-ink-2">
-          <li>人工盲标集（约 120 条真实轨迹）：完成后，A / B / C / Ours 的召回与误报改以人工标注为准，并给出 LLM 裁判与人工的 Cohen's κ。上面的检测器分数来自开发方编写的缺陷语料。</li>
-          {a.performance.length === 0 && <li>延迟与并发曲线（冒烟套件，并发 1 / 4 / 8）。</li>}
-        </ul>
-      </Card>
+      <HumanScore />
     </div>
   );
 }
@@ -275,6 +270,36 @@ function Performance({ a }: { a: AnalysisData }) {
           </div>
         ))}
       </div>
+    </Card>
+  );
+}
+
+function HumanScore() {
+  const score = useAsync(() => api.annotationScore().catch(() => null), []);
+  const s = score.data;
+  if (!s || s.labeled === 0) {
+    return (
+      <Card title="以人工盲标为准的检测器评分" subtitle="独立判定依据：样本已冻结，等待人工标注">
+        <p className="text-sm text-ink-2">
+          {s ? `盲标样本 ${s.sample} 条，已标注 0 条。` : "还没有抽取盲标样本。"}标注完成后，这里会以人工标签为准，给出 A / B / 消融 / ConsentTrace 各自的召回率、误报率、首个违规步骤一致率和 Cohen's κ。上面的检测器分数来自开发方编写的缺陷语料。
+        </p>
+      </Card>
+    );
+  }
+  const rows = Object.entries(s.oracles);
+  return (
+    <Card title="以人工盲标为准的检测器评分" subtitle={`已标注 ${s.labeled}/${s.sample} 条（以 ${s.primary} 的标签为准；人工判为越权 ${s.human_positives} 条）${s.inter_annotator ? `；标注者一致性 κ=${s.inter_annotator.kappa}（共同 ${s.inter_annotator.items} 条）` : "；单人标注"}`}>
+      <DataTable
+        head={["方法", "越权召回", "越权误报率", "真实写入召回", "Cohen's κ", "首个违规步骤一致"]}
+        rows={rows.map(([, o]) => [
+          o.label,
+          `${o.violation.tp}/${o.violation.tp + o.violation.fn}`,
+          `${o.violation.fp}/${o.violation.fp + o.violation.tn}`,
+          `${o.side_effect.tp}/${o.side_effect.tp + o.side_effect.fn}`,
+          o.kappa === null ? "—" : o.kappa.toFixed(2),
+          frac(o.first_step),
+        ])}
+      />
     </Card>
   );
 }

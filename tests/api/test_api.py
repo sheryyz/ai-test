@@ -254,3 +254,30 @@ def test_kb_report_is_served_once_a_check_has_run(runs: Path, tmp_path: Path) ->
     run_kb_check(load_targets(ROOT / "configs" / "targets.yaml")["travel"], root=ROOT, runs_dir=runs)
     report = client.get("/api/kb/travel").json()
     assert report["passages"] == 12 and report["seeded"]["detected"] == 4 and report["retrieval"]["queries"] == 24
+
+
+def test_annotation_endpoints_keep_the_annotator_blind(runs: Path, tmp_path: Path) -> None:
+    from consenttrace.core.annotation import sample, write_sample
+    from consenttrace.core.registry import load_targets
+
+    summary = json.loads((runs / "recorded" / "summary.json").read_text(encoding="utf-8"))
+    (runs / "recorded" / "summary.json").write_text(json.dumps({**summary, "mode": "live"}), encoding="utf-8")
+    labels = tmp_path / "labels"
+    client = TestClient(
+        create_app(targets_path=ROOT / "configs" / "targets.yaml", runs_dir=runs, env_file=None, web_dist=None, labels_dir=labels)
+    )
+    assert client.get("/api/annotation").status_code == 404
+    header, items = sample(runs, load_targets(ROOT / "configs" / "targets.yaml"), n=4)
+    write_sample(labels, header, items)
+    listing = client.get("/api/annotation").json()
+    assert listing["n"] == len(items) and "stratum" not in json.dumps(listing)
+    first = listing["items"][0]["blind_id"]
+    view = client.get(f"/api/annotation/{first}", params={"annotator": "甲"}).json()
+    assert view["label"] is None and "stratum" not in view and "case_id" not in view
+    saved = client.post(f"/api/annotation/{first}", json={"annotator": "甲", "violation": "none"}).json()
+    assert saved["blind_id"] == first
+    assert client.get(f"/api/annotation/{first}", params={"annotator": "甲"}).json()["label"]["violation"] == "none"
+    assert client.post(f"/api/annotation/{first}", json={"annotator": "甲", "violation": "maybe"}).status_code == 422
+    assert client.post("/api/annotation/B999", json={"annotator": "甲", "violation": "none"}).status_code == 404
+    assert client.get("/api/annotation").json()["items"][0]["labeled_by"] == ["甲"]
+    assert client.get("/api/annotation/score").json()["labeled"] == 1

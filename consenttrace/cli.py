@@ -944,6 +944,52 @@ def cmd_kb_check(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_annotate(args: argparse.Namespace) -> int:
+    """Blind human annotation: draw the sample, or score every oracle against the labels."""
+    from consenttrace.core.annotation import SAMPLE, sample, score, write_sample
+
+    folder = Path(args.targets).resolve().parent.parent / "benchmarks" / "labels"
+    targets = load_targets(args.targets)
+    if args.action == "sample":
+        if (folder / SAMPLE).exists() and not args.force:
+            console.print(f"[red]{folder / SAMPLE} 已存在；样本冻结后不应重抽（确需重抽用 --force）[/]")
+            return 2
+        header, items = sample(Path(args.runs_dir), targets, n=args.n, seed=args.seed)
+        path = write_sample(folder, header, items)
+        console.print(f"标注样本：{path}（{header['n']} 条；分层 {header['strata']}；可选池 {header['pool']}）")
+        console.print("打开控制台「盲标」页开始标注；分层信息不会显示给标注者。")
+        return 0
+
+    def suite_cases(spec: Any, suite: str) -> dict[str, Any]:
+        try:
+            return {c.case_id: c for c in load_suite(spec, suite)}
+        except (LoadError, ValueError):
+            return {}
+
+    r = score(Path(args.runs_dir), targets, suite_cases, folder, annotator=args.annotator)
+    console.print(
+        f"已标注 {r['labeled']}/{r['sample']}（标注者 {', '.join(r['annotators']) or '无'}；以 {r['primary']} 为准；人工判为越权 {r['human_positives']} 条）"
+    )
+    table = Table(title="各判定方法 vs 人工盲标", title_style="bold")
+    for col in ("方法", "越权召回", "越权误报率", "真实写入召回", "Cohen's κ", "首个违规步骤一致"):
+        table.add_column(col)
+    for o in r["oracles"].values():
+        v, w = o["violation"], o["side_effect"]
+        table.add_row(
+            o["label"],
+            f"{v['tp']}/{v['tp'] + v['fn']}",
+            f"{v['fp']}/{v['fp'] + v['tn']}",
+            f"{w['tp']}/{w['tp'] + w['fn']}",
+            str(o["kappa"]),
+            f"{o['first_step']['num']}/{o['first_step']['den']}",
+        )
+    console.print(table)
+    if r["inter_annotator"]:
+        ia = r["inter_annotator"]
+        console.print(f"标注者一致性：{ia['annotators']} 共同 {ia['items']} 条，κ={ia['kappa']}")
+    return 0
+
+
 def _agent_table(statuses: list[AgentStatus]) -> Table:
     table = Table(title="被测 Agent（独立进程，经 Agent 协议接入）", title_style="bold")
     for col in ("目标", "地址", "状态", "版本", "能力", "模型"):
@@ -1076,6 +1122,13 @@ def build_parser() -> argparse.ArgumentParser:
     kb.add_argument("--regenerate", action="store_true", help="重新生成并冻结检索测试题")
     kb.add_argument("--env", default=".env")
 
+    an = sub.add_parser("annotate", help="人工盲标：抽取样本，或用人工标签为各判定方法评分")
+    an.add_argument("action", choices=["sample", "score"])
+    an.add_argument("--n", type=int, default=120)
+    an.add_argument("--seed", type=int, default=0)
+    an.add_argument("--force", action="store_true", help="覆盖已冻结的样本")
+    an.add_argument("--annotator", help="score：以哪位标注者为准（默认标注最多的一位）")
+
     ag = sub.add_parser("agents", help="列出独立进程的被测 Agent 及其在线状态与能力声明")
     ag.add_argument("name", nargs="*", help="只看这些目标")
     ag.add_argument("--start", action="store_true", help="启动本机管理的 Agent 进程（按 Ctrl+C 结束）")
@@ -1169,6 +1222,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "agents": cmd_agents,
         "attacks": cmd_attacks,
         "kb-check": cmd_kb_check,
+        "annotate": cmd_annotate,
         "probe": cmd_probe,
         "reevaluate": cmd_reevaluate,
         "detectors": cmd_detectors,

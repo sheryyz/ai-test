@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { OutcomeCell } from "../components/charts";
 import { SwimlaneLegend, TraceSwimlane } from "../components/TraceSwimlane";
-import { Card, ErrorNote, JsonBlock, Loading, Pill, Segmented, StatTile, StatusBadge } from "../components/ui";
+import { Card, ErrorNote, GenericDiff, JsonBlock, Loading, Pill, Segmented, StatTile, StatusBadge } from "../components/ui";
 import { api, type CaseBundle, type Finding, type SensitiveAttempt, type StateDiff, type StateSnapshot, type TraceEvent, type UserEvent } from "../lib/api";
 import { ACTION_NAMES, AUTH_META, CATEGORY_NAMES, OUTCOME_META, href, short, useAsync, versionColor } from "../lib/util";
 
@@ -359,7 +359,7 @@ export function DiffView({ diff, after }: { diff: StateDiff | null; after: State
   const insertedKeys = new Set((changed?.inserted ?? []).map((c) => JSON.stringify(c.pk)));
   const updated = new Map((changed?.updated ?? []).map((c) => [JSON.stringify(c.pk), c]));
   const other = Object.entries(diff.tables).filter(([t]) => t !== "orders");
-  if (!orders) return <p className="text-sm text-muted">没有订单表。</p>;
+  if (!orders) return <GenericDiff diff={diff} />;
   const cols = ["order_id", "flight_no", "date", "origin", "destination", "cabin", "price", "status"];
   return (
     <div className="space-y-3">

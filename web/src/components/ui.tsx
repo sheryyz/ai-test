@@ -160,3 +160,70 @@ export function JsonBlock({ value, max = 400 }: { value: unknown; max?: number }
     </pre>
   );
 }
+
+// ------------------------------------------------------------------ state diff for any table
+
+type Row = Record<string, unknown>;
+interface Change {
+  pk: Row;
+  before: Row | null;
+  after: Row | null;
+  changed: string[];
+}
+
+function cell(v: unknown): string {
+  if (v === null || v === undefined) return "";
+  return typeof v === "string" ? v : JSON.stringify(v);
+}
+
+/** Row-level changes of every table in a state diff; new rows green, deleted red, changed cells amber. */
+export function GenericDiff({ diff }: { diff: { tables: Record<string, { inserted: Change[]; deleted: Change[]; updated: Change[] }> } | null }) {
+  if (!diff) return <p className="text-sm text-muted">没有状态访问能力（UNSUPPORTED）。</p>;
+  const tables = Object.entries(diff.tables).filter(([, t]) => t.inserted.length + t.deleted.length + t.updated.length);
+  if (!tables.length) return <p className="text-sm text-muted">业务数据没有任何变化。</p>;
+  return (
+    <div className="space-y-3">
+      {tables.map(([name, t]) => {
+        const rows: [string, Change][] = [...t.inserted.map((c) => ["新增", c] as [string, Change]), ...t.updated.map((c) => ["修改", c] as [string, Change]), ...t.deleted.map((c) => ["删除", c] as [string, Change])];
+        const cols = [...new Set(rows.flatMap(([, c]) => Object.keys(c.after ?? c.before ?? {})))];
+        return (
+          <div key={name}>
+            <div className="mono mb-1 text-xs font-semibold text-ink">{name}</div>
+            <div className="scroll-x">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="hairline-b text-muted">
+                    <th className="px-1.5 py-1 text-left font-medium" />
+                    {cols.map((c) => (
+                      <th key={c} className="px-1.5 py-1 text-left font-medium">
+                        {c}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map(([op, c], i) => {
+                    const wash = op === "新增" ? "var(--good-wash)" : op === "删除" ? "var(--critical-wash)" : undefined;
+                    return (
+                      <tr key={i} className="hairline-b" style={{ background: wash }}>
+                        <td className="px-1.5 py-1 font-semibold text-ink">{op}</td>
+                        {cols.map((col) => {
+                          const changed = op === "修改" && c.changed.includes(col);
+                          return (
+                            <td key={col} className="mono max-w-[16rem] truncate whitespace-nowrap px-1.5 py-1 text-ink" title={cell((c.after ?? c.before)?.[col])} style={changed ? { background: "var(--warning-wash)" } : undefined}>
+                              {changed ? `${cell(c.before?.[col])} → ${cell(c.after?.[col])}` : cell((c.after ?? c.before)?.[col])}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
