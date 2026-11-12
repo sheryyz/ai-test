@@ -48,6 +48,9 @@ def collect(run_ids: Sequence[str], *, targets_path: str | Path, runs_dir: str |
             grab(f"/api/runs/{_q(run_id)}/cases/{_q(result['case_id'])}/{result['rep']}")
     for target in grab("/api/targets"):
         grab(f"/api/targets/{_q(target['name'])}/contract")
+        grab(f"/api/targets/{_q(target['name'])}/drafts")
+        if client.get(f"/api/targets/{_q(target['name'])}/describe").status_code == 200:  # optional capability
+            grab(f"/api/targets/{_q(target['name'])}/describe")
         for suite in target["suites"]:
             grab(f"/api/targets/{_q(target['name'])}/suites/{_q(suite)}")
     if analysis:

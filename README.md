@@ -83,7 +83,7 @@ uv run ruff check . && uv run ruff format --check .
 | `consenttrace/cli.py` | `validate` / `run` / `show` / `runs` / `reevaluate` / `detectors` / `augment` / `phrasing` / `compare` / `draft-contract` / `report` / `serve` |
 | `consenttrace/ai/` | `contract_drafter`（F09 AI 起草契约）、`case_augmenter`（F10 措辞变体）、`llm_judge`（F11 LLM 裁判对照组，磁盘缓存可离线复现） |
 | `consenttrace/api/` | FastAPI：运行与证据的只读接口、实验分析汇总、启动运行、SSE 实时推送；托管前端；`report` 生成离线静态报告 |
-| `web/` | 前端源码（总览、运行详情、三泳道审计时间轴、回归对比、实验分析、测试控制台、用例与契约） |
+| `web/` | 前端源码（总览、运行详情、三泳道审计时间轴、回归对比、实验分析、契约工作台、测试控制台、用例与契约） |
 | `docs/oracle_review.md` | 每轮实验后对所有非 PASS 执行的人工复核与检测器修正记录 |
 | `targets/travel_agent/` | 差旅靶场：SQLite 沙箱、差旅制度知识库（BM25）、工具、V1 提示词、V2 `ConfirmationGate`、V2.1 `ConfirmationGateV21`、植入缺陷 `mutants.py` |
 | `targets/approval_agent/` | 第二靶场：审批 Agent，复用同一内核，只换工具、提示词、数据库和契约 |

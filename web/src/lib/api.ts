@@ -323,6 +323,62 @@ export interface Analysis {
   }[];
 }
 
+export interface AgentDescription {
+  target: string;
+  version: string;
+  tools: { type: string; function: { name: string; description: string; parameters: { properties?: Record<string, { type?: string; description?: string }>; required?: string[] } } }[];
+  system_prompt: string;
+  state_schema: Record<string, { columns: string[]; pk: string[] }>;
+}
+
+export interface PrDetail extends PrCounts {
+  precision: number | null;
+  recall: number | null;
+  extra: string[];
+  missing: string[];
+}
+
+export interface StructureScore {
+  sensitive_actions: PrDetail;
+  args_mapping: PrDetail;
+  writes: PrDetail;
+  rules: PrDetail;
+  edits_to_gold: Record<string, number>;
+}
+
+export interface DraftSet {
+  run_id: string | null;
+  model?: string;
+  prompt_version?: string;
+  drafts: {
+    draft: number;
+    valid: boolean;
+    attempts: number;
+    errors: string[];
+    rationale: Record<string, string>;
+    structure: StructureScore | null;
+    yaml: string | null;
+    accepted: { edits_from_draft: Record<string, number>; accepted_at: string } | null;
+  }[];
+}
+
+export interface ContractCheck {
+  ok: boolean;
+  errors: string[];
+  vs_gold?: StructureScore;
+  edits_from_draft?: Record<string, number> | null;
+}
+
+async function post<T>(path: string, body: unknown): Promise<T> {
+  if (window.__CONSENTTRACE_STATIC__) throw new Error("离线报告是只读的");
+  const res = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(typeof detail.detail === "string" ? detail.detail : JSON.stringify(detail.detail));
+  }
+  return (await res.json()) as T;
+}
+
 declare global {
   interface Window {
     // set by `consenttrace report`: every API response the page needs, keyed by path
@@ -351,6 +407,12 @@ export const api = {
   settings: () => get<{ live_available: boolean; model: string | null }>("/api/settings"),
   contract: (target: string) => get<{ contract: unknown; yaml: string }>(`/api/targets/${target}/contract`),
   analysis: () => get<Analysis>("/api/analysis"),
+  describe: (target: string) => get<AgentDescription>(`/api/targets/${target}/describe`),
+  drafts: (target: string) => get<DraftSet>(`/api/targets/${target}/drafts`),
+  checkContract: (target: string, body: { yaml: string; draft_run: string | null; draft: number | null }) =>
+    post<ContractCheck>(`/api/targets/${target}/contract/check`, body),
+  acceptContract: (target: string, body: { yaml: string; draft_run: string | null; draft: number | null }) =>
+    post<{ edits_from_draft: Record<string, number>; accepted_at: string }>(`/api/targets/${target}/contract/accept`, body),
   async startRun(body: Record<string, unknown>): Promise<{ run_id: string; total: number }> {
     const res = await fetch("/api/runs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     if (!res.ok) {

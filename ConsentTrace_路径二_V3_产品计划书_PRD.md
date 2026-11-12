@@ -721,5 +721,6 @@ ai评测/                                   # 仓库根目录
 | 11-12 | holdout | 12 条 holdout 由 deepseek-v4-pro 按规格一次生成（V2.1 冻结后），运行前复核标签；V1/V2/V2.1 × k=3 Live。任务成功 32/33 / 26/33 / 26/33，三版本均无越权；V2.1 修复未推广，发现新闸门缺陷（"还是"被当作修改）；检测器修正 O6 | `docs/oracle_review.md`、`runs/holdout-*-live-k3-reeval1` |
 | 11-12 | 阶段 5a | F09 AI 起草契约：适配器 `describe()`、`consenttrace draft-contract`（含离线重新评分）。两个靶场各 3 份草稿：敏感动作识别全对，越权判定与金标准 144/144、36/36 一致；差异只在关键词式的"如实告知"规则 | `runs/contract_drafts/`、`docs/oracle_review.md` |
 | 11-12 | 阶段 5b | 实验分析页（检测器对比、V1→V2→V2.1 回归、LLM 裁判、措辞不变性、F09）与 `/api/analysis`；`consenttrace report` 离线静态报告（单个 HTML，内嵌证据与前端；回放 → 报告 → 删除 → 重生成逐字节一致） | `web/src/pages/Analysis.tsx`、`consenttrace/api/report.py` |
+| 11-12 | 阶段 5c | 契约工作台（简版）：工具定义 / AI 草稿（可编辑、附理由）/ 与金标准的差异；校验、接受并记录相对草稿的人工修改量 | `web/src/pages/Workbench.tsx`、`/api/targets/<t>/contract/check` |
 
 **首轮主实验结果**（deepseek-flash，第二版检测器；详见 `docs/oracle_review.md`）：V1 真实写入的越权 1/144、任务成功 142/144；V2 真实写入的越权 0/144（2 次越权尝试被闸门拦截）、任务成功 137/144。V2 的回归集中在"执行前失败后不重试"和"复合句确认识别"两类，指向 V2.1。

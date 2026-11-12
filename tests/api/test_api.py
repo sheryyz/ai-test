@@ -114,3 +114,55 @@ def test_spa_is_served_when_built(tmp_path: Path, runs: Path) -> None:
 def test_analysis_endpoint(client: TestClient) -> None:
     out = client.get("/api/analysis").json()
     assert set(out) == {"suites", "phrasing", "detectors", "drafts"}
+
+
+@pytest.fixture
+def drafted(runs: Path) -> str:
+    """A saved draft set whose only draft is the gold contract itself."""
+    folder = runs / "contract_drafts" / "draft-t"
+    folder.mkdir(parents=True)
+    gold = (ROOT / "configs" / "travel_contract.yaml").read_text(encoding="utf-8")
+    (folder / "draft-1.yaml").write_text(gold, encoding="utf-8")
+    ev = {
+        "target": "travel",
+        "model": "m",
+        "prompt_version": "draft-v1",
+        "drafts": [{"draft": 1, "valid": True, "attempts": 1, "rationale": {"x": "y"}}],
+    }
+    (folder / "evaluation.json").write_text(json.dumps(ev), encoding="utf-8")
+    return gold
+
+
+def test_workbench_describe_and_drafts(client: TestClient, drafted: str) -> None:
+    desc = client.get("/api/targets/travel/describe").json()
+    assert {t["function"]["name"] for t in desc["tools"]} >= {"book_flight", "cancel_booking"}
+    drafts = client.get("/api/targets/travel/drafts").json()
+    assert drafts["run_id"] == "draft-t" and drafts["drafts"][0]["yaml"] == drafted
+    assert client.get("/api/targets/approval/drafts").json() == {"run_id": None, "drafts": []}
+
+
+def test_workbench_check_counts_human_edits_from_the_draft(client: TestClient, drafted: str) -> None:
+    body = {"yaml": drafted, "draft_run": "draft-t", "draft": 1}
+    same = client.post("/api/targets/travel/contract/check", json=body).json()
+    assert same["ok"] and same["edits_from_draft"]["total"] == 0 and same["vs_gold"]["edits_to_gold"]["total"] == 0
+    lines = drafted.splitlines()
+    start = next(i for i, line in enumerate(lines) if "id: SINGLE_EFFECT" in line)
+    end = next(i for i in range(start + 1, len(lines)) if lines[i].lstrip().startswith("- id:"))
+    edited = "\n".join(lines[:start] + lines[end:]) + "\n"
+    out = client.post("/api/targets/travel/contract/check", json={**body, "yaml": edited}).json()
+    assert out["edits_from_draft"]["rules_removed"] == 1 and out["edits_from_draft"]["rules_added"] == 0
+    assert out["vs_gold"]["rules"]["missing"] == ["('single_effect_per_authorization', 'book_flight')"]
+    bad = client.post("/api/targets/travel/contract/check", json={**body, "yaml": "rules: ["}).json()
+    assert bad["ok"] is False and "YAML" in bad["errors"][0]
+
+
+def test_workbench_accept_records_the_edits(client: TestClient, runs: Path, drafted: str) -> None:
+    body = {"yaml": drafted, "draft_run": "draft-t", "draft": 1}
+    saved = client.post("/api/targets/travel/contract/accept", json=body).json()
+    assert saved["edits_from_draft"]["total"] == 0 and saved["accepted_at"]
+    folder = runs / "contract_drafts" / "draft-t"
+    assert (folder / "accepted-1.yaml").read_text(encoding="utf-8") == drafted
+    assert client.get("/api/targets/travel/drafts").json()["drafts"][0]["accepted"]["draft"] == 1
+    assert client.post("/api/targets/travel/contract/accept", json={**body, "draft_run": None}).status_code == 400
+    assert client.post("/api/targets/travel/contract/accept", json={**body, "yaml": "x: ["}).status_code == 422
+    assert client.post("/api/targets/travel/contract/accept", json={**body, "draft_run": "../../etc"}).status_code == 400

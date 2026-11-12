@@ -10,6 +10,7 @@ import json
 import threading
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
@@ -30,6 +31,12 @@ from consenttrace.core.runner import CaseJob
 from consenttrace.schemas import RunResult, TestCase, TraceEvent
 
 WEB_DIST = Path(__file__).resolve().parent.parent / "web" / "dist"
+
+
+class ContractText(BaseModel):
+    yaml: str
+    draft_run: str | None = None  # the draft set this edit started from, for counting human edits
+    draft: int | None = None
 
 
 class StartRun(BaseModel):
@@ -214,6 +221,107 @@ def create_app(
     @app.get("/api/targets/{name}/suites/{suite}")
     def get_suite(name: str, suite: str) -> list[dict[str, Any]]:
         return [c.model_dump(mode="json") for c in suite_cases(target(name), suite).values()]
+
+    # ------------------------------------------------------------ contract workbench (F09)
+
+    def drafts_dir() -> Path:
+        return runs_dir / "contract_drafts"
+
+    def latest_draft_run(name: str) -> Path | None:
+        found = [
+            p.parent
+            for p in drafts_dir().glob("*/evaluation.json")
+            if json.loads(p.read_text(encoding="utf-8")).get("target") == name
+        ]
+        return max(found, key=lambda p: (p / "evaluation.json").stat().st_mtime) if found else None
+
+    def parse_contract(text: str) -> tuple[Any, list[str]]:
+        from consenttrace.schemas import TestContract
+
+        try:
+            data = yaml.safe_load(text)
+        except yaml.YAMLError as exc:
+            return None, [f"YAML 无法解析：{exc}"]
+        try:
+            return TestContract.model_validate(data), []
+        except Exception as exc:  # pydantic ValidationError, or a non-mapping document
+            errors = getattr(exc, "errors", None)
+            if callable(errors):
+                return None, [f"{'.'.join(map(str, e['loc'])) or '(root)'}：{e['msg']}" for e in errors()]
+            return None, [str(exc)]
+
+    def draft_contract_of(name: str, draft_run: str | None, draft: int | None) -> Any:
+        if not draft_run or not draft:
+            return None
+        path = (drafts_dir() / draft_run / f"draft-{draft}.yaml").resolve()
+        if drafts_dir().resolve() not in path.parents or not path.exists():
+            return None
+        return load_contract(path)
+
+    @app.get("/api/targets/{name}/describe")
+    def describe_target(name: str) -> dict[str, Any]:
+        from consenttrace.adapters.base import DescribableAdapter
+
+        spec = target(name)
+        adapter = spec.adapter_class()(lambda: None)
+        if not isinstance(adapter, DescribableAdapter):
+            raise HTTPException(404, f"{name} 的适配器不支持 describe()")
+        return adapter.describe().model_dump(mode="json")
+
+    @app.get("/api/targets/{name}/drafts")
+    def get_drafts(name: str) -> dict[str, Any]:
+        target(name)
+        folder = latest_draft_run(name)
+        if folder is None:
+            return {"run_id": None, "drafts": []}
+        ev = json.loads((folder / "evaluation.json").read_text(encoding="utf-8"))
+        drafts = []
+        for row in ev["drafts"]:
+            path = folder / f"draft-{row['draft']}.yaml"
+            accepted = folder / f"accepted-{row['draft']}.json"
+            drafts.append(
+                {
+                    **{k: row.get(k) for k in ("draft", "valid", "attempts", "errors", "rationale", "structure", "verdicts")},
+                    "yaml": path.read_text(encoding="utf-8") if path.exists() else None,
+                    "accepted": json.loads(accepted.read_text(encoding="utf-8")) if accepted.exists() else None,
+                }
+            )
+        return {"run_id": folder.name, "model": ev.get("model"), "prompt_version": ev.get("prompt_version"), "drafts": drafts}
+
+    @app.post("/api/targets/{name}/contract/check")
+    def check_contract(name: str, body: ContractText) -> dict[str, Any]:
+        from consenttrace.ai.contract_drafter import score_structure
+
+        spec = target(name)
+        contract, errors = parse_contract(body.yaml)
+        if contract is None:
+            return {"ok": False, "errors": errors}
+        draft = draft_contract_of(name, body.draft_run, body.draft)
+        return {
+            "ok": True,
+            "errors": [],
+            "vs_gold": score_structure(contract, load_contract(spec.contract)),
+            # edits a person made: the draft is the start, the edited contract is where they ended up
+            "edits_from_draft": score_structure(draft, contract)["edits_to_gold"] if draft is not None else None,
+        }
+
+    @app.post("/api/targets/{name}/contract/accept")
+    def accept_contract(name: str, body: ContractText) -> dict[str, Any]:
+        result = check_contract(name, body)
+        if not result["ok"]:
+            raise HTTPException(422, "；".join(result["errors"]))
+        if not body.draft_run or not body.draft or draft_contract_of(name, body.draft_run, body.draft) is None:
+            raise HTTPException(400, "需要指明从哪一份草稿开始编辑")
+        folder = drafts_dir() / body.draft_run
+        (folder / f"accepted-{body.draft}.yaml").write_text(body.yaml, encoding="utf-8")
+        record = {
+            "draft": body.draft,
+            "edits_from_draft": result["edits_from_draft"],
+            "vs_gold": {k: result["vs_gold"][k] for k in ("sensitive_actions", "args_mapping", "rules", "edits_to_gold")},
+            "accepted_at": datetime.now(UTC).isoformat(timespec="seconds"),
+        }
+        (folder / f"accepted-{body.draft}.json").write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
+        return record
 
     @app.get("/api/analysis")
     def analysis() -> dict[str, Any]:

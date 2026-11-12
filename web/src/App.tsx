@@ -7,6 +7,7 @@ import { Overview } from "./pages/Overview";
 import { RunDetail } from "./pages/RunDetail";
 import { Suite } from "./pages/Suite";
 import { TraceExplorer } from "./pages/TraceExplorer";
+import { Workbench } from "./pages/Workbench";
 import { href, useHashRoute } from "./lib/util";
 
 type Theme = "auto" | "light" | "dark";
@@ -41,6 +42,7 @@ export function App() {
   else if (section === "console" && !embedded) page = <Console />;
   else if (section === "compare") page = <Compare />;
   else if (section === "analysis") page = <Analysis />;
+  else if (section === "workbench") page = <Workbench />;
   else if (section === "suite") page = <Suite />;
   else page = <Overview />;
 
@@ -50,6 +52,7 @@ export function App() {
     ...(embedded ? [] : [{ key: "console", label: "测试控制台" }]),
     { key: "compare", label: "回归对比" },
     { key: "analysis", label: "实验分析" },
+    { key: "workbench", label: "契约工作台" },
     { key: "suite", label: "用例与契约" },
   ];
   const current = section === "runs" ? "" : section ?? "";
