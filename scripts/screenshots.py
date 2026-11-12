@@ -22,6 +22,7 @@ def pages(v1: str, v2: str, case: str, rep: int) -> list[tuple[str, str]]:
         ("trace", f"#/runs/{v1}/cases/{case}/{rep}"),
         ("trace-v2", f"#/runs/{v2}/cases/{case}/{rep}"),
         ("compare", "#/compare"),
+        ("analysis", "#/analysis"),
         ("console", "#/console"),
         ("suite", "#/suite"),
     ]

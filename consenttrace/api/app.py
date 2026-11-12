@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field
 
 from consenttrace.core.analysis import run_breakdown
 from consenttrace.core.evidence import load_results, load_summary, load_trace
+from consenttrace.core.experiments import experiment_summary
 from consenttrace.core.launch import LaunchError, RunRequest, prepare_run
 from consenttrace.core.loader import LoadError, load_cases, load_contract
 from consenttrace.core.registry import TargetSpec, load_targets
@@ -213,6 +214,10 @@ def create_app(
     @app.get("/api/targets/{name}/suites/{suite}")
     def get_suite(name: str, suite: str) -> list[dict[str, Any]]:
         return [c.model_dump(mode="json") for c in suite_cases(target(name), suite).values()]
+
+    @app.get("/api/analysis")
+    def analysis() -> dict[str, Any]:
+        return experiment_summary(runs_dir, targets(), suite_cases)
 
     # ------------------------------------------------------------ runs
 

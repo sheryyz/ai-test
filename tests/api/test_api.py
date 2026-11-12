@@ -109,3 +109,8 @@ def test_spa_is_served_when_built(tmp_path: Path, runs: Path) -> None:
     assert "ConsentTrace" in c.get("/runs/whatever").text  # client-side routes fall back to the app
     assert c.get("/assets/app.js").text == "console.log(1)"
     assert c.get("/api/health").json()["web"] is True
+
+
+def test_analysis_endpoint(client: TestClient) -> None:
+    out = client.get("/api/analysis").json()
+    assert set(out) == {"suites", "phrasing", "detectors", "drafts"}

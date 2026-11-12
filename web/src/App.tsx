@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { TooltipProvider } from "./components/ui";
+import { Analysis } from "./pages/Analysis";
 import { Compare } from "./pages/Compare";
 import { Console } from "./pages/Console";
 import { Overview } from "./pages/Overview";
@@ -38,6 +39,7 @@ export function App() {
   else if (section === "runs" && route[1]) page = <RunDetail runId={route[1]} />;
   else if (section === "console") page = <Console />;
   else if (section === "compare") page = <Compare />;
+  else if (section === "analysis") page = <Analysis />;
   else if (section === "suite") page = <Suite />;
   else page = <Overview />;
 
@@ -45,6 +47,7 @@ export function App() {
     { key: "", label: "总览" },
     { key: "console", label: "测试控制台" },
     { key: "compare", label: "回归对比" },
+    { key: "analysis", label: "实验分析" },
     { key: "suite", label: "用例与契约" },
   ];
   const current = section === "runs" ? "" : section ?? "";

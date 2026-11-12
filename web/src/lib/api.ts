@@ -232,7 +232,110 @@ export interface TargetInfo {
   rules: number;
 }
 
+// ------------------------------------------------------------------ experiment analysis
+
+export interface Confusion {
+  tp: number;
+  fp: number;
+  fn: number;
+  tn: number;
+  recall: number | null;
+  fpr: number | null;
+  precision: number | null;
+}
+
+export interface OracleScore {
+  violation: Confusion;
+  side_effect: Confusion;
+  claim: Confusion;
+  localization: { num: number; den: number; rate: number | null };
+}
+
+export interface JudgeSummary {
+  view: string;
+  model: string;
+  prompt_version: string;
+  executions: number;
+  samples: number;
+  unusable_answers: number;
+  self_consistency: { agree: number; total: number; rate: number | null };
+}
+
+export interface SuiteVersion {
+  version: string;
+  run_id: string;
+  model_id: string | null;
+  reps: number;
+  totals: Summ;
+  task_retention: Ratio;
+}
+
+export interface PrCounts {
+  tp: number;
+  fp: number;
+  fn: number;
+}
+
+export interface Analysis {
+  suites: { target: string; suite: string; cases: number; versions: SuiteVersion[]; steps: { a: string; b: string; changes: Record<string, number> }[] }[];
+  phrasing: {
+    target: string;
+    version: string;
+    run_id: string;
+    base_run: string | null;
+    bases: number;
+    variants: number;
+    variant_outcome_split: Ratio;
+    variant_violation_split: Ratio;
+    rep_outcome_split: Ratio;
+    rep_violation_split: Ratio;
+    outside_base: Ratio;
+    split_bases: string[];
+  }[];
+  detectors: {
+    run_id: string;
+    executions: number;
+    positives: number;
+    scores: Record<string, OracleScore>;
+    labels: Record<string, string>;
+    llm_judge: JudgeSummary[];
+    real_runs_from: string | null;
+    real_runs: { run_id: string; executions: number; flagged: Record<string, number>; agreement_with_ours: Record<string, number>; llm_judge: JudgeSummary[] }[];
+  } | null;
+  drafts: {
+    target: string;
+    run_id: string;
+    model: string | null;
+    on_runs: string[];
+    drafts: {
+      draft: number;
+      valid: boolean;
+      attempts: number;
+      sensitive_actions?: PrCounts;
+      args_mapping?: PrCounts;
+      rules?: PrCounts & { missing: string[]; extra: string[] };
+      edits_to_gold?: number;
+      same_authorization_verdict?: Ratio;
+      same_claim_verdict?: Ratio;
+      same_outcome?: Ratio;
+      executions?: number;
+    }[];
+  }[];
+}
+
+declare global {
+  interface Window {
+    // set by `consenttrace report`: every API response the page needs, keyed by path
+    __CONSENTTRACE_STATIC__?: Record<string, unknown>;
+  }
+}
+
 async function get<T>(path: string): Promise<T> {
+  const embedded = window.__CONSENTTRACE_STATIC__;
+  if (embedded) {
+    if (path in embedded) return embedded[path] as T;
+    throw new Error(`静态报告中没有包含 ${path}（只读的离线报告）`);
+  }
   const res = await fetch(path);
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
   return (await res.json()) as T;
@@ -247,6 +350,7 @@ export const api = {
   suite: (target: string, suite: string) => get<TestCase[]>(`/api/targets/${target}/suites/${suite}`),
   settings: () => get<{ live_available: boolean; model: string | null }>("/api/settings"),
   contract: (target: string) => get<{ contract: unknown; yaml: string }>(`/api/targets/${target}/contract`),
+  analysis: () => get<Analysis>("/api/analysis"),
   async startRun(body: Record<string, unknown>): Promise<{ run_id: string; total: number }> {
     const res = await fetch("/api/runs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     if (!res.ok) {

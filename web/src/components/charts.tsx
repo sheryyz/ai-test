@@ -144,6 +144,9 @@ export interface BarSeries {
   color: string;
 }
 
+const LABEL_GUTTER = 104; // px reserved right of the longest bar for "100% · 144/144"
+const along = (fraction: number) => `calc((100% - ${LABEL_GUTTER}px) * ${fraction})`;
+
 export function GroupedBars({
   rows,
   series,
@@ -182,11 +185,11 @@ export function GroupedBars({
           })])}
         />
       ) : (
-        <div className="grid items-center gap-x-3" style={{ gridTemplateColumns: "minmax(150px, 220px) 1fr" }}>
+        <div className="grid grid-cols-1 items-center gap-x-3 sm:grid-cols-[minmax(150px,220px)_1fr]">
           <div />
           <div className="relative h-4 text-[10px] text-muted">
             {ticks.map((t) => (
-              <span key={t} className="tabular absolute -translate-x-1/2" style={{ left: `${(t / max) * 100}%` }}>
+              <span key={t} className="tabular absolute -translate-x-1/2" style={{ left: along(t / max) }}>
                 {+(t * 100).toFixed(1)}%
               </span>
             ))}
@@ -195,12 +198,12 @@ export function GroupedBars({
             <BarRow key={r.key} label={`${r.key} ${r.label}`}>
               <div className="relative py-1.5">
                 {ticks.map((t) => (
-                  <span key={t} aria-hidden className="absolute inset-y-0 w-px" style={{ left: `${(t / max) * 100}%`, background: "var(--grid)" }} />
+                  <span key={t} aria-hidden className="absolute inset-y-0 w-px" style={{ left: along(t / max), background: "var(--grid)" }} />
                 ))}
                 <div className="relative flex flex-col gap-[2px]">
                   {series.map((s) => {
                     const v = value(r.key, s.key);
-                    const w = v?.rate ? (v.rate / max) * 100 : 0;
+                    const w = v?.rate ? v.rate / max : 0;
                     return (
                       <div
                         key={s.key}
@@ -218,8 +221,8 @@ export function GroupedBars({
                           </div>
                         ))}
                       >
-                        <span className="h-full rounded-r-[4px]" style={{ width: `${w}%`, minWidth: w > 0 ? 3 : 0, background: s.color }} />
-                        {v && v.num > 0 && <span className="tabular ml-1.5 text-[11px] text-ink-2">{pct(v)} · {frac(v)}</span>}
+                        <span className="h-full shrink-0 rounded-r-[4px]" style={{ width: along(w), minWidth: w > 0 ? 3 : 0, background: s.color }} />
+                        {v && v.num > 0 && <span className="tabular ml-1.5 whitespace-nowrap text-[11px] text-ink-2">{pct(v)} · {frac(v)}</span>}
                       </div>
                     );
                   })}
@@ -237,7 +240,7 @@ function BarRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <>
       <div className="truncate border-t border-line py-1.5 text-xs text-ink-2">{label}</div>
-      <div className="border-t border-line">{children}</div>
+      <div className="border-line sm:border-t">{children}</div>
     </>
   );
 }
@@ -250,7 +253,7 @@ export function HBars({ items, color = "var(--s1)", unit = "次" }: { items: { l
   return (
     <div className="flex flex-col gap-1.5">
       {items.map((i) => (
-        <div key={i.label} className="grid items-center gap-3" style={{ gridTemplateColumns: "minmax(140px, 200px) 1fr" }}>
+        <div key={i.label} className="grid grid-cols-1 items-center gap-x-3 gap-y-0.5 sm:grid-cols-[minmax(140px,200px)_1fr]">
           <span className="mono truncate text-[11px] text-ink-2" title={i.label}>
             {i.label}
           </span>
@@ -320,7 +323,7 @@ export function OutcomeCell({ outcome, onClick, tooltip, label }: { outcome: Out
 
 // ------------------------------------------------------------------ table view twin
 
-export function DataTable({ head, rows }: { head: string[]; rows: (string | number)[][] }) {
+export function DataTable({ head, rows }: { head: string[]; rows: ReactNode[][] }) {
   return (
     <div className="scroll-x">
       <table className="w-full text-left text-xs">
