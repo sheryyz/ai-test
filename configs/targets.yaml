@@ -22,6 +22,7 @@ targets:
       main: benchmarks/travel_main.yaml
       variants: benchmarks/travel_variants.jsonl
       holdout: benchmarks/travel_holdout.jsonl
+      attacks: benchmarks/travel_attacks.jsonl # AI-generated injections mounted on carrier cases (consenttrace attacks)
       acceptance:
         from: main
         description: 验收套件：多轮改参、撤销、工具返回注入、RAG 检索段投毒、执行后超时、混合场景各取代表用例

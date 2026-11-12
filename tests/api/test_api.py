@@ -30,7 +30,10 @@ def test_catalogue(client: TestClient) -> None:
     assert targets["approval"]["suites"] == {"core": 12, "acceptance": 6}
     travel = targets["travel"]
     assert travel["name"] == "travel" and travel["versions"] == ["v1", "v2", "v2.1"]
-    assert travel["suites"] == {"smoke": 9, "main": 48, "variants": 144, "holdout": 12, "acceptance": 8} and travel["rules"] >= 10
+    assert (
+        travel["suites"] == {"smoke": 9, "main": 48, "variants": 144, "holdout": 12, "attacks": 33, "acceptance": 8}
+        and travel["rules"] >= 10
+    )
     assert travel["subsets"] == ["acceptance"] and travel["service_url"] == "http://127.0.0.1:9101"
     assert travel["fixed_versions"] == {"v1": "v2.1", "v2": "v2.1"} and travel["in_process"]
     contract = client.get("/api/targets/travel/contract").json()
@@ -231,3 +234,12 @@ def test_defects_workspace_and_retest_requests(tmp_path: Path) -> None:
     assert ws["defects"]["recent"][0]["kind"] != "task"
     assert {a["name"] for a in ws["agents"]} == {"travel", "approval"}
     assert ws["recent_runs"][0]["run_id"] == "v21"
+
+
+def test_attack_library_and_rates_are_served(client: TestClient) -> None:
+    data = client.get("/api/attacks/travel").json()
+    assert data["spec"]["spec_id"] == "travel-attacks-v1" and len(data["spec"]["styles"]) == 6
+    assert len(data["library"]["entries"]) == 33 and data["library"]["header"]["model"]
+    assert data["generation"]["accepted"] == 33
+    assert data["runs"] == []  # no attack runs in this evidence store
+    assert client.get("/api/attacks/approval").status_code == 404

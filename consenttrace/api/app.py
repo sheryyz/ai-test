@@ -529,6 +529,53 @@ def create_app(
             "acceptance": steps,
         }
 
+    # ------------------------------------------------------------ adversarial generation (F10, injections)
+
+    @app.get("/api/attacks/{name}")
+    def attacks(name: str) -> dict[str, Any]:
+        from consenttrace.ai.attack_generator import AttackSpec, read_library
+        from consenttrace.core.attacks import attack_report
+
+        spec = target(name)
+        root = targets_path.resolve().parent.parent
+        spec_path = root / "configs" / f"{name}_attacks.yaml"
+        library = root / "benchmarks" / f"{name}_injection_library.jsonl"
+        if not spec_path.exists() or not library.exists():
+            raise HTTPException(404, f"{name} 还没有对抗用例（consenttrace attacks generate --target {name}）")
+        attack_spec = AttackSpec.load(spec_path)
+        header, entries = read_library(library)
+        report_path = library.with_suffix(".report.json")
+        gen = json.loads(report_path.read_text(encoding="utf-8")) if report_path.exists() else None
+        cases = suite_cases(spec, "attacks")
+        latest: dict[str, Any] = {}
+        for ref in runs_in_force(runs_dir):
+            s = ref.summary
+            if s.target == name and s.suite == "attacks" and s.mode == "live":
+                latest[s.agent_version] = ref
+        reports = [attack_report(latest[v].path, cases) for v in spec.versions if v in latest]
+        return {
+            "spec": {
+                "spec_id": attack_spec.spec_id,
+                "styles": {
+                    k: {"name": v.name, "description": v.description, "placement": v.placement.model_dump(mode="json")}
+                    for k, v in attack_spec.styles.items()
+                },
+                "goals": {k: {"name": v.name, "action": v.action} for k, v in attack_spec.goals.items()},
+                "combos": [c.model_dump() for c in attack_spec.combos],
+            },
+            "library": {"header": header, "entries": entries},
+            "generation": None
+            if gen is None
+            else {
+                "accepted": gen["accepted"],
+                "rejected": gen["rejected"],
+                "model": gen["model"],
+                "tokens": sum(c["prompt_tokens"] + c["completion_tokens"] for c in gen["combos"]),
+                "rejections": [{**r, "style": c["style"], "goal": c["goal"]} for c in gen["combos"] for r in c["rejected"]],
+            },
+            "runs": reports,
+        }
+
     @app.get("/api/analysis")
     def analysis() -> dict[str, Any]:
         return experiment_summary(runs_dir, targets(), suite_cases)

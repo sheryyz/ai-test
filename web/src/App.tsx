@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { TooltipProvider } from "./components/ui";
 import { Agents } from "./pages/Agents";
 import { Analysis } from "./pages/Analysis";
+import { Attacks } from "./pages/Attacks";
 import { Compare } from "./pages/Compare";
 import { Console } from "./pages/Console";
 import { DefectDetail, Defects } from "./pages/Defects";
@@ -48,6 +49,7 @@ export function App() {
   else if (section === "agents" && !embedded) page = <Agents />;
   else if (section === "defects" && route[1]) page = <DefectDetail id={route[1]} />;
   else if (section === "defects") page = <Defects />;
+  else if (section === "attacks") page = <Attacks />;
   else if (section === "compare") page = <Compare />;
   else if (section === "analysis") page = <Analysis />;
   else if (section === "workbench") page = <Workbench />;
@@ -72,6 +74,7 @@ export function App() {
       label: "AI 测试助手",
       items: [
         { key: "workbench", label: "契约工作台" },
+        { key: "attacks", label: "对抗用例生成" },
         { key: "suite", label: "用例库" },
       ],
     },

@@ -355,6 +355,39 @@ export interface WorkspaceAgent extends AgentStatus {
   last_run: { run_id: string; version: string; suite: string; mode: string; counts: Partial<Record<Outcome, number>>; executions: number; finished_at: string } | null;
 }
 
+export interface AttackRates {
+  executions: number;
+  errors: number;
+  not_reached: number;
+  reached: number;
+  attempt: Ratio;
+  write: Ratio;
+}
+
+export interface AttackData {
+  spec: {
+    spec_id: string;
+    styles: Record<string, { name: string; description: string; placement: { mode: string; field: string | null; position: number } }>;
+    goals: Record<string, { name: string; action: string }>;
+    combos: { style: string; goal: string; carrier: string }[];
+  };
+  library: {
+    header: Record<string, string>;
+    entries: { attack_id: string; style: string; goal: string; carrier: string; text: string; title: string | null; technique: string | null }[];
+  };
+  generation: { accepted: number; rejected: number; model: string; tokens: number; rejections: { style: string; goal: string; text: string; title?: string; problems: string[] }[] } | null;
+  runs: {
+    run_id: string;
+    version: string;
+    mode: string;
+    model_id: string | null;
+    totals: AttackRates;
+    by_style: Record<string, AttackRates>;
+    by_goal: Record<string, AttackRates>;
+    successes: { case_id: string; rep: number; attempted: boolean; wrote: boolean; first_bad_step: number | null }[];
+  }[];
+}
+
 export interface Workspace {
   agents: WorkspaceAgent[];
   defects: { summary: DefectSummary; recent: Defect[] };
@@ -573,6 +606,7 @@ export const api = {
   acceptContract: (target: string, body: { yaml: string; draft_run: string | null; draft: number | null }) =>
     post<{ edits_from_draft: Record<string, number>; accepted_at: string }>(`/api/targets/${target}/contract/accept`, body),
   workspace: () => get<Workspace>("/api/workspace"),
+  attacks: (target: string) => get<AttackData>(`/api/attacks/${encodeURIComponent(target)}`),
   agents: () => get<AgentStatus[]>("/api/agents"),
   startAgent: (name: string) => post<AgentStatus>(`/api/agents/${encodeURIComponent(name)}/start`, {}),
   probe: (body: { url?: string; target?: string; version?: string }) => post<ProbeReport>("/api/agents/probe", body),

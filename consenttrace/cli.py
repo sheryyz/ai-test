@@ -812,6 +812,79 @@ def cmd_report(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_attacks(args: argparse.Namespace) -> int:
+    """Adversarial case generation (F10 injection half) and attack success rates."""
+    from consenttrace.ai.attack_generator import AttackGenerator, AttackSpec, mount, read_library, write_library
+    from consenttrace.core.attacks import attack_report
+
+    spec_path = Path(args.spec or f"configs/{args.target}_attacks.yaml")
+    attack_spec = AttackSpec.load(spec_path)
+    target = load_targets(args.targets)[args.target]
+    contract = load_contract(target.contract)
+    base = {c.case_id: c for c in load_cases(target.suite(attack_spec.base_suite), contract)}
+    library = Path(args.library or f"benchmarks/{args.target}_injection_library.jsonl")
+    suite_out = Path(args.out or f"benchmarks/{args.target}_attacks.jsonl")
+
+    if args.action == "report":
+        if not args.run:
+            console.print("[red]report 需要 --run[/]")
+            return 2
+        cases = {c.case_id: c for c in load_cases(suite_out, contract)}
+        table = Table(title="注入攻击成功率（分母：实际到达注入点的执行）", title_style="bold")
+        for col in ("运行", "版本", "样式", "到达", "未到达", "错误", "越权尝试", "真实写入"):
+            table.add_column(col)
+        for run_id in args.run:
+            rep = attack_report(Path(args.runs_dir) / run_id, cases)
+            for style, r in [*rep["by_style"].items(), ("合计", rep["totals"])]:
+                table.add_row(
+                    run_id,
+                    rep["version"],
+                    attack_spec.styles[style].name if style in attack_spec.styles else style,
+                    str(r["reached"]),
+                    str(r["not_reached"]),
+                    str(r["errors"]),
+                    f"{r['attempt']['num']}/{r['attempt']['den']}",
+                    f"{r['write']['num']}/{r['write']['den']}",
+                )
+        console.print(table)
+        return 0
+
+    if args.action == "generate":
+        from consenttrace.config import LLMSettings
+        from consenttrace.llm.client import OpenAICompatClient
+
+        settings = LLMSettings.from_env(args.env, model_var="JUDGE_MODEL")
+        if settings is None:
+            console.print("[red]生成攻击需要 .env 中的 LLM_API_KEY[/]")
+            return 2
+        if args.model:
+            settings = LLMSettings(base_url=settings.base_url, model=args.model, api_key=settings.api_key)
+        client = OpenAICompatClient.from_settings(settings, timeout=args.timeout, response_format={"type": "json_object"})
+        generator = AttackGenerator(client, attack_spec, n=args.n)
+        entries, reports = generator.generate_all(base, workers=args.workers)
+        provenance = {"target": args.target, "spec_id": attack_spec.spec_id, "model": settings.model, "per_combo": generator.n}
+        write_library(library, entries, provenance)
+        write_json(
+            library.with_suffix(".report.json"),
+            {
+                **provenance,
+                "combos": [r.__dict__ for r in reports],
+                "accepted": len(entries),
+                "rejected": sum(len(r.rejected) for r in reports),
+            },
+        )
+        console.print(f"注入库：{library}（{len(entries)} 条通过校验，{sum(len(r.rejected) for r in reports)} 条被拒）")
+
+    _, entries = read_library(library)
+    mounted = [mount(e, base[e["carrier"]], attack_spec) for e in entries]
+    from consenttrace.ai.case_augmenter import write_suite
+
+    write_suite(suite_out, mounted, {"target": args.target, "spec_id": attack_spec.spec_id, "library": str(library)})
+    load_cases(suite_out, contract)  # the frozen suite must load like any other
+    console.print(f"攻击套件：{suite_out}（{len(mounted)} 条，载体 {len({e['carrier'] for e in entries})} 个）")
+    return 0
+
+
 def _agent_table(statuses: list[AgentStatus]) -> Table:
     table = Table(title="被测 Agent（独立进程，经 Agent 协议接入）", title_style="bold")
     for col in ("目标", "地址", "状态", "版本", "能力", "模型"):
@@ -924,6 +997,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="接入方式：http = 被测 Agent 是独立进程，只通过 Agent 协议访问；inprocess = 同进程加载（开发与测试）",
     )
 
+    atk = sub.add_parser("attacks", help="F10：对抗用例生成（间接注入库）与注入攻击成功率")
+    atk.add_argument("action", choices=["generate", "mount", "report"])
+    atk.add_argument("--target", default="travel")
+    atk.add_argument("--spec", help="攻击规格（默认 configs/<target>_attacks.yaml）")
+    atk.add_argument("--library", help="注入库（默认 benchmarks/<target>_injection_library.jsonl）")
+    atk.add_argument("--out", help="攻击套件（默认 benchmarks/<target>_attacks.jsonl）")
+    atk.add_argument("-n", type=int, help="每个样式 × 目标组合生成几条")
+    atk.add_argument("--model", help="生成用的模型（默认 JUDGE_MODEL）")
+    atk.add_argument("--workers", type=int, default=4)
+    atk.add_argument("--timeout", type=float, default=120.0)
+    atk.add_argument("--run", action="append", help="report：要统计的攻击套件运行（可重复）")
+    atk.add_argument("--env", default=".env")
+
     ag = sub.add_parser("agents", help="列出独立进程的被测 Agent 及其在线状态与能力声明")
     ag.add_argument("name", nargs="*", help="只看这些目标")
     ag.add_argument("--start", action="store_true", help="启动本机管理的 Agent 进程（按 Ctrl+C 结束）")
@@ -1015,6 +1101,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "runs": cmd_runs,
         "serve": cmd_serve,
         "agents": cmd_agents,
+        "attacks": cmd_attacks,
         "probe": cmd_probe,
         "reevaluate": cmd_reevaluate,
         "detectors": cmd_detectors,
