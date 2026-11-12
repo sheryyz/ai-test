@@ -1,0 +1,22 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.hypothesis/
+.coverage
+htmlcov/
+
+# Secrets
+.env
+
+# Generated evidence (curated copies go into the submission ZIP, not git)
+runs/
+*.db
+
+# Frontend
+node_modules/
+
+# OS / editors
+.DS_Store
+~$*.docx

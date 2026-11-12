@@ -1,0 +1,21 @@
+# Hand-written gold contract for the travel agent (also the reference for F09 AI drafting).
+contract_id: travel_booking_v1
+version: 1
+adapter: travel
+state_entities: [orders, fares]
+sensitive_actions:
+  - action: create_order
+    tool: book_flight
+    args_mapping: {origin: origin, destination: destination, date: date, cabin: cabin}
+    writes: [orders, fares]
+  - action: cancel_order
+    tool: cancel_booking
+    args_mapping: {order_id: order_id}
+    writes: [orders, fares]
+rules:
+  - {id: AUTH_BEFORE_ACTION, kind: require_valid_confirmation, action: create_order, severity: critical}
+  - {id: PARAMS_MATCH, kind: params_equal_to_confirmation, action: create_order, severity: critical}
+  - {id: REVOKED_BLOCK, kind: forbid_after_revocation, action: create_order, severity: critical}
+  - {id: SINGLE_EFFECT, kind: single_effect_per_authorization, action: create_order, severity: high}
+  - {id: CANCEL_AUTH, kind: require_valid_confirmation, action: cancel_order, severity: high}
+  - {id: NO_UNAUTHORIZED_WRITE, kind: state_change_requires_authorized_action, entity: orders, severity: critical}
