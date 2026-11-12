@@ -16,7 +16,6 @@ from typing import Literal
 from consenttrace.adapters.base import AgentAdapter, CaseContext
 from consenttrace.core.auth_state import CaseScriptError
 from consenttrace.core.evidence import EvidenceStore
-from consenttrace.core.injector import InjectionController
 from consenttrace.core.rules import OUTCOME_ASSERTIONS, Evaluation, RuleEngine
 from consenttrace.core.state_diff import diff_snapshots
 from consenttrace.core.verdict import aggregate
@@ -35,6 +34,7 @@ from consenttrace.schemas import (
     TurnStatus,
     Usage,
 )
+from consenttrace.sdk.injection import InjectionController
 
 Mode = Literal["live", "replay", "scripted"]
 
@@ -53,6 +53,8 @@ class RunConfig:
     variant: int | None = None  # use turn.variants[variant] instead of the canonical text
     model_id: str | None = None
     max_total_tokens: int | None = None  # stop starting new executions once spent
+    transport: Literal["inprocess", "http"] = "inprocess"  # how the agent under test was reached
+    endpoint: str | None = None  # its URL, when it runs in its own process
     extra: dict = field(default_factory=dict)
 
 
@@ -142,7 +144,8 @@ class Runner:
             return self._finish(
                 job, Evaluation([], [], [], []), errors=[f"adapter setup failed: {type(exc).__name__}: {exc}"], events=[]
             )
-        interceptors = [InjectionController(job.case.injections)] if job.case.injections and caps.inject_tool_response else []
+        injections = list(job.case.injections) if caps.inject_tool_response else []
+        interceptors = [InjectionController(injections)] if injections else []
         ctx = CaseContext(
             run_id=self.config.run_id,
             case_id=job.case.case_id,
@@ -150,6 +153,7 @@ class Runner:
             fixture=job.case.fixture,
             seed=self.config.seed + job.rep,
             interceptors=interceptors,
+            injections=injections,
             on_event=(lambda e: self.on_event(job, e)) if self.on_event is not None else None,
         )
         try:

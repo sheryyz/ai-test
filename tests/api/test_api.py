@@ -27,10 +27,12 @@ def client(runs: Path, tmp_path: Path) -> TestClient:
 def test_catalogue(client: TestClient) -> None:
     assert client.get("/api/health").json() == {"ok": True, "web": False}
     targets = {t["name"]: t for t in client.get("/api/targets").json()}
-    assert targets["approval"]["suites"] == {"core": 12}
+    assert targets["approval"]["suites"] == {"core": 12, "acceptance": 6}
     travel = targets["travel"]
     assert travel["name"] == "travel" and travel["versions"] == ["v1", "v2", "v2.1"]
-    assert travel["suites"] == {"smoke": 9, "main": 48, "variants": 144, "holdout": 12} and travel["rules"] >= 10
+    assert travel["suites"] == {"smoke": 9, "main": 48, "variants": 144, "holdout": 12, "acceptance": 8} and travel["rules"] >= 10
+    assert travel["subsets"] == ["acceptance"] and travel["service_url"] == "http://127.0.0.1:9101"
+    assert travel["fixed_versions"] == {"v1": "v2.1", "v2": "v2.1"} and travel["in_process"]
     contract = client.get("/api/targets/travel/contract").json()
     assert contract["contract"]["contract_id"] == "travel_booking_v1" and "AUTH_BEFORE_ACTION" in contract["yaml"]
     suite = client.get("/api/targets/travel/suites/main").json()
@@ -166,3 +168,29 @@ def test_workbench_accept_records_the_edits(client: TestClient, runs: Path, draf
     assert client.post("/api/targets/travel/contract/accept", json={**body, "draft_run": None}).status_code == 400
     assert client.post("/api/targets/travel/contract/accept", json={**body, "yaml": "x: ["}).status_code == 422
     assert client.post("/api/targets/travel/contract/accept", json={**body, "draft_run": "../../etc"}).status_code == 400
+
+
+def test_agents_are_listed_with_status_and_can_be_probed(runs: Path, tmp_path: Path) -> None:
+    targets = tmp_path / "configs" / "targets.yaml"
+    targets.parent.mkdir()
+    targets.write_text(
+        f"""targets:
+  remote:
+    origin: 第三方
+    service: {{url: "http://127.0.0.1:9"}}
+    contract: {ROOT / "configs" / "travel_contract.yaml"}
+    suites: {{smoke: {ROOT / "benchmarks" / "travel_smoke.yaml"}}}
+""",
+        encoding="utf-8",
+    )
+    client = TestClient(create_app(targets_path=targets, runs_dir=runs, env_file=None, web_dist=None))
+    [agent] = client.get("/api/agents").json()
+    assert agent["name"] == "remote" and agent["online"] is False and agent["launchable"] is False and agent["error"]
+    started = client.post("/api/agents/remote/start").json()
+    assert started["online"] is False and "不由本机管理" in started["error"]
+    report = client.post("/api/agents/probe", json={"target": "remote"}).json()
+    assert report["ok"] is False and report["checks"][0]["status"] == "FAIL"
+    assert client.post("/api/agents/probe", json={}).status_code == 400
+    assert client.get("/api/targets").json()[0]["in_process"] is False
+    run = client.post("/api/runs", json={"target": "remote", "transport": "http", "mode": "replay", "replay_from": "x"})
+    assert run.status_code == 400 and "连不上被测 Agent" in run.json()["detail"]

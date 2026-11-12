@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
-from consenttrace.schemas import AdapterCapabilities, AgentDescription, StateSnapshot, TraceEvent, TurnResult
+from consenttrace.schemas import AdapterCapabilities, AgentDescription, InjectionSpec, StateSnapshot, TraceEvent, TurnResult
 from consenttrace.sdk.toolbox import ToolInterceptor
 
 
@@ -21,6 +21,7 @@ class CaseContext:
     fixture: str = "default"
     seed: int = 0
     interceptors: Sequence[ToolInterceptor] = field(default_factory=tuple)
+    injections: Sequence[InjectionSpec] = field(default_factory=tuple)  # the specs behind `interceptors`, for remote agents
     on_event: Callable[[TraceEvent], None] | None = None  # live streaming (e.g. to the web console)
 
 

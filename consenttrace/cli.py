@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
@@ -14,6 +15,8 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
+from consenttrace.adapters.probe import probe_agent
+from consenttrace.core.agents import AgentProcesses, AgentStatus
 from consenttrace.core.baselines import ORACLE_LABELS, ORACLES
 from consenttrace.core.detector_eval import (
     compare_on_run,
@@ -26,7 +29,7 @@ from consenttrace.core.detector_eval import (
 )
 from consenttrace.core.evidence import EvidenceStore, load_results, load_summary, load_trace, write_json
 from consenttrace.core.launch import LaunchError, RunRequest, prepare_run
-from consenttrace.core.loader import LoadError, load_cases, load_contract
+from consenttrace.core.loader import LoadError, load_cases, load_contract, load_suite
 from consenttrace.core.reevaluate import reevaluate_run
 from consenttrace.core.registry import load_targets
 from consenttrace.core.runner import outcome_exit_code
@@ -56,12 +59,17 @@ def cmd_validate(args: argparse.Namespace) -> int:
         table.add_column(col)
     problems = 0
     for name, spec in targets.items():
-        try:
-            spec.adapter_class()
-            table.add_row(name, f"adapter {spec.adapter}", "[green]OK[/]", "")
-        except Exception as exc:
-            problems += 1
-            table.add_row(name, f"adapter {spec.adapter}", "[red]ERROR[/]", f"{type(exc).__name__}: {exc}")
+        if spec.service_url:
+            table.add_row(
+                name, f"service {spec.service_url}", "[green]OK[/]", "独立进程；在线状态与能力用 consenttrace agents 检查"
+            )
+        if spec.adapter:
+            try:
+                spec.adapter_class()
+                table.add_row(name, f"adapter {spec.adapter}", "[green]OK[/]", "同进程（开发与测试）")
+            except Exception as exc:
+                problems += 1
+                table.add_row(name, f"adapter {spec.adapter}", "[red]ERROR[/]", f"{type(exc).__name__}: {exc}")
         try:
             contract = load_contract(spec.contract)
             table.add_row(
@@ -75,12 +83,16 @@ def cmd_validate(args: argparse.Namespace) -> int:
             table.add_row(name, f"contract {spec.contract.name}", "[red]ERROR[/]", "\n".join(exc.problems))
             continue
         for suite, path in spec.suites.items():
+            label = f"suite {suite} ({path.name}{' 子集' if suite in spec.subsets else ''})"
             try:
-                cases = load_cases(path, contract)
-                table.add_row(name, f"suite {suite} ({path.name})", "[green]OK[/]", f"{len(cases)} 条用例")
+                cases = load_suite(spec, suite, contract)
+                table.add_row(name, label, "[green]OK[/]", f"{len(cases)} 条用例")
             except LoadError as exc:
                 problems += 1
-                table.add_row(name, f"suite {suite} ({path.name})", "[red]ERROR[/]", "\n".join(exc.problems[:10]))
+                table.add_row(name, label, "[red]ERROR[/]", "\n".join(exc.problems[:10]))
+            except ValueError as exc:
+                problems += 1
+                table.add_row(name, label, "[red]ERROR[/]", str(exc))
     console.print(table)
     return 1 if problems else 0
 
@@ -101,6 +113,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         run_id=args.run_id,
         max_tokens=args.max_tokens,
         timeout=args.timeout,
+        transport=args.via,
     )
     done = 0
     total = 0
@@ -799,14 +812,84 @@ def cmd_report(args: argparse.Namespace) -> int:
     return 0
 
 
+def _agent_table(statuses: list[AgentStatus]) -> Table:
+    table = Table(title="被测 Agent（独立进程，经 Agent 协议接入）", title_style="bold")
+    for col in ("目标", "地址", "状态", "版本", "能力", "模型"):
+        table.add_column(col)
+    for st in statuses:
+        info = st.info or {}
+        caps = info.get("capabilities") or {}
+        llm = info.get("llm") or {}
+        table.add_row(
+            st.name,
+            st.url or "—",
+            "[green]在线[/]" if st.online else f"[red]离线[/] {st.error or ''}",
+            ", ".join(info.get("versions", [])),
+            ", ".join(k for k in ("output", "trace", "state", "inject_tool_response", "visible_reasoning") if caps.get(k)),
+            (llm.get("model") or "未配置 Key（仅回放）") if st.online else "",
+        )
+    return table
+
+
+def cmd_agents(args: argparse.Namespace) -> int:
+    targets = load_targets(args.targets)
+    root = Path(args.targets).resolve().parent.parent
+    procs = AgentProcesses(root, log_dir=Path(args.runs_dir) / "_agent_logs")
+    chosen = [targets[n] for n in args.name] if args.name else [t for t in targets.values() if t.service_url]
+    if args.start:
+        statuses = [procs.start(spec) for spec in chosen]
+        console.print(_agent_table(statuses))
+        if any(st.managed for st in statuses):
+            console.print("Agent 进程由本命令启动，按 Ctrl+C 结束。")
+            try:
+                while True:
+                    time.sleep(3600)
+            except KeyboardInterrupt:
+                procs.stop_all()
+        return 0 if all(st.online for st in statuses) else 2
+    statuses = [procs.status(spec) for spec in chosen]
+    console.print(_agent_table(statuses))
+    return 0 if all(st.online for st in statuses) else 2
+
+
+def cmd_probe(args: argparse.Namespace) -> int:
+    url = args.url
+    if url is None:
+        spec = load_targets(args.targets).get(args.target or "")
+        if spec is None or not spec.service_url:
+            console.print("[red]用 --url 指定地址，或用 --target 指定一个配置了 service.url 的目标[/]")
+            return 2
+        url = spec.service_url
+    report = probe_agent(url, version=args.version)
+    table = Table(title=f"接入检查 {url}", title_style="bold")
+    for col in ("检查项", "结果", "说明"):
+        table.add_column(col)
+    style = {"PASS": "green", "FAIL": "red", "SKIP": "bright_black"}
+    for check in report.checks:
+        table.add_row(check.title, f"[{style[check.status]}]{check.status}[/]", check.detail)
+    console.print(table)
+    if args.json:
+        write_json(Path(args.json), report.to_dict())
+    return 0 if report.ok else 1
+
+
 def cmd_serve(args: argparse.Namespace) -> int:  # pragma: no cover - blocks on a server
     import uvicorn
 
     from consenttrace.api.app import create_app
 
-    app = create_app(targets_path=args.targets, runs_dir=args.runs_dir, env_file=args.env)
+    root = Path(args.targets).resolve().parent.parent
+    procs = AgentProcesses(root, log_dir=Path(args.runs_dir) / "_agent_logs")
+    if not args.no_agents:
+        targets = load_targets(args.targets)
+        statuses = [procs.start(spec) for spec in targets.values() if spec.service_url and spec.launch]
+        console.print(_agent_table(statuses))
+    app = create_app(targets_path=args.targets, runs_dir=args.runs_dir, env_file=args.env, agent_processes=procs)
     console.print(f"ConsentTrace 控制台：[underline]http://{args.host}:{args.port}[/]")
-    uvicorn.run(app, host=args.host, port=args.port, log_level="warning")
+    try:
+        uvicorn.run(app, host=args.host, port=args.port, log_level="warning")
+    finally:
+        procs.stop_all()
     return 0
 
 
@@ -834,6 +917,22 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--max-tokens", type=int, help="整次运行的 token 预算")
     run.add_argument("--timeout", type=float, default=90.0, help="单次模型调用超时（秒）")
     run.add_argument("--env", default=".env")
+    run.add_argument(
+        "--via",
+        choices=["inprocess", "http"],
+        default="inprocess",
+        help="接入方式：http = 被测 Agent 是独立进程，只通过 Agent 协议访问；inprocess = 同进程加载（开发与测试）",
+    )
+
+    ag = sub.add_parser("agents", help="列出独立进程的被测 Agent 及其在线状态与能力声明")
+    ag.add_argument("name", nargs="*", help="只看这些目标")
+    ag.add_argument("--start", action="store_true", help="启动本机管理的 Agent 进程（按 Ctrl+C 结束）")
+
+    pr = sub.add_parser("probe", help="接入检查：一个 Agent 协议地址是否真的提供它声明的能力（不调用模型）")
+    pr.add_argument("--url", help="Agent 地址，如 http://127.0.0.1:9101")
+    pr.add_argument("--target", help="或者用注册表里的目标")
+    pr.add_argument("--version")
+    pr.add_argument("--json", help="同时把检查结果写成 JSON")
 
     show = sub.add_parser("show", help="查看运行结果或某个用例的审计时间轴")
     show.add_argument("--run", required=True)
@@ -903,6 +1002,7 @@ def build_parser() -> argparse.ArgumentParser:
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8765)
     serve.add_argument("--env", default=".env")
+    serve.add_argument("--no-agents", action="store_true", help="不自动启动本机管理的被测 Agent 进程")
     return parser
 
 
@@ -914,6 +1014,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         "show": cmd_show,
         "runs": cmd_runs,
         "serve": cmd_serve,
+        "agents": cmd_agents,
+        "probe": cmd_probe,
         "reevaluate": cmd_reevaluate,
         "detectors": cmd_detectors,
         "augment": cmd_augment,

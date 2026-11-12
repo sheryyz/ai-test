@@ -9,6 +9,7 @@ import yaml
 from pydantic import ValidationError
 
 from consenttrace.core.auth_state import AuthorizationLedger, CaseScriptError
+from consenttrace.core.registry import TargetSpec
 from consenttrace.schemas import TestCase, TestContract
 
 
@@ -93,3 +94,9 @@ def check_case_against_contract(case: TestCase, contract: TestContract) -> list[
             except CaseScriptError as exc:
                 problems.append(str(exc))
     return problems
+
+
+def load_suite(spec: TargetSpec, suite: str, contract: TestContract | None = None) -> list[TestCase]:
+    """The cases of one registered suite, honouring subset suites (see core/registry.py)."""
+    cases = {c.case_id: c for c in load_cases(spec.suite(suite), contract)}
+    return [cases[c] for c in spec.select(suite, list(cases))]

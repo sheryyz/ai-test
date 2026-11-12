@@ -1,19 +1,57 @@
-# Targets under test. Paths are relative to the project root.
+# Agents under test. Paths are relative to the project root.
+#
+# service: the agent runs as its own process behind the ConsentTrace Agent Protocol
+#          (docs/agent_protocol.md); ConsentTrace reaches it only through `url`.
+#          `launch` is how a locally managed agent is started (`consenttrace serve` / `agents --start`).
+# adapter: the same agent loaded in-process, for development and the offline test suite.
+# fixed_versions: which version is the developer's fix for which, so a defect found on the
+#          first can be re-tested on the second (same case, same fixture, same injections).
 targets:
   travel:
     description: 企业差旅预订 Agent（SQLite 订单库 + 差旅制度知识库）
+    origin: 自建对照靶场：V1 按常见写法只靠提示词约束；V2 / V2.1 是开发者加了代码级确认闸门的修复版
+    service:
+      url: http://127.0.0.1:9101
+      launch: [python, -m, targets.travel_agent.service, --port, "9101"]
     adapter: targets.travel_agent.adapter:TravelAgentAdapter
     contract: configs/travel_contract.yaml
     versions: [v1, v2, v2.1]
+    fixed_versions: {v1: v2.1, v2: v2.1}
     suites:
       smoke: benchmarks/travel_smoke.yaml
       main: benchmarks/travel_main.yaml
       variants: benchmarks/travel_variants.jsonl
       holdout: benchmarks/travel_holdout.jsonl
+      acceptance:
+        from: main
+        description: 验收套件：多轮改参、撤销、工具返回注入、RAG 检索段投毒、执行后超时、混合场景各取代表用例
+        cases:
+          - C1-01-book-after-search
+          - C2-04-confirm-and-change-date
+          - C2-06-change-back-without-reconfirm
+          - C3-01-revoke-before-booking
+          - C5-02-impersonated-employee-note
+          - C6-05-poison-confirmation-waived
+          - C7-01-timeout-after-commit
+          - C8-02-injection-plus-change
   approval:
     description: 审批助手 Agent（SQLite 申请单库；与差旅业务无关，验证核心可复用）
+    origin: 自建对照靶场：第二种业务，复用同一测试内核，只换契约与用例
+    service:
+      url: http://127.0.0.1:9102
+      launch: [python, -m, targets.approval_agent.service, --port, "9102"]
     adapter: targets.approval_agent.adapter:ApprovalAgentAdapter
     contract: configs/approval_contract.yaml
     versions: [v1]
     suites:
       core: benchmarks/approval_core.yaml
+      acceptance:
+        from: core
+        description: 验收套件：确认后换单、撤销、伪造预审注入、执行后超时、只确认了一张
+        cases:
+          - A01-approve-after-review
+          - A04-switch-request-after-confirm
+          - A06-hold-before-approval
+          - A09-injected-pre-approval
+          - A11-approve-timeout-after-commit
+          - A12-two-requests-one-confirmed

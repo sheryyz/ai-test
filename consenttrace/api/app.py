@@ -21,6 +21,9 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from consenttrace.adapters.http import AgentProtocolError, HttpAgentAdapter
+from consenttrace.adapters.probe import probe_agent
+from consenttrace.core.agents import AgentProcesses
 from consenttrace.core.analysis import run_breakdown
 from consenttrace.core.evidence import load_results, load_summary, load_trace
 from consenttrace.core.experiments import experiment_summary
@@ -49,6 +52,14 @@ class StartRun(BaseModel):
     cases: list[str] | None = None
     replay_from: str | None = None
     max_tokens: int | None = None
+    transport: Literal["inprocess", "http"] = "inprocess"
+    retest_of: dict[str, Any] | None = None
+
+
+class ProbeRequest(BaseModel):
+    url: str | None = None
+    target: str | None = None
+    version: str | None = None
 
 
 @dataclass
@@ -108,6 +119,8 @@ class RunManager:
             cases=body.cases,
             replay_from=body.replay_from,
             max_tokens=body.max_tokens,
+            transport=body.transport,
+            retest_of=body.retest_of,
         )
         prepared = prepare_run(
             request,
@@ -149,11 +162,14 @@ def create_app(
     runs_dir: str | Path = "runs",
     env_file: str | Path | None = ".env",
     web_dist: Path | None = WEB_DIST,
+    agent_processes: AgentProcesses | None = None,
 ) -> FastAPI:
     targets_path, runs_dir = Path(targets_path), Path(runs_dir)
     manager = RunManager(targets_path, runs_dir, Path(env_file) if env_file else None)
+    procs = agent_processes or AgentProcesses(targets_path.resolve().parent.parent, log_dir=runs_dir / "_agent_logs")
     app = FastAPI(title="ConsentTrace", version="0.1.0")
     app.state.manager = manager
+    app.state.agents = procs
 
     def targets() -> dict[str, TargetSpec]:
         return load_targets(targets_path)
@@ -172,7 +188,11 @@ def create_app(
         path = spec.suites.get(suite)
         if path is None or not path.exists():
             return {}
-        return _suite(str(path), path.stat().st_mtime)
+        cases = _suite(str(path), path.stat().st_mtime)
+        try:
+            return {c: cases[c] for c in spec.select(suite, list(cases))}
+        except ValueError:
+            return {}
 
     def run_dir(run_id: str) -> Path:
         path = (runs_dir / run_id).resolve()
@@ -206,8 +226,13 @@ def create_app(
                     "description": spec.description,
                     "versions": list(spec.versions),
                     "suites": {name: len(suite_cases(spec, name)) for name in spec.suites},
+                    "subsets": sorted(spec.subsets),
                     "contract_id": contract_id,
                     "rules": rules,
+                    "service_url": spec.service_url,
+                    "in_process": bool(spec.adapter),
+                    "origin": spec.origin,
+                    "fixed_versions": spec.fixed_versions,
                 }
             )
         return out
@@ -263,6 +288,12 @@ def create_app(
         from consenttrace.adapters.base import DescribableAdapter
 
         spec = target(name)
+        if not spec.adapter:
+            assert spec.service_url is not None
+            try:
+                return HttpAgentAdapter(spec.service_url, version=spec.versions[0]).describe().model_dump(mode="json")
+            except AgentProtocolError as exc:
+                raise HTTPException(502, str(exc)) from exc
         adapter = spec.adapter_class()(lambda: None)
         if not isinstance(adapter, DescribableAdapter):
             raise HTTPException(404, f"{name} 的适配器不支持 describe()")
@@ -322,6 +353,23 @@ def create_app(
         }
         (folder / f"accepted-{body.draft}.json").write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
         return record
+
+    # ------------------------------------------------------------ agents under test (F01)
+
+    @app.get("/api/agents")
+    def list_agents() -> list[dict[str, Any]]:
+        return [procs.status(spec).to_dict() for spec in targets().values()]
+
+    @app.post("/api/agents/{name}/start")
+    def start_agent(name: str) -> dict[str, Any]:
+        return procs.start(target(name)).to_dict()
+
+    @app.post("/api/agents/probe")
+    def probe(body: ProbeRequest) -> dict[str, Any]:
+        url = body.url or (target(body.target).service_url if body.target else None)
+        if not url:
+            raise HTTPException(400, "需要 url，或一个配置了 service.url 的 target")
+        return probe_agent(url, version=body.version).to_dict()
 
     @app.get("/api/analysis")
     def analysis() -> dict[str, Any]:

@@ -11,9 +11,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Literal
 
+from consenttrace.adapters.http import AgentProtocolError, HttpAgentAdapter, fetch_info
 from consenttrace.config import LLMSettings
 from consenttrace.core.evidence import EvidenceStore, load_summary
-from consenttrace.core.loader import load_cases, load_contract
+from consenttrace.core.loader import load_contract, load_suite
 from consenttrace.core.registry import TargetSpec, load_targets
 from consenttrace.core.runner import CaseJob, RunConfig, Runner
 from consenttrace.llm.client import OpenAICompatClient
@@ -38,6 +39,8 @@ class RunRequest:
     run_id: str | None = None
     max_tokens: int | None = None
     timeout: float = 90.0
+    transport: Literal["inprocess", "http"] = "inprocess"
+    retest_of: dict | None = None  # {run_id, case_id, rep}: this run re-tests a defect found there
 
 
 @dataclass
@@ -56,6 +59,30 @@ def new_run_id(target: str, version: str, mode: str) -> str:
     return f"{datetime.now():%Y%m%d-%H%M%S}-{target}-{version}-{mode}-{uuid.uuid4().hex[:4]}"
 
 
+def _copy_recording(replay_dir: Path, job: CaseJob) -> Path:
+    source = replay_dir / "cases" / job.case.case_id / f"r{job.rep}" / "cassette.jsonl"
+    if not source.exists():
+        raise FileNotFoundError(f"no recording for {job.case.case_id} r{job.rep} in {replay_dir}")
+    job.case_dir.mkdir(parents=True, exist_ok=True)
+    cassette = job.case_dir / "cassette.jsonl"
+    shutil.copyfile(source, cassette)
+    return cassette
+
+
+def build_http_make_adapter(
+    url: str, version: str, mode: str, *, replay_dir: Path | None, timeout: float
+) -> Callable[[CaseJob], object]:
+    """The agent runs in its own process; the recording (replay) travels with the session request."""
+
+    def make(job: CaseJob):
+        if mode == "replay":
+            assert replay_dir is not None
+            _copy_recording(replay_dir, job)
+        return HttpAgentAdapter(url, version=version, mode=mode, timeout=timeout)
+
+    return make
+
+
 def build_make_adapter(
     spec: TargetSpec, version: str, mode: str, *, settings: LLMSettings | None, replay_dir: Path | None, timeout: float
 ) -> Callable[[CaseJob], object]:
@@ -71,11 +98,7 @@ def build_make_adapter(
 
         else:
             assert replay_dir is not None
-            source = replay_dir / "cases" / job.case.case_id / f"r{job.rep}" / "cassette.jsonl"
-            if not source.exists():
-                raise FileNotFoundError(f"no recording for {job.case.case_id} r{job.rep} in {replay_dir}")
-            job.case_dir.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(source, cassette)
+            _copy_recording(replay_dir, job)
 
             def factory():
                 return ReplayClient.from_file(cassette)
@@ -102,22 +125,38 @@ def prepare_run(
         raise LaunchError(f"目标 {spec.name} 没有版本 {request.version}；可选：{', '.join(spec.versions)}")
     contract = load_contract(spec.contract)
     try:
-        suite_path = spec.suite(request.suite)
+        cases = load_suite(spec, request.suite, contract)
     except ValueError as exc:
         raise LaunchError(str(exc)) from exc
-    cases = load_cases(suite_path, contract)
     if request.cases:
         cases = [c for c in cases if any(c.case_id == k or c.case_id.startswith(k) for k in request.cases)]
         if not cases:
             raise LaunchError("没有匹配 --case 的用例")
 
     reps = request.reps
-    settings, replay_dir = None, None
+    settings, replay_dir, info = None, None, None
+    if request.transport == "http":
+        if not spec.service_url:
+            raise LaunchError(f"目标 {spec.name} 没有配置独立进程地址（service.url）")
+        try:
+            info = fetch_info(spec.service_url)
+        except AgentProtocolError as exc:
+            raise LaunchError(f"连不上被测 Agent {spec.service_url}：{exc}。先启动它（consenttrace agents --start）") from exc
+        if request.version not in info.get("versions", []):
+            raise LaunchError(f"被测 Agent 不提供版本 {request.version}；它提供：{', '.join(info.get('versions', []))}")
+    elif not spec.adapter:
+        raise LaunchError(f"目标 {spec.name} 只能通过 HTTP 接入（--via http）")
     if request.mode == "live":
-        settings = LLMSettings.from_env(env_file)
-        if settings is None:
-            raise LaunchError("Live 模式需要在 .env 中配置 LLM_API_KEY；离线请用 --mode replay --replay-from <run_id>")
-        model_id = settings.model
+        if info is not None:
+            llm = info.get("llm") or {}
+            if not llm.get("live_available"):
+                raise LaunchError("被测 Agent 没有配置自己的模型 Key，只能回放；离线请用 --mode replay --replay-from <run_id>")
+            model_id = llm.get("model")
+        else:
+            settings = LLMSettings.from_env(env_file)
+            if settings is None:
+                raise LaunchError("Live 模式需要在 .env 中配置 LLM_API_KEY；离线请用 --mode replay --replay-from <run_id>")
+            model_id = settings.model
     else:
         if not request.replay_from:
             raise LaunchError("Replay 模式需要 --replay-from <run_id>")
@@ -141,12 +180,21 @@ def prepare_run(
         concurrency=request.concurrency,
         model_id=model_id,
         max_total_tokens=request.max_tokens,
-        extra={"replay_from": request.replay_from},
+        transport=request.transport,
+        endpoint=spec.service_url if request.transport == "http" else None,
+        extra={"replay_from": request.replay_from, **({"retest_of": request.retest_of} if request.retest_of else {})},
     )
-    runner = Runner(
-        make_adapter=build_make_adapter(
+    if request.transport == "http":
+        assert spec.service_url is not None
+        make_adapter = build_http_make_adapter(
+            spec.service_url, request.version, request.mode, replay_dir=replay_dir, timeout=request.timeout
+        )
+    else:
+        make_adapter = build_make_adapter(
             spec, request.version, request.mode, settings=settings, replay_dir=replay_dir, timeout=request.timeout
-        ),
+        )
+    runner = Runner(
+        make_adapter=make_adapter,
         contract=contract,
         store=EvidenceStore(runs_dir, config.run_id),
         config=config,
