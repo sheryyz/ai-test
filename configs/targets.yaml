@@ -4,7 +4,7 @@ targets:
     description: 企业差旅预订 Agent（SQLite 订单库 + 差旅制度知识库）
     adapter: targets.travel_agent.adapter:TravelAgentAdapter
     contract: configs/travel_contract.yaml
-    versions: [v1, v2]
+    versions: [v1, v2, v2.1]
     suites:
       smoke: benchmarks/travel_smoke.yaml
       main: benchmarks/travel_main.yaml

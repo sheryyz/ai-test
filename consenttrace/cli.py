@@ -597,6 +597,62 @@ def cmd_phrasing(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_compare(args: argparse.Namespace) -> int:
+    """Regression report between two runs of the same suite (PRD §10.7 v1_v2_regression.md)."""
+    from consenttrace.core.analysis import CHANGE_NAMES, regression, render_regression_md, run_breakdown
+
+    breakdowns, labels = [], []
+    for run in (args.a, args.b):
+        source = Path(args.runs_dir) / run
+        config = json.loads((source / "config.json").read_text(encoding="utf-8"))
+        spec = load_targets(args.targets)[config["target"]]
+        contract = load_contract(spec.contract)
+        cases = {c.case_id: c for c in load_cases(spec.suite(config["suite"]), contract)}
+        breakdowns.append(run_breakdown(source, cases))
+        labels.append(str(config.get("agent_version", run)).upper())
+    reg = regression(*breakdowns)
+    out = Path(args.reports_dir) / f"{args.a}__{args.b}"
+    out.mkdir(parents=True, exist_ok=True)
+    write_json(out / "regression.json", reg)
+    md = render_regression_md(reg, a_label=labels[0], b_label=labels[1])
+    (out / "regression.md").write_text(md, encoding="utf-8")
+
+    ta, tb = reg["totals"]["a"], reg["totals"]["b"]
+
+    def r(x: dict[str, Any]) -> str:
+        return f"{x['num']}/{x['den']}" if x["den"] else "—"
+
+    console.rule(f"[bold]回归对比[/] {labels[0]} {args.a} → {labels[1]} {args.b}")
+    table = Table(title_style="bold")
+    for col in ("指标", labels[0], labels[1]):
+        table.add_column(col)
+    for name, key in (
+        ("越权（含尝试）", "auth_violation"),
+        ("真实写入的越权", "side_effect"),
+        ("任务成功", "task_success"),
+        ("pass^k", "pass_k"),
+    ):
+        table.add_row(name, r(ta[key]), r(tb[key]))
+    table.add_row("任务保持率", r(reg["task_retention"]["a"]), r(reg["task_retention"]["b"]))
+    console.print(table)
+    console.print("按用例：" + "，".join(f"{CHANGE_NAMES[k]} {v}" for k, v in reg["changes"].items()))
+    changed = Table(title="发生变化的用例", title_style="bold")
+    for col in ("用例", "变化", f"{labels[0]} 未通过（写入）", f"{labels[1]} 未通过（写入）", f"{labels[1]} 命中规则"):
+        changed.add_column(col)
+    for row in reg["rows"]:
+        if row["change"] != "unchanged":
+            changed.add_row(
+                row["case_id"],
+                CHANGE_NAMES[row["change"]],
+                f"{row['a']['fail']}/{row['a']['reps']}（{row['a']['writes']}）",
+                f"{row['b']['fail']}/{row['b']['reps']}（{row['b']['writes']}）",
+                ", ".join(row["b"]["rules"]) or "—",
+            )
+    console.print(changed)
+    console.print(f"报告：{out / 'regression.md'}")
+    return 0
+
+
 def cmd_serve(args: argparse.Namespace) -> int:  # pragma: no cover - blocks on a server
     import uvicorn
 
@@ -674,6 +730,11 @@ def build_parser() -> argparse.ArgumentParser:
     phr.add_argument("--run", required=True, help="变体套件的运行")
     phr.add_argument("--base", help="同一版本在原用例集上的运行（k≥2，作为采样噪声对照）")
 
+    cmp_ = sub.add_parser("compare", help="两次运行的逐用例回归对比，生成 Markdown 报告")
+    cmp_.add_argument("--a", required=True, help="基线运行（如 V2）")
+    cmp_.add_argument("--b", required=True, help="对比运行（如 V2.1）")
+    cmp_.add_argument("--reports-dir", default="reports")
+
     serve = sub.add_parser("serve", help="启动 Web 控制台（FastAPI + 前端）")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8765)
@@ -693,6 +754,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "detectors": cmd_detectors,
         "augment": cmd_augment,
         "phrasing": cmd_phrasing,
+        "compare": cmd_compare,
     }
     try:
         return handlers[args.command](args)

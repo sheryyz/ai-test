@@ -22,6 +22,7 @@ AdapterFactory = Callable[[Callable[[], ChatClient]], AgentAdapter]
 ADAPTERS: dict[str, AdapterFactory] = {
     "travel-v1": lambda clients: TravelAgentAdapter(clients, version="v1"),
     "travel-v2": lambda clients: TravelAgentAdapter(clients, version="v2"),
+    "travel-v2.1": lambda clients: TravelAgentAdapter(clients, version="v2.1"),
     "approval-v1": lambda clients: ApprovalAgentAdapter(clients, version="v1"),
 }
 

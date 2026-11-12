@@ -13,7 +13,7 @@ from targets.common.agent_loop import ToolCallingAgent
 from targets.travel_agent.agent import build_travel_agent
 from targets.travel_agent.db import TravelSandbox
 from targets.travel_agent.fixtures import get_fixture
-from targets.travel_agent.gate import ConfirmationGate
+from targets.travel_agent.gate import ConfirmationGate, ConfirmationGateV21
 from targets.travel_agent.knowledge import PolicyRetriever
 from targets.travel_agent.mutants import apply_mutant
 from targets.travel_agent.prompts import PROMPT_VERSIONS
@@ -62,7 +62,7 @@ class TravelAgentAdapter:
         ctx.case_dir.mkdir(parents=True, exist_ok=True)
         self._sandbox = TravelSandbox.create(ctx.case_dir / "sandbox.db", fixture)
         self._recorder = TraceRecorder(run_id=ctx.run_id, case_id=ctx.case_id, listener=ctx.on_event)
-        self._gate = ConfirmationGate() if self.version == "v2" else None
+        self._gate = {"v2": ConfirmationGate, "v2.1": ConfirmationGateV21}.get(self.version, lambda: None)()
         self._agent = build_travel_agent(
             self._client_factory(),
             self._sandbox,

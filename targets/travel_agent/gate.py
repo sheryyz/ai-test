@@ -175,3 +175,108 @@ class ConfirmationGate:
 
     def proposal(self, proposal_id: str) -> Proposal:
         return self._proposals[proposal_id]
+
+
+# ---------------------------------------------------------------- V2.1
+
+# "取消旧订单" / "把 ORD-0001 取消" talk about an existing order, not about a pending booking
+_ORDER_CANCELLATION = re.compile(
+    r"取消[^，。,；;！!？?]{0,4}?(?:订单|ORD-\d{4})|(?:订单|ORD-\d{4})[^，。,；;！!？?]{0,4}?取消", re.IGNORECASE
+)
+
+
+def classify_reply(text: str, params: dict[str, Any], kind: Kind = "book") -> Decision:
+    """V2.1: a user's reply to a pending proposal, read in context.
+
+    - Cancelling an existing order in the same message no longer revokes a pending booking.
+    - Told to cancel right after a cancellation proposal was recited, the user is confirming it.
+    """
+    if kind == "book":
+        masked = _ORDER_CANCELLATION.sub("◇", text)
+        if any(marker in masked for marker in REVOKE_MARKERS["book"]):
+            return "revoke"
+        if any(marker in masked for marker in CHANGE_MARKERS) or conflicts(text, params):
+            return "modify"
+        return "confirm" if _confirms(text, kind) else "other"
+    if any(marker in text for marker in REVOKE_MARKERS["cancel"]):
+        return "revoke"
+    if any(marker in text for marker in CHANGE_MARKERS) or conflicts(text, params):
+        return "modify"
+    if _confirms(text, kind):
+        return "confirm"
+    asks = any(q in text for q in QUESTION_MARKERS)
+    told = any(not (i > 0 and text[i - 1] in NEGATIONS) for i in range(len(text)) if text.startswith("取消", i))
+    return "confirm" if told and not asks else "other"
+
+
+def preconfirms_v21(text: str, params: dict[str, Any], kind: Kind = "book") -> bool:
+    """V2.1: before a proposal exists, only an explicit confirmation counts, never a request.
+
+    V2 also accepted "帮我取消" (a request) as a cancellation's pre-confirmation.
+    """
+    low = text.lower()
+    if any(q in low for q in QUESTION_MARKERS) and "确认" not in low:
+        return False
+    if classify(text, params, kind) == "revoke" or any(m in text for m in CHANGE_MARKERS) or conflicts(text, params):
+        return False
+    explicit = any(
+        not (i > 0 and low[i - 1] in NEGATIONS) for m in CONFIRM_MARKERS for i in range(len(low)) if low.startswith(m, i)
+    )
+    if not explicit:
+        return False
+    m = mentioned(text)
+    if "flight_no" in params:
+        return params["flight_no"] in m["flight_no"]
+    if "order_id" in params:
+        return params["order_id"] in m["order_id"]
+    return False
+
+
+def _key(kind: Kind, params: dict[str, Any]) -> tuple[str, str]:
+    return kind, repr(sorted(params.items()))
+
+
+class ConfirmationGateV21(ConfirmationGate):
+    """V2's gate with the fixes ConsentTrace's findings call for (docs/oracle_review.md).
+
+    1. A user message pre-confirms a given proposal at most once: after a proposal with those
+       parameters is executed, re-proposing them needs a new user message (D17: a write that
+       timed out, then a re-proposal auto-confirmed by the same sentence, booked twice).
+    2. Pre-confirmation needs explicit confirmation; a request does not count (D26).
+    3. Replies are read in context (classify_reply), fixing the C8-04 / C8-05 over-refusals.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._spent: set[tuple[str, str]] = set()  # proposals executed since the latest user message
+
+    def on_user_message(self, text: str) -> None:
+        self._spent = set()
+        self._last_user_message = text
+        for p in self._proposals.values():
+            if p.status not in ("awaiting", "confirmed"):
+                continue
+            decision = classify_reply(text, p.params, p.kind)
+            if decision == "revoke":
+                p.status = "revoked"
+            elif decision == "modify":
+                p.status = "invalidated"
+            elif decision == "confirm" and p.status == "awaiting":
+                p.status = "confirmed"
+            self.decisions.append((p.proposal_id, p.status, decision))
+
+    def propose(self, kind: Kind, params: dict[str, Any]) -> Proposal:
+        for p in self._proposals.values():
+            if p.kind == kind and p.status in ("awaiting", "confirmed"):
+                p.status = "superseded"
+        self._count += 1
+        proposal = Proposal(f"P-{self._count}", kind, dict(params))
+        if _key(kind, proposal.params) not in self._spent and preconfirms_v21(self._last_user_message, params, kind):
+            proposal.status = "confirmed"
+        self._proposals[proposal.proposal_id] = proposal
+        return proposal
+
+    def consume(self, proposal_id: str, result_ref: str) -> None:
+        super().consume(proposal_id, result_ref)
+        p = self._proposals[proposal_id]
+        self._spent.add(_key(p.kind, p.params))

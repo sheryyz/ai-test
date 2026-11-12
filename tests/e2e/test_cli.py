@@ -220,3 +220,12 @@ def load_cases_from(path: Path) -> list:
     from consenttrace.core.loader import load_cases
 
     return load_cases(path)
+
+
+def test_compare_writes_a_regression_report(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+    runs = tmp_path / "runs"
+    a, b = record_run(runs, "rec-a"), record_run(runs, "rec-b")
+    code = cli_main("--runs-dir", str(runs), "compare", "--a", a.name, "--b", b.name, "--reports-dir", str(tmp_path / "rep"))
+    assert code == 0 and "回归对比" in capsys.readouterr().out
+    md = (tmp_path / "rep" / "rec-a__rec-b" / "regression.md").read_text(encoding="utf-8")
+    assert "# 回归对比：V1 → V1" in md and "不变" in md

@@ -185,3 +185,126 @@ def phrasing_sensitivity(
         "outside_base": ratio(sum(len(r["outside_base"]) for r in with_reps), sum(len(r["variants"]) for r in with_reps)),
         "rows": rows,
     }
+
+
+RETENTION_TAG = "task-retention"
+
+
+def _non_pass(case_row: dict[str, Any]) -> int:
+    return sum(r["outcome"] != Outcome.PASS.value for r in case_row["reps"])
+
+
+def regression(a: dict[str, Any], b: dict[str, Any]) -> dict[str, Any]:
+    """Per-case comparison of two breakdowns of the same suite (e.g. V2 → V2.1).
+
+    With k repetitions a case is *fixed* when A failed at least once and B never did,
+    *regressed* in the opposite case, and *better* / *worse* when both failed but B
+    failed fewer / more times. Everything else is unchanged.
+    """
+    ca, cb = {c["case_id"]: c for c in a["cases"]}, {c["case_id"]: c for c in b["cases"]}
+    rows = []
+    for cid in sorted(set(ca) & set(cb)):
+        x, y = ca[cid], cb[cid]
+        fx, fy = _non_pass(x), _non_pass(y)
+        if fx and not fy:
+            change = "fixed"
+        elif fy and not fx:
+            change = "regressed"
+        elif fx and fy:
+            change = "better" if fy < fx else "worse" if fy > fx else "still_failing"
+        else:
+            change = "unchanged"
+        rows.append(
+            {
+                "case_id": cid,
+                "category": x["category"],
+                "title": x["title"],
+                "change": change,
+                "a": {
+                    "fail": fx,
+                    "reps": len(x["reps"]),
+                    "violations": x["violation_reps"],
+                    "writes": sum(r["side_effect"] for r in x["reps"]),
+                    "rules": sorted({rule for r in x["reps"] for rule in r["rules"]}),
+                },
+                "b": {
+                    "fail": fy,
+                    "reps": len(y["reps"]),
+                    "violations": y["violation_reps"],
+                    "writes": sum(r["side_effect"] for r in y["reps"]),
+                    "rules": sorted({rule for r in y["reps"] for rule in r["rules"]}),
+                },
+            }
+        )
+
+    def retention(bd: dict[str, Any]) -> dict[str, Any]:
+        reps = [r for c in bd["cases"] if RETENTION_TAG in c["tags"] for r in c["reps"] if r["task_ok"] is not None]
+        return ratio(sum(bool(r["task_ok"]) for r in reps), len(reps))
+
+    return {
+        "a": a["run_id"],
+        "b": b["run_id"],
+        "only_in_a": sorted(set(ca) - set(cb)),
+        "only_in_b": sorted(set(cb) - set(ca)),
+        "totals": {"a": a["totals"], "b": b["totals"]},
+        "task_retention": {"a": retention(a), "b": retention(b)},
+        "changes": dict(Counter(r["change"] for r in rows)),
+        "rows": rows,
+    }
+
+
+CHANGE_NAMES = {
+    "fixed": "修复",
+    "regressed": "回归",
+    "better": "好转",
+    "worse": "变差",
+    "still_failing": "仍失败",
+    "unchanged": "不变",
+}
+
+
+def _r(x: dict[str, Any]) -> str:
+    return f"{x['num']}/{x['den']}" if x["den"] else "—"
+
+
+def render_regression_md(reg: dict[str, Any], *, a_label: str, b_label: str) -> str:
+    """The regression report as Markdown; every number is a count with its denominator."""
+    ta, tb = reg["totals"]["a"], reg["totals"]["b"]
+    lines = [
+        f"# 回归对比：{a_label} → {b_label}",
+        "",
+        f"运行 `{reg['a']}` → `{reg['b']}`，同一用例集、同一判定（由 `consenttrace compare` 从运行证据生成）。",
+        "",
+        f"| 指标 | {a_label} | {b_label} |",
+        "|---|---|---|",
+        f"| 执行数 | {ta['executions']} | {tb['executions']} |",
+        f"| 越权（含被拦截的尝试） | {_r(ta['auth_violation'])} | {_r(tb['auth_violation'])} |",
+        f"| 产生真实写入的越权 | {_r(ta['side_effect'])} | {_r(tb['side_effect'])} |",
+        f"| 虚假陈述 | {_r(ta['claim_violation'])} | {_r(tb['claim_violation'])} |",
+        f"| 任务成功 | {_r(ta['task_success'])} | {_r(tb['task_success'])} |",
+        f"| 任务保持率（`{RETENTION_TAG}` 用例） | {_r(reg['task_retention']['a'])} | {_r(reg['task_retention']['b'])} |",
+        f"| pass^k（每次都通过的用例） | {_r(ta['pass_k'])} | {_r(tb['pass_k'])} |",
+        f"| 注入攻击成功 | {_r(ta['attack_success'])} | {_r(tb['attack_success'])} |",
+        "",
+        "按用例："
+        + "，".join(
+            f"{CHANGE_NAMES[k]} {v}" for k, v in sorted(reg["changes"].items(), key=lambda kv: list(CHANGE_NAMES).index(kv[0]))
+        ),
+        "",
+        "「未通过」括号里是其中产生真实写入的越权次数：同样是 FAIL，被拦截的尝试与写进数据库的越权性质不同。",
+        "",
+        f"| 用例 | 变化 | {a_label} 未通过 | {b_label} 未通过 | {a_label} 命中规则 | {b_label} 命中规则 |",
+        "|---|---|---|---|---|---|",
+    ]
+    for row in reg["rows"]:
+        if row["change"] == "unchanged":
+            continue
+        a, b = row["a"], row["b"]
+        lines.append(
+            f"| {row['case_id']} | {CHANGE_NAMES[row['change']]} | {a['fail']}/{a['reps']}（写入 {a['writes']}）"
+            f" | {b['fail']}/{b['reps']}（写入 {b['writes']}） | {', '.join(a['rules']) or '—'} | {', '.join(b['rules']) or '—'} |"
+        )
+    if reg["only_in_a"] or reg["only_in_b"]:
+        lines += ["", f"只在 A 中：{', '.join(reg['only_in_a']) or '—'}；只在 B 中：{', '.join(reg['only_in_b']) or '—'}"]
+    lines += ["", "每条用例只有 k 次重复，单条用例的变化可能来自模型的随机性；结论以汇总计数为准，并结合逐条复核。", ""]
+    return "\n".join(lines)

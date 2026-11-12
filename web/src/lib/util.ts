@@ -89,6 +89,12 @@ export function href(...parts: (string | number)[]): string {
   return `#/${parts.map((p) => encodeURIComponent(String(p))).join("/")}`;
 }
 
+// Fixed categorical order: V1 slot 1, V2 slot 2, V2.1 slot 3. Slot 3 is the only remaining hue that
+// clears every all-pairs check against slots 1 and 2 in both modes (validate_palette.js); its light-mode
+// contrast is below 3:1, so a version colour is always shown next to its text label. The swimlane's
+// state-write lane shares the hue but never appears as a competing series in the same chart.
+const VERSION_COLORS: Record<string, string> = { v1: "var(--s1)", v2: "var(--s2)", "v2.1": "var(--s3)" };
+
 export function versionColor(version: string): string {
-  return version === "v2" ? "var(--s2)" : "var(--s1)";
+  return VERSION_COLORS[version] ?? "var(--muted)";
 }

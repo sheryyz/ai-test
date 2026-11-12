@@ -3,7 +3,7 @@ import { OutcomeCell } from "../components/charts";
 import { SwimlaneLegend, TraceSwimlane } from "../components/TraceSwimlane";
 import { Card, ErrorNote, JsonBlock, Loading, Pill, Segmented, StatTile, StatusBadge } from "../components/ui";
 import { api, type CaseBundle, type Finding, type SensitiveAttempt, type StateDiff, type StateSnapshot, type TraceEvent, type UserEvent } from "../lib/api";
-import { ACTION_NAMES, AUTH_META, CATEGORY_NAMES, OUTCOME_META, href, short, useAsync } from "../lib/util";
+import { ACTION_NAMES, AUTH_META, CATEGORY_NAMES, OUTCOME_META, href, short, useAsync, versionColor } from "../lib/util";
 
 const KIND_TEXT: Record<Finding["kind"], string> = {
   side_effect_violation: "真实写入",
@@ -42,7 +42,7 @@ export function TraceExplorer({ runId, caseId, rep }: { runId: string; caseId: s
           <h1 className="mt-1.5 text-xl font-semibold text-ink">{b.case?.title ?? caseId}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-ink-2">
             <StatusBadge status={v.outcome} />
-            <Pill color={v.agent_version === "v2" ? "var(--s2)" : "var(--s1)"}>Agent {v.agent_version}</Pill>
+            <Pill color={versionColor(v.agent_version)}>Agent {v.agent_version}</Pill>
             <Pill>{v.mode}</Pill>
             <Pill>{v.model_id ?? "—"}</Pill>
             {b.case?.fixture && b.case.fixture !== "default" && <Pill>初始数据 {b.case.fixture}</Pill>}
