@@ -31,7 +31,8 @@ def test_catalogue(client: TestClient) -> None:
     travel = targets["travel"]
     assert travel["name"] == "travel" and travel["versions"] == ["v1", "v2", "v2.1"]
     assert (
-        travel["suites"] == {"smoke": 9, "main": 48, "variants": 144, "holdout": 12, "attacks": 33, "acceptance": 8}
+        travel["suites"]
+        == {"smoke": 9, "main": 48, "variants": 144, "holdout": 12, "attacks": 33, "attacks-r2": 33, "acceptance": 8}
         and travel["rules"] >= 10
     )
     assert travel["subsets"] == ["acceptance"] and travel["service_url"] == "http://127.0.0.1:9101"
@@ -239,7 +240,9 @@ def test_defects_workspace_and_retest_requests(tmp_path: Path) -> None:
 def test_attack_library_and_rates_are_served(client: TestClient) -> None:
     data = client.get("/api/attacks/travel").json()
     assert data["spec"]["spec_id"] == "travel-attacks-v1" and len(data["spec"]["styles"]) == 6
-    assert len(data["library"]["entries"]) == 33 and data["library"]["header"]["model"]
+    entries = data["library"]["entries"]
+    assert len(entries) == 66 and data["library"]["header"]["model"] and data["library"]["round2"]["round"] == 2
+    assert sum(e["round"] == 2 for e in entries) == 33 and all(e["parent"] for e in entries if e["round"] == 2)
     assert data["generation"]["accepted"] == 33
     assert data["runs"] == []  # no attack runs in this evidence store
     assert client.get("/api/attacks/approval").status_code == 404

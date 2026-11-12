@@ -830,6 +830,9 @@ def cmd_attacks(args: argparse.Namespace) -> int:
             console.print("[red]report 需要 --run[/]")
             return 2
         cases = {c.case_id: c for c in load_cases(suite_out, contract)}
+        round2 = suite_out.with_name(suite_out.stem + "_r2.jsonl")
+        if round2.exists():
+            cases |= {c.case_id: c for c in load_cases(round2, contract)}
         table = Table(title="注入攻击成功率（分母：实际到达注入点的执行）", title_style="bold")
         for col in ("运行", "版本", "样式", "到达", "未到达", "错误", "越权尝试", "真实写入"):
             table.add_column(col)
@@ -847,6 +850,59 @@ def cmd_attacks(args: argparse.Namespace) -> int:
                     f"{r['write']['num']}/{r['write']['den']}",
                 )
         console.print(table)
+        return 0
+
+    if args.action == "evolve":
+        from concurrent.futures import ThreadPoolExecutor
+
+        from consenttrace.ai.attack_generator import evolve_one
+        from consenttrace.config import LLMSettings
+        from consenttrace.core.attacks import agent_response, attack_facts
+        from consenttrace.llm.client import OpenAICompatClient
+
+        if not args.run:
+            console.print("[red]evolve 需要 --run（用哪次攻击套件运行里失败的攻击和 Agent 的回应来演化）[/]")
+            return 2
+        settings = LLMSettings.from_env(args.env, model_var="JUDGE_MODEL")
+        if settings is None:
+            console.print("[red]演化攻击需要 .env 中的 LLM_API_KEY[/]")
+            return 2
+        client = OpenAICompatClient.from_settings(settings, timeout=args.timeout, response_format={"type": "json_object"})
+        run_dir = Path(args.runs_dir) / args.run[0]
+        _, parents = read_library(library)
+        cases = {c.case_id: c for c in load_cases(suite_out, contract)}
+        failed = {f["case_id"] for f in attack_facts(run_dir, cases) if f["reached"] and not f["attempted"] and not f["error"]}
+        todo = [e for e in parents if e["attack_id"] in failed]
+
+        def one(entry: dict[str, Any]) -> tuple[dict[str, Any] | None, dict[str, Any]]:
+            return evolve_one(client, attack_spec, entry, base[entry["carrier"]], agent_response(run_dir, entry["attack_id"]), [])
+
+        with ThreadPoolExecutor(max_workers=args.workers) as pool:
+            results = list(pool.map(one, todo))
+        children = [c for c, _ in results if c is not None]
+        out_lib = library.with_name(library.stem + ".r2.jsonl")
+        provenance = {
+            "target": args.target,
+            "spec_id": attack_spec.spec_id,
+            "model": settings.model,
+            "round": 2,
+            "evolved_from_run": args.run[0],
+        }
+        write_library(out_lib, children, provenance)
+        write_json(
+            out_lib.with_suffix(".report.json"),
+            {**provenance, "parents": len(todo), "accepted": len(children), "logs": [log for _, log in results]},
+        )
+        out_suite = suite_out.with_name(suite_out.stem + "_r2.jsonl")
+        from consenttrace.ai.case_augmenter import write_suite
+
+        write_suite(
+            out_suite, [mount(c, base[c["carrier"]], attack_spec) for c in children], {**provenance, "library": str(out_lib)}
+        )
+        load_cases(out_suite, contract)
+        console.print(
+            f"第 2 轮：{len(todo)} 条失败的攻击 → {len(children)} 条通过校验的加强版；注入库 {out_lib}，攻击套件 {out_suite}"
+        )
         return 0
 
     if args.action == "generate":
@@ -1103,7 +1159,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     atk = sub.add_parser("attacks", help="F10：对抗用例生成（间接注入库）与注入攻击成功率")
-    atk.add_argument("action", choices=["generate", "mount", "report"])
+    atk.add_argument("action", choices=["generate", "mount", "evolve", "report"])
     atk.add_argument("--target", default="travel")
     atk.add_argument("--spec", help="攻击规格（默认 configs/<target>_attacks.yaml）")
     atk.add_argument("--library", help="注入库（默认 benchmarks/<target>_injection_library.jsonl）")
@@ -1112,7 +1168,7 @@ def build_parser() -> argparse.ArgumentParser:
     atk.add_argument("--model", help="生成用的模型（默认 JUDGE_MODEL）")
     atk.add_argument("--workers", type=int, default=4)
     atk.add_argument("--timeout", type=float, default=120.0)
-    atk.add_argument("--run", action="append", help="report：要统计的攻击套件运行（可重复）")
+    atk.add_argument("--run", action="append", help="report：要统计的攻击套件运行（可重复）；evolve：从这次运行里失败的攻击演化")
     atk.add_argument("--env", default=".env")
 
     kb = sub.add_parser("kb-check", help="RAG 知识库体检：结构错误、冗余、冲突、检索质量（含检查器自检与投毒检测）")

@@ -545,15 +545,26 @@ def create_app(
             raise HTTPException(404, f"{name} 还没有对抗用例（consenttrace attacks generate --target {name}）")
         attack_spec = AttackSpec.load(spec_path)
         header, entries = read_library(library)
+        round2 = library.with_name(library.stem + ".r2.jsonl")
+        r2_header, r2_entries = read_library(round2) if round2.exists() else ({}, [])
         report_path = library.with_suffix(".report.json")
         gen = json.loads(report_path.read_text(encoding="utf-8")) if report_path.exists() else None
-        cases = suite_cases(spec, "attacks")
-        latest: dict[str, Any] = {}
+        suites = [s for s in ("attacks", "attacks-r2") if s in spec.suites]
+        latest: dict[tuple[str, str], Any] = {}
         for ref in runs_in_force(runs_dir):
             s = ref.summary
-            if s.target == name and s.suite == "attacks" and s.mode == "live":
-                latest[s.agent_version] = ref
-        reports = [attack_report(latest[v].path, cases) for v in spec.versions if v in latest]
+            if s.target == name and s.suite in suites and s.mode == "live":
+                latest[(s.suite, s.agent_version)] = ref
+        reports = [
+            {
+                **attack_report(latest[(suite, v)].path, suite_cases(spec, suite)),
+                "suite": suite,
+                "round": 2 if suite == "attacks-r2" else 1,
+            }
+            for suite in suites
+            for v in spec.versions
+            if (suite, v) in latest
+        ]
         return {
             "spec": {
                 "spec_id": attack_spec.spec_id,
@@ -564,7 +575,11 @@ def create_app(
                 "goals": {k: {"name": v.name, "action": v.action} for k, v in attack_spec.goals.items()},
                 "combos": [c.model_dump() for c in attack_spec.combos],
             },
-            "library": {"header": header, "entries": entries},
+            "library": {
+                "header": header,
+                "entries": [{**e, "round": 1} for e in entries] + r2_entries,
+                "round2": r2_header or None,
+            },
             "generation": None
             if gen is None
             else {

@@ -88,3 +88,20 @@ def attack_report(run_dir: Path, cases: dict[str, TestCase]) -> dict[str, Any]:
         "by_combo": {k: _rates(v) for k, v in sorted(by_combo.items())},
         "successes": [f for f in facts if f["attempted"]],
     }
+
+
+def agent_response(run_dir: Path, case_id: str, rep: int = 0, limit: int = 600) -> str:
+    """What the agent said after it was shown the injected content (input to attack evolution)."""
+    path = run_dir / "cases" / case_id / f"r{rep}" / "trace.jsonl"
+    if not path.exists():
+        return ""
+    seen, said = False, []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        e = json.loads(line)
+        if e["kind"] == "injection":
+            seen = True
+        elif seen and e["kind"] == "agent_message" and e.get("content"):
+            said.append(e["content"])
+    return " / ".join(said)[:limit]

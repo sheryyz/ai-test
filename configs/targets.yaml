@@ -23,6 +23,7 @@ targets:
       variants: benchmarks/travel_variants.jsonl
       holdout: benchmarks/travel_holdout.jsonl
       attacks: benchmarks/travel_attacks.jsonl # AI-generated injections mounted on carrier cases (consenttrace attacks)
+      attacks-r2: benchmarks/travel_attacks_r2.jsonl # round 2: each failed attack rewritten after seeing the agent's response
       acceptance:
         from: main
         description: 验收套件：多轮改参、撤销、工具返回注入、RAG 检索段投毒、执行后超时、混合场景各取代表用例

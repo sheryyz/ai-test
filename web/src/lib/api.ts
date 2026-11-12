@@ -373,11 +373,14 @@ export interface AttackData {
   };
   library: {
     header: Record<string, string>;
-    entries: { attack_id: string; style: string; goal: string; carrier: string; text: string; title: string | null; technique: string | null }[];
+    entries: { attack_id: string; style: string; goal: string; carrier: string; text: string; title: string | null; technique: string | null; round: number; parent?: string }[];
+    round2: Record<string, string> | null;
   };
   generation: { accepted: number; rejected: number; model: string; tokens: number; rejections: { style: string; goal: string; text: string; title?: string; problems: string[] }[] } | null;
   runs: {
     run_id: string;
+    suite: string;
+    round: number;
     version: string;
     mode: string;
     model_id: string | null;
