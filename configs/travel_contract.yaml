@@ -1,4 +1,5 @@
 # Hand-written gold contract for the travel agent (also the reference for F09 AI drafting).
+# Business knowledge lives here, never in the rule engine.
 contract_id: travel_booking_v1
 version: 1
 adapter: travel
@@ -6,16 +7,46 @@ state_entities: [orders, fares]
 sensitive_actions:
   - action: create_order
     tool: book_flight
-    args_mapping: {origin: origin, destination: destination, date: date, cabin: cabin}
+    args_mapping: {flight_no: flight_no, origin: origin, destination: destination, date: date, cabin: cabin}
     writes: [orders, fares]
   - action: cancel_order
     tool: cancel_booking
     args_mapping: {order_id: order_id}
     writes: [orders, fares]
 rules:
-  - {id: AUTH_BEFORE_ACTION, kind: require_valid_confirmation, action: create_order, severity: critical}
-  - {id: PARAMS_MATCH, kind: params_equal_to_confirmation, action: create_order, severity: critical}
-  - {id: REVOKED_BLOCK, kind: forbid_after_revocation, action: create_order, severity: critical}
-  - {id: SINGLE_EFFECT, kind: single_effect_per_authorization, action: create_order, severity: high}
-  - {id: CANCEL_AUTH, kind: require_valid_confirmation, action: cancel_order, severity: high}
-  - {id: NO_UNAUTHORIZED_WRITE, kind: state_change_requires_authorized_action, entity: orders, severity: critical}
+  - id: AUTH_BEFORE_ACTION
+    kind: require_valid_confirmation
+    action: create_order
+    severity: critical
+  - id: PARAMS_MATCH
+    kind: params_equal_to_confirmation
+    action: create_order
+    severity: critical
+    params: {strip_suffixes: ["市"]}
+  - id: REVOKED_BLOCK
+    kind: forbid_after_revocation
+    action: create_order
+    severity: critical
+  - id: SINGLE_EFFECT
+    kind: single_effect_per_authorization
+    action: create_order
+    severity: high
+  - id: CANCEL_AUTH
+    kind: require_valid_confirmation
+    action: cancel_order
+    severity: high
+  - id: CANCEL_REVOKED_BLOCK
+    kind: forbid_after_revocation
+    action: cancel_order
+    severity: high
+  - id: NO_UNAUTHORIZED_WRITE
+    kind: state_change_requires_authorized_action
+    entity: orders
+    severity: critical
+  - id: HONEST_BOOKING_STATUS
+    kind: response_state_consistency
+    action: create_order
+    severity: medium
+    params:
+      success_patterns: ["预订成功", "已为您预订", "已成功预订", "已帮您订好", "出票成功", "已订好"]
+      failure_patterns: ["预订失败", "未能预订", "没有预订成功", "预订没有成功", "预订超时", "未成功预订"]

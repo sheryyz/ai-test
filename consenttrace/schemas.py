@@ -121,6 +121,31 @@ class StateSnapshot(_Model):
     captured_at_step: int | None = None
 
 
+class RowChange(_Model):
+    pk: dict[str, Any]
+    before: dict[str, Any] | None = None
+    after: dict[str, Any] | None = None
+    changed: list[str] = Field(default_factory=list)
+
+
+class TableDiff(_Model):
+    inserted: list[RowChange] = Field(default_factory=list)
+    deleted: list[RowChange] = Field(default_factory=list)
+    updated: list[RowChange] = Field(default_factory=list)
+
+    @property
+    def changes(self) -> list[RowChange]:
+        return [*self.inserted, *self.deleted, *self.updated]
+
+
+class StateDiff(_Model):
+    tables: dict[str, TableDiff] = Field(default_factory=dict)
+
+    @property
+    def is_empty(self) -> bool:
+        return not any(t.changes for t in self.tables.values())
+
+
 # --------------------------------------------------------------------------- adapter I/O
 
 
@@ -200,13 +225,23 @@ class InjectionSpec(_Model):
     mode: InjectionMode
     payload: Any = None
     style: str | None = None
+    field: str | None = None  # result key to append to / list to poison
+    position: int = Field(default=0, ge=0)  # rank at which a poisoned item is inserted
+
+
+class StateExpectation(_Model):
+    """`count` rows of `table` match every column in `where` at the end of the case."""
+
+    table: str
+    where: dict[str, Any] = Field(default_factory=dict)
+    count: int = Field(ge=0)
 
 
 class Expectation(_Model):
     task_should_complete: bool | None = None
     # Ground-truth rule ids; only meaningful for seeded mutants or human-labelled traces.
     expected_violations: list[str] = Field(default_factory=list)
-    final_state: dict[str, Any] = Field(default_factory=dict)
+    final_state: list[StateExpectation] = Field(default_factory=list)
     notes: str = ""
 
 
@@ -337,6 +372,44 @@ class AssertionStatus(StrEnum):
 class ViolationKind(StrEnum):
     ATTEMPT = "attempt_violation"  # unauthorized call, but nothing was written
     SIDE_EFFECT = "side_effect_violation"  # unauthorized call that changed state
+    CLAIM = "claim_violation"  # what the agent told the user contradicts the real state
+
+
+class AuthStatus(StrEnum):
+    NONE = "none"
+    PENDING = "pending"  # requested, not confirmed
+    CONFIRMED = "confirmed"  # confirmed for the current params; authorizes one effect
+    MODIFIED = "modified"  # params changed after a confirmation; the old one is void
+    REVOKED = "revoked"
+    CONSUMED = "consumed"  # the confirmation has been used by a real write
+
+
+class AuthTransition(_Model):
+    step: int
+    turn: int
+    action: str
+    trigger: str  # user event type, or "consume"
+    from_status: AuthStatus
+    to_status: AuthStatus
+    version: int
+    params: dict[str, Any]
+    confirmed_params: dict[str, Any] | None = None
+    call_id: str | None = None
+
+
+class SensitiveAttempt(_Model):
+    step: int
+    call_id: str
+    action: str
+    tool: str
+    args: dict[str, Any]
+    mapped: dict[str, Any]  # business fields, via the contract's args_mapping
+    status_at_attempt: AuthStatus
+    version: int
+    reference_params: dict[str, Any] | None = None
+    authorized: bool
+    wrote: bool = False
+    violated_rules: list[str] = Field(default_factory=list)
 
 
 class Finding(_Model):
@@ -370,3 +443,22 @@ class RunResult(_Model):
     mode: Literal["live", "replay", "scripted"]
     model_id: str | None = None
     agent_version: str
+
+
+class RunSummary(_Model):
+    schema_version: Literal["1"] = SCHEMA_VERSION
+    run_id: str
+    target: str
+    agent_version: str
+    mode: Literal["live", "replay", "scripted"]
+    model_id: str | None = None
+    contract_id: str
+    suite: str
+    reps: int
+    executions: int
+    counts: dict[str, int]
+    usage: Usage = Field(default_factory=Usage)
+    llm_calls: int = 0
+    started_at: datetime
+    finished_at: datetime
+    config: dict[str, Any] = Field(default_factory=dict)

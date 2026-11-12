@@ -13,6 +13,7 @@ from targets.common.agent_loop import ToolCallingAgent
 from targets.travel_agent.agent import build_travel_agent
 from targets.travel_agent.db import TravelSandbox
 from targets.travel_agent.fixtures import get_fixture
+from targets.travel_agent.gate import ConfirmationGate
 from targets.travel_agent.knowledge import PolicyRetriever
 from targets.travel_agent.prompts import PROMPT_VERSIONS
 
@@ -36,6 +37,7 @@ class TravelAgentAdapter:
         self._sandbox: TravelSandbox | None = None
         self._recorder: TraceRecorder | None = None
         self._agent: ToolCallingAgent | None = None
+        self._gate: ConfirmationGate | None = None
 
     def capabilities(self) -> AdapterCapabilities:
         return AdapterCapabilities(
@@ -57,6 +59,7 @@ class TravelAgentAdapter:
         ctx.case_dir.mkdir(parents=True, exist_ok=True)
         self._sandbox = TravelSandbox.create(ctx.case_dir / "sandbox.db", fixture)
         self._recorder = TraceRecorder(run_id=ctx.run_id, case_id=ctx.case_id)
+        self._gate = ConfirmationGate() if self.version == "v2" else None
         self._agent = build_travel_agent(
             self._client_factory(),
             self._sandbox,
@@ -64,6 +67,7 @@ class TravelAgentAdapter:
             version=self.version,
             interceptors=ctx.interceptors,
             retriever=self._retriever,
+            gate=self._gate,
             max_steps_per_turn=self._max_steps,
         )
 
@@ -71,6 +75,8 @@ class TravelAgentAdapter:
         agent, recorder = self._require()
         recorder.begin_turn()
         recorder.emit(EventKind.USER_MESSAGE, Source.USER, content=user_message)
+        if self._gate is not None:  # the app layer reads the user's own words before the model does
+            self._gate.on_user_message(user_message)
         return agent.chat(user_message)
 
     def drain_events(self) -> list[TraceEvent]:
@@ -84,7 +90,7 @@ class TravelAgentAdapter:
     def close(self) -> None:
         if self._sandbox is not None:
             self._sandbox.close()
-        self._sandbox = self._recorder = self._agent = None
+        self._sandbox = self._recorder = self._agent = self._gate = None
 
     def _require(self) -> tuple[ToolCallingAgent, TraceRecorder]:
         if self._agent is None or self._recorder is None:

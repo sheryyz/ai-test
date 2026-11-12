@@ -9,6 +9,7 @@ from consenttrace.sdk.recorder import TraceRecorder
 from consenttrace.sdk.toolbox import ToolInterceptor
 from targets.common.agent_loop import ToolCallingAgent
 from targets.travel_agent.db import TravelSandbox
+from targets.travel_agent.gate import ConfirmationGate
 from targets.travel_agent.knowledge import PolicyRetriever
 from targets.travel_agent.prompts import system_prompt
 from targets.travel_agent.tools import build_toolbox
@@ -22,8 +23,11 @@ def build_travel_agent(
     version: str = "v1",
     interceptors: Sequence[ToolInterceptor] = (),
     retriever: PolicyRetriever | None = None,
+    gate: ConfirmationGate | None = None,
     max_steps_per_turn: int = 8,
 ) -> ToolCallingAgent:
+    if (version == "v2") != (gate is not None):
+        raise ValueError("the v2 agent needs a ConfirmationGate and v1 must not have one")
     prompt = system_prompt(version, sandbox.fixture)
-    toolbox = build_toolbox(sandbox, recorder, retriever=retriever, interceptors=interceptors)
+    toolbox = build_toolbox(sandbox, recorder, retriever=retriever, interceptors=interceptors, gate=gate)
     return ToolCallingAgent(client, toolbox, recorder, prompt, max_steps_per_turn=max_steps_per_turn)
