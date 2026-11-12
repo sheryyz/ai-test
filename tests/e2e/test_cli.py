@@ -159,3 +159,63 @@ def test_detectors_scores_the_corpus_and_compares_on_a_real_run(tmp_path: Path, 
     assert "ConsentTrace" in out and "A 只看输出" in out and f"真实运行 {recorded.name}" in out
     assert (runs / "det" / "detector_eval.json").exists() and (runs / "det" / "real_run_comparison.json").exists()
     assert (reports / "det" / "benchmark_comparison.csv").exists()
+
+
+def test_detectors_with_llm_judge_offline(tmp_path: Path, capsys: pytest.CaptureFixture, monkeypatch: pytest.MonkeyPatch) -> None:
+    from consenttrace.ai.llm_judge import JudgeCache, LLMJudge
+    from tests.unit.test_llm_judge import CLEAN, FakeClient
+
+    client = FakeClient({False: [json.dumps(CLEAN)], True: [json.dumps(CLEAN)]})
+    monkeypatch.setattr(cli, "_build_judge", lambda args: LLMJudge(client, JudgeCache(tmp_path / "j.jsonl"), samples=2))
+    runs = tmp_path / "runs"
+    code = cli_main("--runs-dir", str(runs), "detectors", "--run-id", "det", "--reports-dir", str(tmp_path), "--llm-judge")
+    out = capsys.readouterr().out
+    assert code == 0 and "C1 LLM 裁判" in out and "C2 LLM 裁判" in out and "自一致" in out
+    scored = json.loads((runs / "det" / "detector_eval.json").read_text(encoding="utf-8"))
+    assert {"llm_c1", "llm_c2"} <= set(scored["scores"])
+    # a judge that never flags anything has zero recall, and that is what gets reported
+    assert scored["scores"]["llm_c1"]["violation"]["tp"] == 0
+    assert len(client.calls) == 2 * 2 * scored["executions"]
+
+
+def test_detectors_refuses_to_score_on_a_partial_judge(
+    tmp_path: Path, capsys: pytest.CaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from consenttrace.ai.llm_judge import JudgeCache, LLMJudge
+
+    class Broke:
+        model = "judge-model"
+
+        def complete(self, messages, tools=None):
+            raise RuntimeError("Error code: 402 - Insufficient Balance")
+
+    monkeypatch.setattr(cli, "_build_judge", lambda args: LLMJudge(Broke(), JudgeCache(tmp_path / "j.jsonl"), samples=1))
+    runs = tmp_path / "runs"
+    code = cli_main("--runs-dir", str(runs), "detectors", "--run-id", "det", "--reports-dir", str(tmp_path), "--llm-judge")
+    assert code == 3 and "结果不完整，未评分" in capsys.readouterr().out
+    assert not (runs / "det" / "detector_eval.json").exists()
+
+
+def test_augment_freezes_validated_variants(
+    tmp_path: Path, capsys: pytest.CaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from consenttrace.config import LLMSettings
+    from consenttrace.llm.client import OpenAICompatClient
+    from tests.unit.test_case_augmenter import BAD, GOOD, FakeClient
+
+    client = FakeClient([json.dumps({"variants": [GOOD[0], BAD]}), json.dumps({"variants": [GOOD[1]]})])
+    monkeypatch.setattr(LLMSettings, "from_env", classmethod(lambda cls, *a, **k: LLMSettings("http://x", "m", "k")))
+    monkeypatch.setattr(OpenAICompatClient, "from_settings", classmethod(lambda cls, *a, **k: client))
+    out = tmp_path / "v.jsonl"
+    code = cli_main("augment", "--target", "travel", "--case", "C2-04", "-n", "2", "--out", str(out))
+    text = capsys.readouterr().out
+    assert code == 0 and "2 / 2 个通过校验" in text and "新增了confirm类词语" in text
+    assert len(load_cases_from(out)) == 2
+    report = json.loads(out.with_suffix(".report.json").read_text(encoding="utf-8"))
+    assert report["variants"] == 2 and report["reports"][0]["rejected"][0]["turns"] == BAD
+
+
+def load_cases_from(path: Path) -> list:
+    from consenttrace.core.loader import load_cases
+
+    return load_cases(path)

@@ -14,8 +14,16 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
-from consenttrace.core.baselines import ORACLE_LABELS
-from consenttrace.core.detector_eval import compare_on_run, load_corpus, run_corpus, score_corpus, score_table, write_score_csv
+from consenttrace.core.baselines import ORACLE_LABELS, ORACLES
+from consenttrace.core.detector_eval import (
+    compare_on_run,
+    executions,
+    load_corpus,
+    run_corpus,
+    score_corpus,
+    score_table,
+    write_score_csv,
+)
 from consenttrace.core.evidence import EvidenceStore, load_results, load_summary, load_trace, write_json
 from consenttrace.core.launch import LaunchError, RunRequest, prepare_run
 from consenttrace.core.loader import LoadError, load_cases, load_contract
@@ -354,15 +362,73 @@ def _pct(num: int, den: int) -> str:
     return f"{num}/{den}" if den else "—"
 
 
+def _build_judge(args: argparse.Namespace) -> Any:
+    from consenttrace.ai.llm_judge import JudgeCache, LLMJudge
+    from consenttrace.config import LLMSettings
+    from consenttrace.llm.client import OpenAICompatClient
+
+    settings = LLMSettings.from_env(args.env, model_var="JUDGE_MODEL")
+    if settings is None:
+        raise SystemExit("LLM 裁判需要 .env 中的 LLM_API_KEY（裁判模型取 JUDGE_MODEL）")
+    client = OpenAICompatClient.from_settings(settings, timeout=args.timeout, response_format={"type": "json_object"})
+    cache = JudgeCache(args.judge_cache or Path(args.runs_dir) / "judge_cache" / f"{settings.model}.jsonl")
+    return LLMJudge(client, cache, samples=args.judge_samples)
+
+
+class JudgeUnavailable(RuntimeError):
+    pass
+
+
+def _prefetch(judge: Any, execs: list[Any], contract: Any, workers: int, label: str) -> None:
+    """Fill the judge cache; refuse to score on a partial judge (a failed call would read as "not flagged")."""
+    from rich.progress import Progress
+
+    with Progress(console=console, transient=True) as progress:
+        task = progress.add_task(f"LLM 裁判 · {label}", total=None)
+        judge.prefetch(execs, contract, workers=workers, on_done=lambda d, t: progress.update(task, completed=d, total=t))
+    if judge.stats.call_failures:
+        raise JudgeUnavailable(
+            f"{judge.stats.call_failures} 次裁判调用失败（网络、限流或余额不足），结果不完整，未评分。"
+            f"已成功的回答保存在 {judge.cache.path}，重新运行会从缓存续跑。"
+        )
+
+
+def _print_judge(summaries: list[dict[str, Any]]) -> None:
+    for sm in summaries:
+        sc = sm["self_consistency"]
+        console.print(
+            f"  {ORACLE_LABELS.get(sm['view'], sm['view'])}（{sm['model']}，{sm['prompt_version']}）："
+            f"自一致 {_pct(sc['agree'], sc['total'])}，无法解析的回答 {sm['unusable_answers']}"
+        )
+
+
 def cmd_detectors(args: argparse.Namespace) -> int:
     """Score every oracle on a labelled defect corpus, and compare them on real (unlabelled) runs."""
+    try:
+        return _detectors(args)
+    except JudgeUnavailable as exc:
+        console.print(f"[red]{exc}[/]")
+        return 3
+
+
+def _detectors(args: argparse.Namespace) -> int:
+    from consenttrace.ai.llm_judge import VIEWS
+
     corpus = load_corpus(args.corpus)
     spec = load_targets(args.targets)[corpus.TARGET]
     contract = load_contract(spec.contract)
     suite = {c.case_id: c for c in load_cases(spec.suite(corpus.SUITE), contract)}
+    judge = _build_judge(args) if args.llm_judge else None
+    oracles = {**ORACLES, **judge.oracles()} if judge else None
     run_id = args.run_id or f"detectors-{corpus.TARGET}-{datetime.now():%m%d%H%M%S}"
     run_dir = run_corpus(corpus, targets_path=args.targets, runs_dir=args.runs_dir, run_id=run_id)
-    scored = score_corpus(run_dir, contract, suite)
+    if judge:
+        labels = json.loads((run_dir / "labels.json").read_text(encoding="utf-8"))
+        corpus_execs = [ex for _, _, ex in executions(run_dir, suite, case_of=lambda cid: labels[cid]["case_id"])]
+        _prefetch(judge, corpus_execs, contract, args.judge_workers, "缺陷语料")
+    scored = score_corpus(run_dir, contract, suite, oracles)
+    if judge:
+        scored["llm_judge"] = [judge.view_summary(corpus_execs, contract, v) for v in VIEWS]
     write_json(run_dir / "detector_eval.json", scored)
     write_score_csv(score_table(scored), Path(args.reports_dir) / run_id / "benchmark_comparison.csv")
 
@@ -383,6 +449,8 @@ def cmd_detectors(args: argparse.Namespace) -> int:
             _pct(loc["num"], loc["den"]),
         )
     console.print(table)
+    if judge:
+        _print_judge(scored["llm_judge"])
     console.print("[bright_black]语料为人工编写并预先标注的脚本化行为，只用于度量检测器，不代表真实 Agent 的缺陷率。[/]")
 
     comparisons = []
@@ -392,7 +460,13 @@ def cmd_detectors(args: argparse.Namespace) -> int:
         real_spec = load_targets(args.targets)[config["target"]]
         real_contract = load_contract(real_spec.contract)
         real_cases = {c.case_id: c for c in load_cases(real_spec.suite(config["suite"]), real_contract)}
-        cmp = compare_on_run(source, real_contract, real_cases, fallback_capabilities=_declared_capabilities(real_spec))
+        fallback = _declared_capabilities(real_spec)
+        if judge:
+            real_execs = [ex for _, _, ex in executions(source, real_cases, fallback_capabilities=fallback)]
+            _prefetch(judge, real_execs, real_contract, args.judge_workers, real)
+        cmp = compare_on_run(source, real_contract, real_cases, oracles, fallback_capabilities=fallback)
+        if judge:
+            cmp["llm_judge"] = [judge.view_summary(real_execs, real_contract, v) for v in VIEWS]
         comparisons.append(cmp)
         t = Table(title=f"真实运行 {real}（{cmp['executions']} 次执行，无标注）", title_style="bold")
         for col in ("判定方法", "判为越权", "与 ConsentTrace 一致"):
@@ -400,10 +474,85 @@ def cmd_detectors(args: argparse.Namespace) -> int:
         for name, flagged in cmp["flagged"].items():
             t.add_row(ORACLE_LABELS.get(name, name), str(flagged), _pct(cmp["agreement_with_ours"][name], cmp["executions"]))
         console.print(t)
+        if judge:
+            _print_judge(cmp["llm_judge"])
     if comparisons:
         write_json(run_dir / "real_run_comparison.json", comparisons)
+    if judge:
+        st = judge.stats
+        console.print(
+            f"LLM 裁判本次调用 {st.calls} 次（其余来自缓存 {judge.cache.path}），"
+            f"token：输入 {st.prompt_tokens} / 输出 {st.completion_tokens}，失败 {st.errors}"
+        )
     console.print(f"证据：{run_dir}　表格：{Path(args.reports_dir) / run_id / 'benchmark_comparison.csv'}")
     return 0
+
+
+def cmd_augment(args: argparse.Namespace) -> int:
+    """F10: generate phrasing variants of a suite, validate them deterministically and freeze them."""
+    from collections import Counter
+
+    from consenttrace.ai.case_augmenter import CaseAugmenter, VariantSpec, write_suite
+    from consenttrace.config import LLMSettings
+    from consenttrace.llm.client import OpenAICompatClient
+
+    spec = load_targets(args.targets)[args.target]
+    contract = load_contract(spec.contract)
+    cases = load_cases(spec.suite(args.suite), contract)
+    if args.case:
+        cases = [c for c in cases if any(c.case_id.startswith(p) for p in args.case)]
+    variant_spec_path = Path(args.spec or f"configs/{args.target}_variants.yaml")
+    variant_spec = VariantSpec.load(variant_spec_path)
+    settings = LLMSettings.from_env(args.env, model_var="JUDGE_MODEL")
+    if settings is None:
+        console.print("[red]生成变体需要 .env 中的 LLM_API_KEY[/]")
+        return 2
+    if args.model:
+        settings = LLMSettings(base_url=settings.base_url, model=args.model, api_key=settings.api_key)
+    client = OpenAICompatClient.from_settings(settings, timeout=args.timeout, response_format={"type": "json_object"})
+    augmenter = CaseAugmenter(client, variant_spec, n=args.n, max_attempts=args.max_attempts)
+    out = Path(args.out or f"benchmarks/{args.target}_variants.jsonl")
+
+    from rich.progress import Progress
+
+    with Progress(console=console, transient=True) as progress:
+        task = progress.add_task(f"生成措辞变体（{settings.model}）", total=len(cases))
+        variants, reports = augmenter.augment_all(cases, workers=args.workers, on_done=lambda r: progress.advance(task))
+    order = {c.case_id: i for i, c in enumerate(cases)}
+    variants.sort(key=lambda v: (order[v.case_id.rsplit(".p", 1)[0]], v.case_id))
+    reports.sort(key=lambda r: order[r.case_id])
+
+    provenance = {
+        "target": args.target,
+        "base_suite": args.suite,
+        "spec_id": variant_spec.spec_id,
+        "model": settings.model,
+        "per_case": args.n,
+        "max_attempts": args.max_attempts,
+    }
+    write_suite(out, variants, provenance)
+    load_cases(out, contract)  # the frozen file must load like any other suite
+    report_path = out.with_suffix(".report.json")
+    write_json(
+        report_path,
+        {**provenance, "cases": len(cases), "variants": len(variants), "reports": [r.__dict__ for r in reports]},
+    )
+
+    table = Table(title=f"措辞变体：{len(variants)} / {args.n * len(cases)} 个通过校验", title_style="bold")
+    for col in ("用例", "通过", "轮次", "被拒", "错误"):
+        table.add_column(col)
+    for r in reports:
+        style = "green" if r.accepted == r.requested else "yellow"
+        table.add_row(
+            r.case_id, Text(f"{r.accepted}/{r.requested}", style=style), str(r.attempts), str(len(r.rejected)), str(len(r.errors))
+        )
+    console.print(table)
+    reasons = Counter(p.split("：", 1)[-1].split("（")[0] for r in reports for rej in r.rejected for p in rej["problems"])
+    if reasons:
+        console.print("被拒原因：" + "；".join(f"{k} ×{v}" for k, v in reasons.most_common(8)))
+    tokens = sum(r.prompt_tokens for r in reports), sum(r.completion_tokens for r in reports)
+    console.print(f"token：输入 {tokens[0]} / 输出 {tokens[1]}　已冻结：{out}　校验记录：{report_path}")
+    return 0 if len(variants) == args.n * len(cases) else 1
 
 
 def cmd_serve(args: argparse.Namespace) -> int:  # pragma: no cover - blocks on a server
@@ -459,6 +608,25 @@ def build_parser() -> argparse.ArgumentParser:
     det.add_argument("--on-run", action="append", help="同时在一次真实运行上比较各判定方法（可重复）")
     det.add_argument("--run-id")
     det.add_argument("--reports-dir", default="reports")
+    det.add_argument("--llm-judge", action="store_true", help="加入 LLM 裁判对照组 C1 / C2（调用 JUDGE_MODEL，结果缓存）")
+    det.add_argument("--judge-samples", type=int, default=2, help="同一输入的裁判次数，用于自一致性（默认 2）")
+    det.add_argument("--judge-workers", type=int, default=6)
+    det.add_argument("--judge-cache", help="裁判缓存文件（默认 <runs-dir>/judge_cache/<模型>.jsonl）")
+    det.add_argument("--timeout", type=float, default=120.0)
+    det.add_argument("--env", default=".env")
+
+    aug = sub.add_parser("augment", help="F10：用 LLM 生成用例的措辞变体，确定性校验后冻结")
+    aug.add_argument("--target", required=True)
+    aug.add_argument("--suite", default="main")
+    aug.add_argument("--spec", help="变体约束（默认 configs/<target>_variants.yaml）")
+    aug.add_argument("--out", help="输出（默认 benchmarks/<target>_variants.jsonl）")
+    aug.add_argument("-n", type=int, default=3, help="每条用例的变体数")
+    aug.add_argument("--case", action="append", help="只处理指定用例（可重复，支持前缀）")
+    aug.add_argument("--model", help="生成用的模型（默认取 JUDGE_MODEL）")
+    aug.add_argument("--workers", type=int, default=4)
+    aug.add_argument("--max-attempts", type=int, default=3)
+    aug.add_argument("--timeout", type=float, default=180.0)
+    aug.add_argument("--env", default=".env")
 
     serve = sub.add_parser("serve", help="启动 Web 控制台（FastAPI + 前端）")
     serve.add_argument("--host", default="127.0.0.1")
@@ -477,6 +645,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "serve": cmd_serve,
         "reevaluate": cmd_reevaluate,
         "detectors": cmd_detectors,
+        "augment": cmd_augment,
     }
     try:
         return handlers[args.command](args)

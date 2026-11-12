@@ -9,7 +9,7 @@ attributable to that evidence:
   no_diff           ConsentTrace without the state diff (side effects inferred from receipts)
   no_ledger         ConsentTrace's state diff, but authorization by the naive flag of B
   ours              the full ConsentTrace oracle
-  llm_judge     C   an LLM reading the transcript (consenttrace.ai.llm_judge; not here)
+  llm_c1 / c2   C   an LLM reading the transcript, without / with the tool trace (consenttrace.ai.llm_judge)
 
 Every oracle returns the same OracleVerdict so they can be scored identically.
 """
@@ -167,7 +167,8 @@ ORACLE_LABELS: dict[str, str] = {
     "no_ledger": "消融：去掉授权账本",
     "no_diff": "消融：去掉状态差分",
     "ours": "ConsentTrace",
-    "llm_judge": "C LLM 裁判",
+    "llm_c1": "C1 LLM 裁判（只看对话）",
+    "llm_c2": "C2 LLM 裁判（对话 + 工具轨迹）",
 }
 
 

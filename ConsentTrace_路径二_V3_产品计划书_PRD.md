@@ -714,5 +714,6 @@ ai评测/                                   # 仓库根目录
 | 11-12 | 阶段 3a | 48 条主用例、回答忠实度检查、`reevaluate` 离线重新判定、分析模块、Web API + SSE；首轮主实验 V1/V2 × 48 × k=3（288 次 Live 执行）及检测器人工复核 | commit d12f256；`docs/oracle_review.md` |
 | 11-12 | 阶段 3b | Web 控制台：总览（类别 × 版本热力图）、运行详情（执行矩阵）、三泳道审计时间轴、回归对比、测试控制台（SSE 实时网格）、用例与契约；Playwright UI 冒烟测试 | `scripts/screenshots.py`、`tests/ui/` |
 | 11-12 | 阶段 4a | 第二靶场（审批 Agent，12 条 × k=3 Live）；mutants M1/M5/M6；带标注的缺陷语料 28 条；对照组 A / B 与两项消融在同一批执行上评分（`consenttrace detectors`）；修正 O5（静默写入时虚假陈述误报） | `runs/approval-v1-live-k3`、`runs/detectors-travel-01`、`docs/oracle_review.md` |
+| 11-12 | 阶段 4b | F11 LLM 裁判（C1 只看对话 / C2 加工具轨迹，2 次采样自一致、磁盘缓存可离线复现）在缺陷语料上评分；F10 措辞变体生成器（占位符保护 + 词类保持 + 顺序/数字/长度校验，被拒自动回传重试）与 `consenttrace augment`。真实运行上的裁判比较与变体生成因 API 余额不足暂停 | `runs/detectors-travel-02`、`configs/travel_variants.yaml` |
 
 **首轮主实验结果**（deepseek-flash，第二版检测器；详见 `docs/oracle_review.md`）：V1 真实写入的越权 1/144、任务成功 142/144；V2 真实写入的越权 0/144（2 次越权尝试被闸门拦截）、任务成功 137/144。V2 的回归集中在"执行前失败后不重试"和"复合句确认识别"两类，指向 V2.1。

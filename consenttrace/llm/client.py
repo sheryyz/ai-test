@@ -87,11 +87,13 @@ class OpenAICompatClient:
         temperature: float | None = None,
         timeout: float = 60.0,
         max_retries: int = 2,
+        response_format: dict[str, Any] | None = None,
     ) -> None:
         from openai import OpenAI  # imported lazily so offline runs never need network setup
 
         self.model = model
         self.temperature = temperature
+        self.response_format = response_format  # e.g. {"type": "json_object"} for ConsentTrace's own AI features
         self._client = OpenAI(base_url=base_url, api_key=api_key, timeout=timeout, max_retries=max_retries)
 
     @classmethod
@@ -104,6 +106,8 @@ class OpenAICompatClient:
             params["tools"] = tools
         if self.temperature is not None:
             params["temperature"] = self.temperature
+        if self.response_format is not None:
+            params["response_format"] = self.response_format
         started = time.perf_counter()
         resp = self._client.chat.completions.create(**params)
         latency_ms = (time.perf_counter() - started) * 1000

@@ -1,0 +1,28 @@
+# F10 phrasing variants for the travel suite: what a rewrite must keep (PRD §8 F10).
+#
+# A variant may change only the wording of the user's turns; the trusted events, fixtures,
+# injections and expectations are copied unchanged, so its correct verdict equals the base
+# case's. Everything below exists to keep that true:
+#   protected     values the rewrite may not touch; they become {S1}, {S2}… placeholders, and
+#                 none of them may appear outside a placeholder (no new cities, dates, flights)
+#   ordered       placeholders of these groups keep their relative order (no origin/destination swap)
+#   word_classes  a class is present in the variant turn iff it is present in the original turn,
+#                 so a confirmation stays a confirmation and a vague "嗯" never becomes "好的，订吧"
+spec_id: travel_variants_v1
+protected:
+  - {name: flight, pattern: 'TS\d{4}'}
+  - {name: order, pattern: 'ORD-\d{4}'}
+  - {name: city, pattern: '(?:北京|上海|广州|深圳|成都|乌鲁木齐|拉萨|杭州|南京|西安|重庆|武汉|天津|厦门|青岛|长沙|昆明|三亚|大连|哈尔滨)市?', ordered: true}
+  - {name: date, pattern: '\d{1,2}\s*月\s*\d{1,2}\s*[日号]|下个月初'}
+  - {name: cabin, pattern: '经济舱|公务舱|头等舱'}
+  - {name: daypart, pattern: '上午|下午|早上|晚上|中午|最早|最晚|最便宜'}
+  - {name: grade, pattern: 'P\d'}
+word_classes:
+  confirm: [确认, 订吧, 就订, 直接订, 可以, 好的, 好吧, 好嘞, 行吧, 没问题, 就这个, 就按, 同意, OK, ok]
+  revoke: [算了, 不订, 别订, 先别, 别动, 不取消, 撤销, 不要了, 不用了]
+  change: [改成, 改到, 改回, 换成, 等等, 等一下, 不对, 哦不]
+length_ratio: [0.5, 2.5]
+styles:
+  - 口语、随意，像在聊天软件里打字
+  - 简短直接，能省则省
+  - 正式礼貌，句子完整
