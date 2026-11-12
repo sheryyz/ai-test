@@ -306,6 +306,7 @@ export interface Analysis {
     target: string;
     suite: string;
     version: string;
+    reps: number;
     points: {
       concurrency: number;
       run_id: string;

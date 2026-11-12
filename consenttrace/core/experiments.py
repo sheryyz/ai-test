@@ -196,9 +196,10 @@ _RATE_LIMIT = ("429", "rate limit", "ratelimit", "too many requests")
 
 
 def performance_section(runs_dir: Path) -> list[dict[str, Any]]:
-    """Latency and errors against concurrency: live runs of one (target, suite, version) that differ
-    only in concurrency, the latest run per concurrency level."""
-    groups: dict[tuple[str, str, str], dict[int, tuple[Path, RunSummary]]] = {}
+    """Latency and errors against concurrency: live runs of one (target, suite, version, k) that differ
+    only in concurrency, the latest run per concurrency level. k and the number of executions are
+    part of the key, so every point on a curve ran the same cases the same number of times."""
+    groups: dict[tuple[str, str, str, int, int], dict[int, tuple[Path, RunSummary]]] = {}
     if not runs_dir.exists():
         return []
     for path in runs_dir.iterdir():
@@ -209,11 +210,11 @@ def performance_section(runs_dir: Path) -> list[dict[str, Any]]:
         if s.mode != "live" or config.get("reevaluated_from") or s.config.get("reevaluated_from"):
             continue
         level = int(config.get("concurrency") or 1)
-        slot = groups.setdefault((s.target, s.suite, s.agent_version), {})
+        slot = groups.setdefault((s.target, s.suite, s.agent_version, s.reps, s.executions), {})
         if level not in slot or s.finished_at > slot[level][1].finished_at:
             slot[level] = (path, s)
     out = []
-    for (target, suite, version), levels in sorted(groups.items()):
+    for (target, suite, version, reps, _), levels in sorted(groups.items()):
         if len(levels) < 2:
             continue
         points = []
@@ -246,5 +247,5 @@ def performance_section(runs_dir: Path) -> list[dict[str, Any]]:
                     else None,
                 }
             )
-        out.append({"target": target, "suite": suite, "version": version, "points": points})
+        out.append({"target": target, "suite": suite, "version": version, "reps": reps, "points": points})
     return out

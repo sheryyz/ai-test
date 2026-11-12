@@ -241,15 +241,15 @@ function Performance({ a }: { a: AnalysisData }) {
         {a.performance.map((g) => (
           <div key={`${g.target}-${g.suite}-${g.version}`}>
             <div className="mb-2 text-xs text-muted">
-              {g.target} · {SUITE_NAMES[g.suite] ?? g.suite} · Agent {g.version}
+              {g.target} · {SUITE_NAMES[g.suite] ?? g.suite} · Agent {g.version} · 每条用例 {g.reps} 次
             </div>
             <LineChart
               x={g.points.map((p) => p.concurrency)}
               xLabel="并发度"
               unit="s"
               series={[
-                { key: "p50", label: "单次执行耗时 p50", color: "var(--muted)", values: g.points.map((p) => p.latency_s.p50) },
-                { key: "p95", label: "单次执行耗时 p95", color: "var(--ink)", values: g.points.map((p) => p.latency_s.p95) },
+                { key: "p50", label: "单次执行耗时 p50", short: "p50", color: "var(--muted)", values: g.points.map((p) => p.latency_s.p50) },
+                { key: "p95", label: "单次执行耗时 p95", short: "p95", color: "var(--ink)", values: g.points.map((p) => p.latency_s.p95) },
               ]}
             />
             <div className="mt-3">

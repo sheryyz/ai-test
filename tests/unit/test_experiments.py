@@ -90,6 +90,11 @@ def test_performance_groups_runs_that_differ_only_in_concurrency(tmp_path: Path)
         config = json.loads((run / "config.json").read_text(encoding="utf-8"))
         (run / "config.json").write_text(json.dumps({**config, "concurrency": level}), encoding="utf-8")
     as_live(record_run(runs, "other"), "v2")  # a single concurrency level: no curve
+    odd = record_run(runs, "c8-other-k")  # same version, another k: never mixed into the k=1 curve
+    as_live(odd)
+    for name, data in (("summary.json", {"reps": 3}), ("config.json", {"concurrency": 8})):
+        path = odd / name
+        path.write_text(json.dumps({**json.loads(path.read_text(encoding="utf-8")), **data}), encoding="utf-8")
     (group,) = performance_section(runs)
     assert (group["version"], [p["concurrency"] for p in group["points"]]) == ("v1", [1, 4])
     point = group["points"][0]

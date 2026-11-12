@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Outcome, Ratio } from "../lib/api";
 import { OUTCOME_META, frac, pct } from "../lib/util";
 import { Segmented, tipHandlers, useTooltip } from "./ui";
@@ -357,6 +357,7 @@ export function DataTable({ head, rows }: { head: string[]; rows: ReactNode[][] 
 export interface LineSeries {
   key: string;
   label: string;
+  short?: string; // direct label at the line's end (defaults to label)
   color: string;
   values: (number | null)[];
 }
@@ -364,16 +365,29 @@ export interface LineSeries {
 /** Lines over a handful of ordered x positions, direct-labelled at the last point; hover any point. */
 export function LineChart({ x, xLabel, series, unit, height = 220 }: { x: (string | number)[]; xLabel: string; series: LineSeries[]; unit: string; height?: number }) {
   const tip = useTooltip();
-  const W = 640;
-  const pad = { l: 44, r: 64, t: 12, b: 34 };
+  // draw at the container's real width so text keeps its intended pixel size at any viewport
+  const box = useRef<HTMLDivElement>(null);
+  const [W, setW] = useState(640);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => setW(Math.max(280, Math.round(entry.contentRect.width))));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const pad = { l: 44, r: 40, t: 12, b: 34 };
   const peak = Math.max(0, ...series.flatMap((s) => s.values.map((v) => v ?? 0)));
   const step = [1, 2, 5, 10, 20, 30, 60, 120].find((m) => peak / m <= 5) ?? Math.ceil(peak / 5);
   const top = Math.max(step, Math.ceil(peak / step) * step);
   const ticks = Array.from({ length: Math.round(top / step) + 1 }, (_, i) => i * step);
-  const px = (i: number) => pad.l + (x.length === 1 ? 0.5 : i / (x.length - 1)) * (W - pad.l - pad.r);
+  // numeric x (e.g. concurrency 1, 4, 6, 8) is placed to scale, not evenly
+  const nums = x.every((v) => typeof v === "number") ? (x as number[]) : null;
+  const span = nums ? Math.max(...nums) - Math.min(...nums) : 0;
+  const frac = (i: number) => (x.length === 1 ? 0.5 : nums && span > 0 ? (nums[i] - Math.min(...nums)) / span : i / (x.length - 1));
+  const px = (i: number) => pad.l + frac(i) * (W - pad.l - pad.r);
   const py = (v: number) => pad.t + (1 - v / top) * (height - pad.t - pad.b);
   return (
-    <div>
+    <div ref={box}>
       <div className="mb-2 flex flex-wrap items-center gap-3 text-[11px] text-ink-2">
         {series.map((s) => (
           <span key={s.key} className="inline-flex items-center gap-1.5">
@@ -382,7 +396,7 @@ export function LineChart({ x, xLabel, series, unit, height = 220 }: { x: (strin
           </span>
         ))}
       </div>
-      <svg viewBox={`0 0 ${W} ${height}`} className="h-auto w-full" role="img" aria-label={`${series.map((s) => s.label).join("、")}随${xLabel}的变化`}>
+      <svg width={W} height={height} viewBox={`0 0 ${W} ${height}`} className="block max-w-full" role="img" aria-label={`${series.map((s) => s.label).join("、")}随${xLabel}的变化`}>
         {ticks.map((t) => (
           <g key={t}>
             <line x1={pad.l} x2={W - pad.r} y1={py(t)} y2={py(t)} stroke="var(--grid)" strokeWidth={1} />
@@ -434,7 +448,7 @@ export function LineChart({ x, xLabel, series, unit, height = 220 }: { x: (strin
               )}
               {lastIdx !== undefined && pts[lastIdx] && (
                 <text x={pts[lastIdx]![0] + 9} y={pts[lastIdx]![1]} dominantBaseline="middle" fontSize={11} fill="var(--ink-2)">
-                  {s.label}
+                  {s.short ?? s.label}
                 </text>
               )}
             </g>
