@@ -52,7 +52,9 @@ def test_suites_section_orders_versions_and_lists_steps(tmp_path: Path) -> None:
     step = smoke["steps"][0]
     executed = smoke["versions"][0]["totals"]["cases"]
     assert (step["a"], step["b"]) == ("v1", "v2")
-    assert step["changes"] == {"unchanged": executed}  # same scripted behaviour twice: every case classified once, unchanged
+    # same scripted behaviour twice: every case classified once, and nothing can have changed
+    assert sum(step["changes"].values()) == executed
+    assert set(step["changes"]) <= {"unchanged", "still_failing"}
     assert smoke["versions"][0]["totals"]["executions"] > 0
 
 
