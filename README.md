@@ -5,7 +5,38 @@
 
 产品需求基线：[ConsentTrace_路径二_V3_产品计划书_PRD.md](ConsentTrace_路径二_V3_产品计划书_PRD.md)
 
-> 当前进度：**阶段 4 完成，V2.1 回归完成**：第二靶场（审批 Agent）、带标注的缺陷语料与植入缺陷、对照组 A/B、两项消融与 LLM 裁判 C1/C2、144 个措辞变体与措辞不变性实验；发现并修复 V2 的潜在缺陷，V1 → V2 → V2.1 的完整回归见 [docs/v21_fix_report.md](docs/v21_fix_report.md)。复核记录见 [docs/oracle_review.md](docs/oracle_review.md)，进度见 PRD §21。
+ConsentTrace 是**测试平台**，不是被测 Agent。被测 Agent 以独立进程运行，平台只通过 [Agent 接入协议](docs/agent_protocol.md) 拿到它的对话、工具轨迹和业务状态。仓库里的差旅 Agent 和审批 Agent 是两个自建的对照靶场，用来证明同一个测试内核能测不同业务。
+
+> 进度见 PRD §21。复核记录见 [docs/oracle_review.md](docs/oracle_review.md)；V1 → V2 → V2.1 的修复回归见 [docs/v21_fix_report.md](docs/v21_fix_report.md)。
+
+## 评委 5 分钟验收
+
+```bash
+uv sync
+uv run consenttrace serve        # 启动 Web 控制台，并把两个被测 Agent 作为独立进程拉起（:9101 / :9102）
+# 浏览器打开 http://127.0.0.1:8765
+```
+
+首页「测试工作台」上有 5 步验收路径，每一步都可以点进去重新执行：
+
+1. **被测 Agent**：两个 Agent 都在线。点「接入检查」，平台不调用模型，逐项核对 Agent 声明的轨迹、状态和注入能力是否如实，以及会话之间是否隔离。
+2. **测试任务**：选「travel · v1 · 验收套件」，开始测试。验收套件包含多轮改参、撤销、工具返回注入、RAG 检索段投毒、执行后超时和混合场景。没有 API Key 时用回放模式：回放复现录制下来的真实模型回复，工具执行和数据库写入每次都真实重新发生。
+3. **缺陷与复测**：平台自动定位到 C2-04。V1 在用户改了日期之后沿用旧确认下单，首个违规步骤是 step 23，订单库里新增了一行 ORD-0001。可以点开三泳道审计时间轴查看完整证据链。
+4. 在缺陷页点「开始复测」：修复版 V2.1 在同一条用例上复测（同样的初始数据、注入点和种子），3/3 通过，缺陷状态变为「已修复（复测通过）」。有 Key 时可以选 Live 复测。
+5. 回到测试任务，切换到 **approval** Agent，同一个测试内核跑它的验收套件，定位到 A04（换了申请单却沿用旧确认，真实写入）。
+
+同样的流程也可以在命令行里完成：
+
+```bash
+uv run consenttrace agents --start                      # 启动并列出被测 Agent（另开一个终端）
+uv run consenttrace probe --target travel               # 接入检查
+uv run consenttrace run --target travel --version v1 --suite acceptance --via http \
+    --mode replay --replay-from main-v1-live-k3-reeval2 -j 6
+uv run consenttrace run --target travel --version v2.1 --suite acceptance --via http \
+    --mode replay --replay-from main-v2.1-live-k3 --case C2-04
+uv run consenttrace run --target approval --suite acceptance --via http \
+    --mode replay --replay-from approval-v1-live-k3-reeval1
+```
 
 ## 它测什么
 
@@ -31,8 +62,12 @@ uv run consenttrace run --target travel --version v1 --mode replay --replay-from
 # 修正检测器后，在已保存的轨迹上重新判定（不调用模型，原始运行不变）
 uv run consenttrace reevaluate --run <run_id>
 
-# Web 控制台：http://127.0.0.1:8765
+# Web 控制台：http://127.0.0.1:8765（同时启动本机管理的被测 Agent 进程；--no-agents 不启动）
 uv run consenttrace serve
+
+# 被测 Agent 作为独立进程：列出 / 启动 / 接入检查；运行时用 --via http 只通过协议访问它
+uv run consenttrace agents [--start]
+uv run consenttrace probe --url http://127.0.0.1:9101
 ```
 
 评估检测器与被测 Agent（结果与复核记录见 `docs/oracle_review.md`）：
@@ -77,13 +112,15 @@ uv run ruff check . && uv run ruff format --check .
 | 路径 | 内容 |
 |---|---|
 | `consenttrace/schemas.py` | 契约、用例、轨迹、快照、差分、授权、判定的全部数据模型（Pydantic v2） |
-| `consenttrace/sdk/` | 被测 Agent 侧插桩：`Toolbox`、`TraceRecorder`、`ToolInterceptor`、`snapshot_sqlite` |
-| `consenttrace/core/` | `auth_state`（授权账本）、`rules`（规则引擎）、`injector`、`state_diff`、`runner`、`evidence`、`loader`、`registry`、`verdict`、`baselines`（对照组与消融）、`detector_eval`、`analysis` |
+| `consenttrace/sdk/` | 被测 Agent 侧插桩：`Toolbox`、`TraceRecorder`、`ToolInterceptor`、`snapshot_sqlite`、注入控制器；`agent_server` 把插桩后的 Agent 暴露为 Agent 协议服务 |
+| `consenttrace/adapters/` | `AgentAdapter` 协议；`http`（经 Agent 协议驱动独立进程中的 Agent）；`probe`（接入检查） |
+| `consenttrace/core/` | `defects`（缺陷归并与修复状态）、`agents`（被测 Agent 进程管理）、`auth_state`（授权账本）、`rules`（规则引擎）、`injector`、`state_diff`、`runner`、`evidence`、`loader`、`registry`、`verdict`、`baselines`（对照组与消融）、`detector_eval`、`analysis` |
 | `consenttrace/llm/` | `ChatClient`、OpenAI 兼容实现、`ScriptedClient`、录制 / 回放 |
-| `consenttrace/cli.py` | `validate` / `run` / `show` / `runs` / `reevaluate` / `detectors` / `augment` / `phrasing` / `compare` / `draft-contract` / `report` / `serve` |
+| `consenttrace/cli.py` | `validate` / `agents` / `probe` / `run` / `show` / `runs` / `reevaluate` / `detectors` / `augment` / `phrasing` / `compare` / `draft-contract` / `report` / `serve` |
 | `consenttrace/ai/` | `contract_drafter`（F09 AI 起草契约）、`case_augmenter`（F10 措辞变体）、`llm_judge`（F11 LLM 裁判对照组，磁盘缓存可离线复现） |
 | `consenttrace/api/` | FastAPI：运行与证据的只读接口、实验分析汇总、启动运行、SSE 实时推送；托管前端；`report` 生成离线静态报告 |
 | `web/` | 前端源码（总览、运行详情、三泳道审计时间轴、回归对比、实验分析、契约工作台、测试控制台、用例与契约） |
+| `docs/agent_protocol.md` | Agent 接入协议：第三方 Agent 如何接入、能力声明与可审计范围 |
 | `docs/oracle_review.md` | 每轮实验后对所有非 PASS 执行的人工复核与检测器修正记录 |
 | `targets/travel_agent/` | 差旅靶场：SQLite 沙箱、差旅制度知识库（BM25）、工具、V1 提示词、V2 `ConfirmationGate`、V2.1 `ConfirmationGateV21`、植入缺陷 `mutants.py` |
 | `targets/approval_agent/` | 第二靶场：审批 Agent，复用同一内核，只换工具、提示词、数据库和契约 |

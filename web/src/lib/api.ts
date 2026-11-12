@@ -212,6 +212,8 @@ export interface StateDiff {
 
 export interface CaseBundle {
   run_id: string;
+  target: string | null;
+  transport: string;
   case: TestCase | null;
   verdict: RunResult;
   trace: TraceEvent[];
@@ -228,8 +230,147 @@ export interface TargetInfo {
   description: string;
   versions: string[];
   suites: Record<string, number>;
+  subsets: string[];
   contract_id: string | null;
   rules: number;
+  service_url: string | null;
+  in_process: boolean;
+  origin: string;
+  fixed_versions: Record<string, string>;
+}
+
+// ------------------------------------------------------------------ agents under test, defects, workspace
+
+export interface Capabilities {
+  output: boolean;
+  trace: boolean;
+  state: boolean;
+  inject_tool_response: boolean;
+  visible_reasoning: boolean;
+  notes: string;
+}
+
+export interface AgentInfo {
+  protocol: string;
+  name: string;
+  description: string;
+  versions: string[];
+  capabilities: Capabilities;
+  llm: { live_available: boolean; model: string | null; replay: boolean };
+}
+
+export interface AgentStatus {
+  name: string;
+  url: string | null;
+  online: boolean;
+  info: AgentInfo | null;
+  error: string | null;
+  managed: boolean;
+  launchable: boolean;
+}
+
+export interface ProbeReport {
+  url: string;
+  ok: boolean;
+  info: AgentInfo | null;
+  checks: { key: string; title: string; status: "PASS" | "FAIL" | "SKIP"; detail: string }[];
+}
+
+export type DefectKind = "side_effect" | "attempt" | "claim" | "task";
+export type DefectStatus = "fixed_verified" | "fix_failed" | "awaiting_retest" | "open";
+
+export interface Occurrence {
+  run_id: string;
+  rep: number;
+  mode: "live" | "replay";
+  transport: string;
+  suite: string;
+  finished_at: string;
+  kinds: DefectKind[];
+  rules: string[];
+  first_bad_step: number | null;
+  replay_from: string | null;
+  model_id: string | null;
+}
+
+export interface Retest {
+  run_id: string;
+  version: string;
+  mode: string;
+  transport: string;
+  suite: string;
+  finished_at: string;
+  outcomes: { rep: number; outcome: Outcome; rules: string[] }[];
+  passed: number;
+  total: number;
+  is_retest: boolean;
+}
+
+export interface Defect {
+  id: string;
+  target: string;
+  version: string;
+  case_id: string;
+  title: string;
+  category: string | null;
+  has_injection: boolean;
+  occurrences: Occurrence[];
+  kinds: DefectKind[];
+  kind: DefectKind;
+  kind_label: string;
+  rules: string[];
+  executions: { live: number; live_fail: number; replay: number; replay_fail: number };
+  first: Occurrence;
+  latest: Occurrence;
+  fixed_version: string | null;
+  retest: Retest | null;
+  status: DefectStatus;
+  status_label: string;
+  last_seen: string;
+}
+
+export interface DefectSummary {
+  total: number;
+  by_status: Record<DefectStatus, number>;
+  by_kind: Record<DefectKind, number>;
+  status_labels: Record<DefectStatus, string>;
+  kind_labels: Record<DefectKind, string>;
+}
+
+export interface ReplaySource {
+  run_id: string;
+  mode: string;
+  suite: string;
+  reps: number;
+  finished_at: string;
+}
+
+export interface WorkspaceAgent extends AgentStatus {
+  description: string;
+  origin: string;
+  versions: string[];
+  suites: Record<string, number>;
+  fixed_versions: Record<string, string>;
+  in_process: boolean;
+  last_run: { run_id: string; version: string; suite: string; mode: string; counts: Partial<Record<Outcome, number>>; executions: number; finished_at: string } | null;
+}
+
+export interface Workspace {
+  agents: WorkspaceAgent[];
+  defects: { summary: DefectSummary; recent: Defect[] };
+  recent_runs: {
+    run_id: string;
+    target: string;
+    version: string;
+    suite: string;
+    mode: string;
+    transport: string;
+    counts: Partial<Record<Outcome, number>>;
+    executions: number;
+    finished_at: string;
+    retest_of: { defect: string } | null;
+  }[];
+  acceptance: { key: string; title: string; done: boolean; detail: string; href: string }[];
 }
 
 // ------------------------------------------------------------------ experiment analysis
@@ -431,6 +572,17 @@ export const api = {
     post<ContractCheck>(`/api/targets/${target}/contract/check`, body),
   acceptContract: (target: string, body: { yaml: string; draft_run: string | null; draft: number | null }) =>
     post<{ edits_from_draft: Record<string, number>; accepted_at: string }>(`/api/targets/${target}/contract/accept`, body),
+  workspace: () => get<Workspace>("/api/workspace"),
+  agents: () => get<AgentStatus[]>("/api/agents"),
+  startAgent: (name: string) => post<AgentStatus>(`/api/agents/${encodeURIComponent(name)}/start`, {}),
+  probe: (body: { url?: string; target?: string; version?: string }) => post<ProbeReport>("/api/agents/probe", body),
+  defects: () => get<{ summary: DefectSummary; defects: Defect[] }>("/api/defects"),
+  retest: (body: { id: string; mode: "live" | "replay"; transport: "http" | "inprocess"; reps?: number }) =>
+    post<{ run_id: string; total: number; version: string; replay_from: string | null }>("/api/defects/retest", body),
+  replaySourcesForCase: (target: string, version: string, caseId: string) =>
+    get<ReplaySource[]>(`/api/targets/${encodeURIComponent(target)}/replay-sources?version=${encodeURIComponent(version)}&case=${encodeURIComponent(caseId)}`),
+  replaySources: (target: string, version: string, suite: string) =>
+    get<ReplaySource[]>(`/api/targets/${encodeURIComponent(target)}/replay-sources?version=${encodeURIComponent(version)}&suite=${encodeURIComponent(suite)}`),
   async startRun(body: Record<string, unknown>): Promise<{ run_id: string; total: number }> {
     const res = await fetch("/api/runs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     if (!res.ok) {

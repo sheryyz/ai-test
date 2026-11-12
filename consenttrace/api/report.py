@@ -53,6 +53,7 @@ def collect(run_ids: Sequence[str], *, targets_path: str | Path, runs_dir: str |
             grab(f"/api/targets/{_q(target['name'])}/describe")
         for suite in target["suites"]:
             grab(f"/api/targets/{_q(target['name'])}/suites/{_q(suite)}")
+    grab("/api/defects")  # links to runs outside this report show a note instead of evidence
     if analysis:
         grab("/api/analysis")
     data["/api/settings"] = {"live_available": False, "model": None}

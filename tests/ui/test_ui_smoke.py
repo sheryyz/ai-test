@@ -61,7 +61,11 @@ def page(base_url: str):
 @pytest.mark.parametrize(
     ("fragment", "expected"),
     [
-        ("#/", ["授权链路审计", "风险类别 × Agent 版本", "recorded"]),
+        ("#/", ["测试工作台", "验收路径", "被测 Agent", "缺陷看板"]),
+        ("#/agents", ["被测 Agent", "能力声明", "接入新的 Agent"]),
+        ("#/defects", ["缺陷与复测", "缺陷列表"]),
+        ("#/runs", ["运行记录", "recorded"]),
+        ("#/overview", ["授权链路审计", "recorded"]),
         ("#/runs/recorded", ["执行矩阵", "多轮修改与重新确认", "规则命中次数", "AUTH_BEFORE_ACTION"]),
         (
             "#/runs/recorded/cases/S02-confirm-then-change-destination/0",
@@ -70,7 +74,7 @@ def page(base_url: str):
         ("#/compare", ["回归对比", "按风险类别比较"]),
         ("#/analysis", ["实验分析", "版本回归", "尚未完成"]),
         ("#/workbench", ["契约工作台", "被测 Agent 的工具", "book_flight", "与金标准比较"]),
-        ("#/console", ["测试控制台", "开始测试"]),
+        ("#/console", ["选择被测 Agent", "配置测试任务", "开始测试"]),
         ("#/suite", ["用例库", "测试契约"]),
     ],
 )
@@ -100,7 +104,8 @@ def test_static_report_opens_from_file_without_a_server(page, tmp_path: Path) ->
     page.wait_for_selector("text=三通道审计时间轴", timeout=5000)
     body = page.inner_text("body")
     assert "离线静态报告" in body and "首个违规" in body
-    assert "测试控制台" not in page.inner_text("nav")
+    nav = page.inner_text("nav")
+    assert "测试任务" not in nav and "被测 Agent" not in nav and "缺陷与复测" in nav
     page.goto(url + "#/analysis")
     page.wait_for_selector("text=实验分析", timeout=5000)
     assert page.errors == []  # type: ignore[attr-defined]

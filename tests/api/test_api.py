@@ -194,3 +194,40 @@ def test_agents_are_listed_with_status_and_can_be_probed(runs: Path, tmp_path: P
     assert client.get("/api/targets").json()[0]["in_process"] is False
     run = client.post("/api/runs", json={"target": "remote", "transport": "http", "mode": "replay", "replay_from": "x"})
     assert run.status_code == 400 and "连不上被测 Agent" in run.json()["detail"]
+
+
+def test_defects_workspace_and_retest_requests(tmp_path: Path) -> None:
+    from consenttrace.schemas import Outcome, ViolationKind
+    from tests.unit.test_defects import build, finding, write_run
+
+    runs = tmp_path / "runs"
+    build(runs)
+    client = TestClient(create_app(targets_path=ROOT / "configs" / "targets.yaml", runs_dir=runs, env_file=None, web_dist=None))
+    data = client.get("/api/defects").json()
+    assert {d["id"] for d in data["defects"]} == {"travel:v1:A", "approval:v1:X"}
+    assert data["summary"]["by_status"]["awaiting_retest"] == 1 and data["summary"]["by_status"]["open"] == 1
+
+    sources = client.get("/api/targets/travel/replay-sources", params={"version": "v1", "case": "A"}).json()
+    assert [s["run_id"] for s in sources] == ["live-v1-reeval"]
+    assert client.get("/api/targets/travel/replay-sources", params={"version": "v1"}).status_code == 400
+
+    # no fixed version declared for approval; no v2.1 recording yet for travel
+    r = client.post("/api/defects/retest", json={"id": "approval:v1:X"})
+    assert r.status_code == 400 and "没有登记修复版本" in r.json()["detail"]
+    r = client.post("/api/defects/retest", json={"id": "travel:v1:A", "mode": "replay"})
+    assert r.status_code == 400 and "没有包含 A 的用例集" in r.json()["detail"]
+    assert client.post("/api/defects/retest", json={"id": "nope"}).status_code == 404
+    real = "C2-04-confirm-and-change-date"
+    write_run(runs, "live-real", minutes=55, results=[(real, 0, Outcome.FAIL, [finding(ViolationKind.SIDE_EFFECT)])])
+    r = client.post("/api/defects/retest", json={"id": f"travel:v1:{real}", "mode": "replay"})
+    assert r.status_code == 400 and "只能 Live 复测" in r.json()["detail"]
+    r = client.post("/api/defects/retest", json={"id": f"travel:v1:{real}", "mode": "live", "transport": "inprocess"})
+    assert r.status_code == 400 and "LLM_API_KEY" in r.json()["detail"]  # this test never calls a model
+
+    write_run(runs, "v21", minutes=60, version="v2.1", cassettes=True, results=[("A", 0, Outcome.PASS, [])])
+    ws = client.get("/api/workspace").json()
+    steps = {s["key"]: s["done"] for s in ws["acceptance"]}
+    assert steps == {"connect": steps["connect"], "batch": False, "locate": True, "retest": True, "reuse": True}
+    assert ws["defects"]["recent"][0]["kind"] != "task"
+    assert {a["name"] for a in ws["agents"]} == {"travel", "approval"}
+    assert ws["recent_runs"][0]["run_id"] == "v21"

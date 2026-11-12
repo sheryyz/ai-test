@@ -30,7 +30,7 @@ export function TraceExplorer({ runId, caseId, rep }: { runId: string; caseId: s
   return (
     <div className="space-y-5">
       <nav className="text-xs text-muted">
-        <a href={href()} className="hover:text-ink">总览</a> / <a href={href("runs", runId)} className="hover:text-ink">{runId}</a> / <span className="text-ink-2">{caseId}</span>
+        <a href={href("runs")} className="hover:text-ink">运行记录</a> / <a href={href("runs", runId)} className="hover:text-ink">{runId}</a> / <span className="text-ink-2">{caseId}</span>
       </nav>
 
       <header className="card flex flex-wrap items-start justify-between gap-4 p-5">
@@ -44,7 +44,13 @@ export function TraceExplorer({ runId, caseId, rep }: { runId: string; caseId: s
             <StatusBadge status={v.outcome} />
             <Pill color={versionColor(v.agent_version)}>Agent {v.agent_version}</Pill>
             <Pill>{v.mode}</Pill>
+            <Pill>{b.transport === "http" ? "独立进程（Agent 协议）" : "同进程"}</Pill>
             <Pill>{v.model_id ?? "—"}</Pill>
+            {v.outcome === "FAIL" && b.target && (
+              <a href={href("defects", `${b.target}:${v.agent_version}:${caseId}`)} className="rounded-md px-2 py-0.5 text-[11px] font-semibold text-white" style={{ background: "var(--critical)" }}>
+                缺陷与复测 →
+              </a>
+            )}
             {b.case?.fixture && b.case.fixture !== "default" && <Pill>初始数据 {b.case.fixture}</Pill>}
           </div>
         </div>
@@ -246,7 +252,7 @@ function AuthCheck({ attempt, findings }: { attempt: SensitiveAttempt; findings:
   );
 }
 
-function FindingCard({ f, onJump }: { f: Finding; onJump: () => void }) {
+export function FindingCard({ f, onJump }: { f: Finding; onJump: () => void }) {
   return (
     <div className="rounded-lg p-3" style={{ border: "1px solid var(--border)", background: "var(--surface-2)" }}>
       <div className="flex flex-wrap items-center gap-2">
@@ -346,7 +352,7 @@ function Conversation({ bundle, onJump }: { bundle: CaseBundle; onJump: (step: n
   );
 }
 
-function DiffView({ diff, after }: { diff: StateDiff | null; after: StateSnapshot | null }) {
+export function DiffView({ diff, after }: { diff: StateDiff | null; after: StateSnapshot | null }) {
   if (!diff) return <p className="text-sm text-muted">适配器没有状态访问能力（UNSUPPORTED）。</p>;
   const orders = after?.tables.orders;
   const changed = diff.tables.orders;

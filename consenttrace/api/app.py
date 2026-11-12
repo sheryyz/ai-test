@@ -25,6 +25,7 @@ from consenttrace.adapters.http import AgentProtocolError, HttpAgentAdapter
 from consenttrace.adapters.probe import probe_agent
 from consenttrace.core.agents import AgentProcesses
 from consenttrace.core.analysis import run_breakdown
+from consenttrace.core.defects import collect_defects, defect_summary, replay_sources, runs_in_force
 from consenttrace.core.evidence import load_results, load_summary, load_trace
 from consenttrace.core.experiments import experiment_summary
 from consenttrace.core.launch import LaunchError, RunRequest, prepare_run
@@ -54,6 +55,14 @@ class StartRun(BaseModel):
     max_tokens: int | None = None
     transport: Literal["inprocess", "http"] = "inprocess"
     retest_of: dict[str, Any] | None = None
+
+
+class RetestRequest(BaseModel):
+    id: str  # defect id: target:version:case_id
+    mode: Literal["live", "replay"] = "replay"
+    transport: Literal["inprocess", "http"] = "http"
+    reps: int | None = Field(default=None, ge=1, le=10)
+    replay_from: str | None = None
 
 
 class ProbeRequest(BaseModel):
@@ -371,6 +380,155 @@ def create_app(
             raise HTTPException(400, "需要 url，或一个配置了 service.url 的 target")
         return probe_agent(url, version=body.version).to_dict()
 
+    # ------------------------------------------------------------ defects, re-tests and the workspace
+
+    @app.get("/api/defects")
+    def defects() -> dict[str, Any]:
+        found = collect_defects(runs_dir, targets(), suite_cases)
+        return {"summary": defect_summary(found), "defects": found}
+
+    @app.get("/api/targets/{name}/replay-sources")
+    def get_replay_sources(name: str, version: str, suite: str | None = None, case: str | None = None) -> list[dict[str, Any]]:
+        spec = target(name)
+        if case:
+            ids = [case]
+        elif suite:
+            ids = list(suite_cases(spec, suite))
+        else:
+            raise HTTPException(400, "需要 suite 或 case")
+        return replay_sources(runs_dir, name, version, ids)
+
+    @app.post("/api/defects/retest", status_code=202)
+    def retest(body: RetestRequest) -> dict[str, Any]:
+        found = next((d for d in collect_defects(runs_dir, targets(), suite_cases) if d["id"] == body.id), None)
+        if found is None:
+            raise HTTPException(404, f"没有这个缺陷：{body.id}")
+        spec = target(found["target"])
+        fixed = found["fixed_version"]
+        if not fixed:
+            raise HTTPException(400, f"{spec.name} {found['version']} 没有登记修复版本（targets.yaml fixed_versions）")
+        suite = next((s for s in [found["first"]["suite"], *spec.suites] if found["case_id"] in suite_cases(spec, s)), None)
+        if suite is None:
+            raise HTTPException(400, f"没有包含 {found['case_id']} 的用例集")
+        replay_from = body.replay_from
+        if body.mode == "replay" and not replay_from:
+            sources = replay_sources(runs_dir, spec.name, fixed, [found["case_id"]])
+            if not sources:
+                raise HTTPException(400, f"修复版 {fixed} 还没有这条用例的录制，只能 Live 复测")
+            replay_from = sources[0]["run_id"]
+        request = StartRun(
+            target=spec.name,
+            version=fixed,
+            suite=suite,
+            mode=body.mode,
+            reps=body.reps if body.mode == "live" else None,
+            concurrency=3,
+            cases=[found["case_id"]],
+            replay_from=replay_from,
+            transport=body.transport,
+            retest_of={"defect": found["id"], "run_id": found["first"]["run_id"], "rep": found["first"]["rep"]},
+        )
+        try:
+            live = manager.start(request)
+        except (LaunchError, LoadError) as exc:
+            raise HTTPException(400, str(exc)) from exc
+        return {"run_id": live.run_id, "total": live.total, "version": fixed, "replay_from": replay_from}
+
+    @app.get("/api/workspace")
+    def workspace() -> dict[str, Any]:
+        specs = targets()
+        found = collect_defects(runs_dir, specs, suite_cases)
+        refs = runs_in_force(runs_dir)
+        statuses = {spec.name: procs.status(spec).to_dict() for spec in specs.values()}
+        last_run = {}
+        for ref in refs:
+            last_run[ref.summary.target] = {
+                "run_id": ref.run_id,
+                "version": ref.summary.agent_version,
+                "suite": ref.summary.suite,
+                "mode": ref.summary.mode,
+                "counts": ref.summary.counts,
+                "executions": ref.summary.executions,
+                "finished_at": ref.summary.finished_at.isoformat(),
+            }
+        acceptance_runs = [r for r in refs if r.summary.suite == "acceptance"]
+        writes = [d for d in found if d["kind"] == "side_effect"]
+        verified = [d for d in writes if d["status"] == "fixed_verified"]
+        tested_targets = sorted({r.summary.target for r in refs})
+        steps = [
+            {
+                "key": "connect",
+                "title": "接入独立进程中的被测 Agent",
+                "done": any(st["online"] for st in statuses.values()),
+                "detail": "、".join(f"{n}（{st['url']}）" for n, st in statuses.items() if st["online"]) or "尚无在线 Agent",
+                "href": "#/agents",
+            },
+            {
+                "key": "batch",
+                "title": "批量执行验收套件（多轮授权变更 + 工具注入 + RAG 投毒）",
+                "done": bool(acceptance_runs),
+                "detail": acceptance_runs[-1].run_id if acceptance_runs else "还没有验收套件的运行",
+                "href": f"#/runs/{acceptance_runs[-1].run_id}" if acceptance_runs else "#/console",
+            },
+            {
+                "key": "locate",
+                "title": "从轨迹与数据库实际写入中自动定位缺陷",
+                "done": bool(writes),
+                "detail": f"{len(writes)} 个越权写入缺陷" if writes else "尚未发现越权写入",
+                "href": f"#/defects/{writes[0]['id']}" if writes else "#/defects",
+            },
+            {
+                "key": "retest",
+                "title": "修复后同一用例复测通过",
+                "done": bool(verified),
+                "detail": f"{len(verified)} 个已验证修复" if verified else "尚未复测",
+                "href": f"#/defects/{verified[0]['id']}" if verified else "#/defects",
+            },
+            {
+                "key": "reuse",
+                "title": "第二个不同业务的 Agent 复用同一测试内核",
+                "done": len(tested_targets) >= 2,
+                "detail": "、".join(tested_targets) or "—",
+                "href": "#/agents",
+            },
+        ]
+        return {
+            "agents": [
+                {
+                    **statuses[spec.name],
+                    "description": spec.description,
+                    "origin": spec.origin,
+                    "versions": list(spec.versions),
+                    "suites": {name: len(suite_cases(spec, name)) for name in spec.suites},
+                    "fixed_versions": spec.fixed_versions,
+                    "in_process": bool(spec.adapter),
+                    "last_run": last_run.get(spec.name),
+                }
+                for spec in specs.values()
+            ],
+            "defects": {
+                "summary": defect_summary(found),
+                # authorization defects first, then the most recently seen
+                "recent": sorted(found, key=lambda d: (d["kind"] == "task", -_ts(d["last_seen"])))[:6],
+            },
+            "recent_runs": [
+                {
+                    "run_id": r.run_id,
+                    "target": r.summary.target,
+                    "version": r.summary.agent_version,
+                    "suite": r.summary.suite,
+                    "mode": r.summary.mode,
+                    "transport": r.transport,
+                    "counts": r.summary.counts,
+                    "executions": r.summary.executions,
+                    "finished_at": r.summary.finished_at.isoformat(),
+                    "retest_of": r.retest_of,
+                }
+                for r in reversed(refs[-8:])
+            ],
+            "acceptance": steps,
+        }
+
     @app.get("/api/analysis")
     def analysis() -> dict[str, Any]:
         return experiment_summary(runs_dir, targets(), suite_cases)
@@ -420,6 +578,8 @@ def create_app(
         contract = load_contract(spec.contract).model_dump(mode="json") if spec else None
         return {
             "run_id": run_id,
+            "target": config.get("target"),
+            "transport": config.get("transport") or "inprocess",
             "case": case.model_dump(mode="json") if case else None,
             "verdict": read("verdict.json"),
             "trace": [e.model_dump(mode="json") for e in load_trace(case_dir)],
@@ -482,6 +642,10 @@ def create_app(
             return FileResponse(web_dist / "index.html")
 
     return app
+
+
+def _ts(iso: str) -> float:
+    return datetime.fromisoformat(iso).timestamp()
 
 
 def dump_openapi(path: Path) -> None:  # pragma: no cover - developer convenience

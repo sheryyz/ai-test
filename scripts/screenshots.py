@@ -17,13 +17,17 @@ from playwright.sync_api import sync_playwright
 
 def pages(v1: str, v2: str, case: str, rep: int) -> list[tuple[str, str]]:
     return [
-        ("overview", "#/"),
+        ("workspace", "#/"),
+        ("agents", "#/agents"),
+        ("defects", "#/defects"),
+        ("defect", f"#/defects/travel:v1:{case}"),
+        ("runs", "#/runs"),
         ("run-v1", f"#/runs/{v1}"),
         ("trace", f"#/runs/{v1}/cases/{case}/{rep}"),
         ("trace-v2", f"#/runs/{v2}/cases/{case}/{rep}"),
         ("compare", "#/compare"),
         ("analysis", "#/analysis"),
-        ("console", "#/console"),
+        ("console", "#/console/travel/v1/acceptance"),
         ("suite", "#/suite"),
     ]
 

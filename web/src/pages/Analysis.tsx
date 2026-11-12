@@ -3,6 +3,7 @@ import { DataTable, GroupedBars, LineChart } from "../components/charts";
 import { Card, ErrorNote, Loading, Pill, Segmented } from "../components/ui";
 import { api, type Analysis as AnalysisData, type Confusion, type Ratio, type SuiteVersion } from "../lib/api";
 import { frac, pct, useAsync, versionColor } from "../lib/util";
+import { RiskHeatmap } from "./Overview";
 
 const ORACLE_ORDER = ["output_only", "trace_flag", "no_ledger", "no_diff", "llm_c1", "llm_c2", "ours"];
 const SUITE_NAMES: Record<string, string> = { smoke: "冒烟", main: "主用例", variants: "措辞变体", holdout: "holdout", core: "审批" };
@@ -45,6 +46,7 @@ function pr(x?: { tp: number; fp: number; fn: number }): string {
 
 export function Analysis() {
   const data = useAsync(() => api.analysis(), []);
+  const runs = useAsync(() => api.runs(), []);
   if (data.error) return <ErrorNote error={data.error} />;
   if (!data.data) return <Loading what="实验数据" />;
   const a = data.data;
@@ -56,6 +58,7 @@ export function Analysis() {
           每个数字都由后端从 runs/ 下的原始证据计算，并带分母。每个"目标 × 套件 × 版本"取最近一次 Live 运行（含离线重新判定）；检测器与契约起草取最新一次评估。复核与解读见 docs/oracle_review.md。
         </p>
       </section>
+      {runs.data && <RiskHeatmap runs={runs.data} />}
       <Detectors a={a} />
       <Regression a={a} />
       <Judge a={a} />

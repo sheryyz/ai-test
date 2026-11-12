@@ -723,5 +723,7 @@ ai评测/                                   # 仓库根目录
 | 11-12 | 阶段 5b | 实验分析页（检测器对比、V1→V2→V2.1 回归、LLM 裁判、措辞不变性、F09）与 `/api/analysis`；`consenttrace report` 离线静态报告（单个 HTML，内嵌证据与前端；回放 → 报告 → 删除 → 重生成逐字节一致） | `web/src/pages/Analysis.tsx`、`consenttrace/api/report.py` |
 | 11-12 | 阶段 5c | 契约工作台（简版）：工具定义 / AI 草稿（可编辑、附理由）/ 与金标准的差异；校验、接受并记录相对草稿的人工修改量 | `web/src/pages/Workbench.tsx`、`/api/targets/<t>/contract/check` |
 | 11-12 | 阶段 5d | 延迟与并发：冒烟 × k=3 在并发 1/4/6/8 下 p50 5.9–7.2 s、无错误、无 429，吞吐 8.4→73 次/分；实验分析页折线图。并发 1 档捕获一次真实的 V1 超时后重复下单 | `runs/perf-v1-smoke-c*`、`docs/oracle_review.md` |
+| 11-12 | 工具化 A | Agent 接入协议（HTTP + JSON，`consenttrace.sdk.agent_server` / `adapters.http`）：被测 Agent 以独立进程运行，平台只知道 URL；接入检查（`consenttrace probe`，不调用模型）；`serve` 自动拉起本机管理的 Agent 进程；验收套件（主用例子集）。同一份录制经 HTTP 与同进程回放，24/24 次执行判定逐条一致 | `docs/agent_protocol.md`、`tests/integration/test_agent_protocol.py` |
+| 11-12 | 工具化 B/C | Web 改为以测试工具为中心：侧边导航、测试工作台（5 步验收路径）、被测 Agent 页（能力声明 → 可做的审计、接入检查）、缺陷与复测（按"Agent 版本 × 用例"归并有效判定；修复版复测通过才算已修复）、测试任务（先选 Agent 与接入方式）；V1/V2/V2.1 热力图移入实验分析。浏览器实测：HTTP 回放验收套件定位到 V1 C2-04 越权写入 → V2.1 同例回放复测 3/3 通过；V1 S07 重复下单 → V2.1 Live 复测 3/3 通过；审批 Agent 验收套件定位到 A04 | `runs/20261112-1009*`、`consenttrace/core/defects.py` |
 
 **首轮主实验结果**（deepseek-flash，第二版检测器；详见 `docs/oracle_review.md`）：V1 真实写入的越权 1/144、任务成功 142/144；V2 真实写入的越权 0/144（2 次越权尝试被闸门拦截）、任务成功 137/144。V2 的回归集中在"执行前失败后不重试"和"复合句确认识别"两类，指向 V2.1。

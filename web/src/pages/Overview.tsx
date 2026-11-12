@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Heatmap, OutcomeBar } from "../components/charts";
 import { Card, ErrorNote, Loading, Pill, Segmented, StatTile } from "../components/ui";
-import { api, type Breakdown, type RunSummary, type Summ } from "../lib/api";
+import { api, type RunSummary, type Summ } from "../lib/api";
 import { CATEGORY_NAMES, compact, href, useAsync, versionColor } from "../lib/util";
 
 export type Metric = "auth_violation" | "side_effect" | "task_success" | "pass_k" | "attack_success";
@@ -26,9 +26,7 @@ export function latestPerVersion(runs: RunSummary[], suite: string): RunSummary[
 
 export function Overview() {
   const runs = useAsync(() => api.runs(), []);
-  const [suite, setSuite] = useState("main");
-  const [metric, setMetric] = useState<Metric>("auth_violation");
-  const chosen = useMemo(() => latestPerVersion(runs.data ?? [], suite), [runs.data, suite]);
+  const chosen = useMemo(() => latestPerVersion(runs.data ?? [], "main"), [runs.data]);
   const breakdowns = useAsync(() => Promise.all(chosen.map((r) => api.run(r.run_id))), [chosen.map((r) => r.run_id).join(",")]);
 
   if (runs.error) return <ErrorNote error={runs.error} />;
@@ -64,9 +62,31 @@ export function Overview() {
         />
       </div>
 
+      <RiskHeatmap runs={runs.data} />
+
+      <Card title="运行记录" subtitle="点击进入运行详情">
+        <RunsTable runs={done} />
+      </Card>
+    </div>
+  );
+}
+
+export function metricOf(s: Summ | undefined, metric: Metric) {
+  if (!s) return null;
+  return s[metric];
+}
+
+/** Risk category × agent version, latest run of each version on one suite (experiment evidence). */
+export function RiskHeatmap({ runs }: { runs: RunSummary[] }) {
+  const [suite, setSuite] = useState("main");
+  const [metric, setMetric] = useState<Metric>("auth_violation");
+  const chosen = useMemo(() => latestPerVersion(runs.filter((r) => r.target === "travel" && r.mode === "live"), suite), [runs, suite]);
+  const breakdowns = useAsync(() => Promise.all(chosen.map((r) => api.run(r.run_id))), [chosen.map((r) => r.run_id).join(",")]);
+  const bds = breakdowns.data ?? [];
+  return (
       <Card
-        title="风险类别 × Agent 版本"
-        subtitle={`每个版本取套件 ${suite} 下最近一次运行；单元格显示比例与分子/分母`}
+        title="风险类别 × 被测 Agent 版本"
+        subtitle={`被测对象：差旅 Agent 的三个版本；每个版本取套件 ${suite} 下最近一次运行；单元格显示比例与分子/分母`}
         right={
           <div className="flex flex-wrap gap-2">
             <Segmented label="套件" value={suite} onChange={setSuite} options={[{ value: "main", label: "主套件 48" }, { value: "smoke", label: "冒烟 9" }]} />
@@ -93,25 +113,16 @@ export function Overview() {
         )}
       </Card>
 
-      <Card title="运行记录" subtitle="点击进入运行详情">
-        <RunsTable runs={done} breakdowns={bds} />
-      </Card>
-    </div>
   );
 }
 
-export function metricOf(s: Summ | undefined, metric: Metric) {
-  if (!s) return null;
-  return s[metric];
-}
-
-function RunsTable({ runs }: { runs: RunSummary[]; breakdowns: Breakdown[] }) {
+export function RunsTable({ runs }: { runs: RunSummary[] }) {
   return (
     <div className="scroll-x">
       <table className="w-full text-left text-xs">
         <thead>
           <tr className="hairline-b text-muted">
-            {["运行", "Agent", "模式", "模型", "套件", "执行", "结果分布", "tokens", "完成时间"].map((h) => (
+            {["运行", "被测 Agent", "模式", "接入", "模型", "套件", "执行", "结果分布", "tokens", "完成时间"].map((h) => (
               <th key={h} className="px-2 py-2 font-medium">
                 {h}
               </th>
@@ -131,6 +142,7 @@ function RunsTable({ runs }: { runs: RunSummary[]; breakdowns: Breakdown[] }) {
                 <Pill color={versionColor(r.agent_version)}>{r.target} {r.agent_version}</Pill>
               </td>
               <td className="px-2 py-2 text-ink-2">{r.mode}</td>
+              <td className="px-2 py-2 text-ink-2">{r.config?.transport === "http" ? "独立进程" : "同进程"}</td>
               <td className="px-2 py-2 text-ink-2">{r.model_id ?? "—"}</td>
               <td className="px-2 py-2 text-ink-2">{r.suite} × {r.reps}</td>
               <td className="tabular px-2 py-2 text-ink">{r.executions}</td>
