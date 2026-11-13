@@ -15,6 +15,7 @@ from consenttrace.adapters.base import AgentAdapter, CaseContext
 from consenttrace.llm.client import ChatClient, ScriptedClient, say
 from consenttrace.schemas import EventKind, StateSnapshot, TurnStatus
 from targets.approval_agent.adapter import ApprovalAgentAdapter
+from targets.tau_airline.adapter import TauAirlineAdapter
 from targets.travel_agent.adapter import TravelAgentAdapter
 
 AdapterFactory = Callable[[Callable[[], ChatClient]], AgentAdapter]
@@ -24,6 +25,8 @@ ADAPTERS: dict[str, AdapterFactory] = {
     "travel-v2": lambda clients: TravelAgentAdapter(clients, version="v2"),
     "travel-v2.1": lambda clients: TravelAgentAdapter(clients, version="v2.1"),
     "approval-v1": lambda clients: ApprovalAgentAdapter(clients, version="v1"),
+    "tau-airline-v1": lambda clients: TauAirlineAdapter(clients, version="v1"),  # third-party agent
+    "tau-airline-v1-gated": lambda clients: TauAirlineAdapter(clients, version="v1-gated"),
 }
 
 

@@ -13,6 +13,7 @@ export const CAPABILITY_LABELS: Record<keyof Omit<Capabilities, "notes">, { labe
 
 export const STATUS_COLORS: Record<DefectStatus, string> = {
   fixed_verified: "var(--good)",
+  mitigated: "var(--s3)",
   fix_failed: "var(--critical)",
   awaiting_retest: "var(--warning)",
   open: "var(--serious)",
@@ -199,13 +200,13 @@ function AgentCard({ a }: { a: WorkspaceAgent }) {
 
 function DefectBoard({ w }: { w: WorkspaceData }) {
   const s = w.defects.summary;
-  const order: DefectStatus[] = ["open", "awaiting_retest", "fix_failed", "fixed_verified"];
+  const order: DefectStatus[] = ["open", "awaiting_retest", "fix_failed", "mitigated", "fixed_verified"];
   return (
     <Card title="缺陷看板" subtitle={`${s.total} 个缺陷（Agent 版本 × 用例），从全部有效运行的判定中归并`} right={<a className="text-xs text-s1 hover:underline" href={href("defects")}>全部缺陷 →</a>}>
       <div className="mb-3 flex h-2.5 overflow-hidden rounded-full" role="img" aria-label="缺陷状态分布">
         {order.map((k) => (s.by_status[k] ? <div key={k} style={{ width: `${(s.by_status[k] / s.total) * 100}%`, background: STATUS_COLORS[k] }} /> : null))}
       </div>
-      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
         {order.map((k) => (
           <div key={k} className="text-xs">
             <div className="flex items-center gap-1.5 text-ink-2">

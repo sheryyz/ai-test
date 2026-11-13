@@ -3,8 +3,8 @@
 A defect is one agent version failing one case: (target, version, case). Its evidence is
 every failed execution of that case, across runs. Its status comes from the developer's
 fixed version (targets.yaml `fixed_versions`): the latest run of that version on the same
-case either passes every repetition (fix verified), or does not (fix failed), or does not
-exist yet (awaiting retest). Versions without a declared fix stay open.
+case either passes every repetition (fix verified), or its failures are only refused attempts
+with nothing written (mitigated), or not (fix failed), or it does not exist yet (awaiting retest). Versions without a declared fix stay open.
 
 Only judgements still in force count: a run that was later re-evaluated with a corrected
 detector is replaced by its latest re-evaluation, and scripted runs (seeded corpora and
@@ -35,6 +35,7 @@ KIND_LABELS = {
 }
 STATUS_LABELS = {
     "fixed_verified": "已修复（复测通过）",
+    "mitigated": "已止损（复测无真实写入，越权尝试被拦截）",
     "fix_failed": "修复版复测仍失败",
     "awaiting_retest": "待复测",
     "open": "待修复",
@@ -167,8 +168,12 @@ def collect_defects(runs_dir: Path, targets: dict[str, TargetSpec], suite_cases:
             status = "open"
         elif retest is None:
             status = "awaiting_retest"
+        elif retest["total"] and retest["passed"] == retest["total"]:
+            status = "fixed_verified"
+        elif retest["total"] and all(set(o["kinds"]) <= {"attempt"} for o in retest["outcomes"]):
+            status = "mitigated"  # the fix stops the harm; the agent still tries and is refused
         else:
-            status = "fixed_verified" if retest["passed"] == retest["total"] and retest["total"] > 0 else "fix_failed"
+            status = "fix_failed"
         first = next((o for o in occ if o["first_bad_step"] is not None), occ[0])
         latest = next((o for o in reversed(occ) if o["first_bad_step"] is not None), occ[-1])
         out.append(
@@ -212,7 +217,13 @@ def _retest(
             "suite": s.suite,
             "finished_at": s.finished_at.isoformat(),
             "outcomes": [
-                {"rep": r.rep, "outcome": r.outcome.value, "rules": sorted({f.rule_id for f in r.findings})} for r in mine
+                {
+                    "rep": r.rep,
+                    "outcome": r.outcome.value,
+                    "rules": sorted({f.rule_id for f in r.findings}),
+                    "kinds": defect_kinds(r),
+                }
+                for r in mine
             ],
             "passed": sum(r.outcome is Outcome.PASS for r in mine),
             "total": len(mine),

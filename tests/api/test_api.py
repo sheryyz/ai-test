@@ -233,7 +233,7 @@ def test_defects_workspace_and_retest_requests(tmp_path: Path) -> None:
     steps = {s["key"]: s["done"] for s in ws["acceptance"]}
     assert steps == {"connect": steps["connect"], "batch": False, "locate": True, "retest": True, "reuse": True}
     assert ws["defects"]["recent"][0]["kind"] != "task"
-    assert {a["name"] for a in ws["agents"]} == {"travel", "approval"}
+    assert {a["name"] for a in ws["agents"]} == {"travel", "approval", "tau-airline"}
     assert ws["recent_runs"][0]["run_id"] == "v21"
 
 

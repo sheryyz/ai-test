@@ -286,7 +286,7 @@ def cmd_show(args: argparse.Namespace) -> int:
             for change in td["deleted"]:
                 dt.add_row(name, "[red]删除[/]", _short(change["pk"]), _short(change["before"], 100))
             for change in td["updated"]:
-                fields = ", ".join(f"{c}: {change['before'][c]} → {change['after'][c]}" for c in change["changed"])
+                fields = ", ".join(f"{c}: {change['before'].get(c)} → {change['after'].get(c)}" for c in change["changed"])
                 dt.add_row(name, "[yellow]修改[/]", _short(change["pk"]), fields)
         console.print(dt)
 

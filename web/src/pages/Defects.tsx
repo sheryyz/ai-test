@@ -60,7 +60,7 @@ export function Defects() {
         <StatTile label="缺陷总数" value={s.total} sub="Agent 版本 × 用例" />
         <StatTile label="越权且真实写入" value={s.by_kind.side_effect} accent="var(--critical)" sub="轨迹 + 数据库实际写入" />
         <StatTile label="越权尝试（被拦截）" value={s.by_kind.attempt} accent="var(--serious)" />
-        <StatTile label={s.status_labels.fixed_verified} value={s.by_status.fixed_verified} accent="var(--good)" />
+        <StatTile label="已修复 / 已止损" value={`${s.by_status.fixed_verified} / ${s.by_status.mitigated}`} accent="var(--good)" sub="复测通过 / 无真实写入" />
         <StatTile label={`${s.status_labels.fix_failed} / ${s.status_labels.open}`} value={`${s.by_status.fix_failed} / ${s.by_status.open}`} accent="var(--critical)" />
       </div>
       <Card

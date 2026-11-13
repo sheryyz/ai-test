@@ -185,7 +185,10 @@ export function GenericDiff({ diff }: { diff: { tables: Record<string, { inserte
     <div className="space-y-3">
       {tables.map(([name, t]) => {
         const rows: [string, Change][] = [...t.inserted.map((c) => ["新增", c] as [string, Change]), ...t.updated.map((c) => ["修改", c] as [string, Change]), ...t.deleted.map((c) => ["删除", c] as [string, Change])];
-        const cols = [...new Set(rows.flatMap(([, c]) => Object.keys(c.after ?? c.before ?? {})))];
+        // key columns first, then whatever changed, then the rest (wide rows keep the change in view)
+        const keys = [...new Set(rows.flatMap(([, c]) => Object.keys(c.pk)))];
+        const changed = [...new Set(rows.flatMap(([, c]) => c.changed))];
+        const cols = [...new Set([...keys, ...changed, ...rows.flatMap(([, c]) => Object.keys(c.after ?? c.before ?? {}))])];
         return (
           <div key={name}>
             <div className="mono mb-1 text-xs font-semibold text-ink">{name}</div>

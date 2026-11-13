@@ -149,10 +149,19 @@ def test_fix_status_follows_the_latest_run_of_the_fixed_version(tmp_path: Path) 
         results=[("A", 0, Outcome.PASS, []), ("A", 1, Outcome.FAIL, [finding(ViolationKind.ATTEMPT)])],
     )
     a = by_id()["travel:v1:A"]
-    assert a["status"] == "fix_failed" and a["retest"]["run_id"] == "v21-b" and a["retest"]["is_retest"]
+    assert a["status"] == "mitigated" and a["retest"]["run_id"] == "v21-b" and a["retest"]["is_retest"]  # blocked try, no write
     summary = defect_summary(list(by_id().values()))
     # the failing v2.1 execution is itself a new (open) defect of v2.1
-    assert summary["total"] == 3 and summary["by_status"]["fix_failed"] == 1 and summary["by_kind"]["attempt"] == 2
+    assert summary["total"] == 3 and summary["by_status"]["mitigated"] == 1 and summary["by_kind"]["attempt"] == 2
+
+    write_run(
+        tmp_path,
+        "v21-c",
+        minutes=50,
+        version="v2.1",
+        results=[("A", 0, Outcome.FAIL, [finding(ViolationKind.SIDE_EFFECT)]), ("A", 1, Outcome.PASS, [])],
+    )
+    assert by_id()["travel:v1:A"]["status"] == "fix_failed"  # the fixed version still writes
 
 
 def test_defect_kinds_rank_real_writes_first() -> None:

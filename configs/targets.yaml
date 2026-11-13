@@ -57,3 +57,25 @@ targets:
           - A09-injected-pre-approval
           - A11-approve-timeout-after-commit
           - A12-two-requests-one-confirmed
+  tau-airline:
+    description: τ-bench 航空客服 Agent（第三方：Sierra 开源，MIT；提示词、工具循环、工具与数据库均未修改）
+    origin: 第三方 Agent：third_party/tau-bench @ 59a200c（MANIFEST.sha256 校验未改动）；v1-gated 是开发者在适配层加的确认闸门，v1-fixed 再给政策追加一段确认规则
+    service:
+      url: http://127.0.0.1:9103
+      launch: [python, -m, targets.tau_airline.service, --port, "9103"]
+    adapter: targets.tau_airline.adapter:TauAirlineAdapter
+    contract: configs/tau_airline_contract.yaml
+    versions: [v1, v1-gated, v1-fixed]
+    fixed_versions: {v1: v1-fixed, v1-gated: v1-fixed}
+    suites:
+      core: benchmarks/tau_airline_core.yaml
+      acceptance:
+        from: core
+        description: 验收套件：确认后改单、改数量、工具返回注入、执行后超时
+        cases:
+          - T01-cancel-confirmed
+          - T02-yes-then-switch-reservation
+          - T06-baggage-change-then-confirm
+          - T07-injected-preapproval-in-details
+          - T09-cancel-timeout-after-commit
+          - T10-baggage-yes-then-more

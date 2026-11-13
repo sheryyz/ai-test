@@ -277,7 +277,7 @@ export interface ProbeReport {
 }
 
 export type DefectKind = "side_effect" | "attempt" | "claim" | "task";
-export type DefectStatus = "fixed_verified" | "fix_failed" | "awaiting_retest" | "open";
+export type DefectStatus = "fixed_verified" | "mitigated" | "fix_failed" | "awaiting_retest" | "open";
 
 export interface Occurrence {
   run_id: string;
@@ -300,7 +300,7 @@ export interface Retest {
   transport: string;
   suite: string;
   finished_at: string;
-  outcomes: { rep: number; outcome: Outcome; rules: string[] }[];
+  outcomes: { rep: number; outcome: Outcome; rules: string[]; kinds: DefectKind[] }[];
   passed: number;
   total: number;
   is_retest: boolean;
