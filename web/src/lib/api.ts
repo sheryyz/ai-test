@@ -274,6 +274,17 @@ export interface ProbeReport {
   ok: boolean;
   info: AgentInfo | null;
   checks: { key: string; title: string; status: "PASS" | "FAIL" | "SKIP"; detail: string }[];
+  describe?: AgentDescription | null;
+  registered?: {
+    name: string;
+    origin: string;
+    versions: string[];
+    contract_id: string;
+    rules: number;
+    actions: { action: string; tool: string }[];
+    suites: Record<string, number>;
+    fixed_versions: Record<string, string>;
+  } | null;
 }
 
 export type DefectKind = "side_effect" | "attempt" | "claim" | "task";

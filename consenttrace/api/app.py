@@ -379,7 +379,30 @@ def create_app(
         url = body.url or (target(body.target).service_url if body.target else None)
         if not url:
             raise HTTPException(400, "需要 url，或一个配置了 service.url 的 target")
-        return probe_agent(url, version=body.version).to_dict()
+        report = probe_agent(url, version=body.version).to_dict()
+        report["describe"], report["registered"] = None, None
+        info = report.get("info")
+        if not info:
+            return report
+        try:  # what the agent says about itself: tools, prompt, state tables
+            version = body.version or info["versions"][0]
+            report["describe"] = HttpAgentAdapter(url, version=version).describe().model_dump(mode="json")
+        except AgentProtocolError:
+            pass  # optional endpoint; the probe already reports it as SKIP
+        spec = next((t for t in targets().values() if t.service_url and _same_endpoint(t.service_url, url)), None)
+        if spec is not None:
+            contract = load_contract(spec.contract)
+            report["registered"] = {
+                "name": spec.name,
+                "origin": spec.origin,
+                "versions": list(spec.versions),
+                "contract_id": contract.contract_id,
+                "rules": len(contract.rules),
+                "actions": [{"action": a.action, "tool": a.tool} for a in contract.sensitive_actions],
+                "suites": {name: len(suite_cases(spec, name)) for name in spec.suites},
+                "fixed_versions": spec.fixed_versions,
+            }
+        return report
 
     # ------------------------------------------------------------ defects, re-tests and the workspace
 
@@ -768,6 +791,13 @@ def create_app(
             return FileResponse(web_dist / "index.html")
 
     return app
+
+
+def _same_endpoint(a: str, b: str) -> bool:
+    def norm(u: str) -> str:
+        return u.strip().rstrip("/").replace("://localhost", "://127.0.0.1")
+
+    return norm(a) == norm(b)
 
 
 def _ts(iso: str) -> float:

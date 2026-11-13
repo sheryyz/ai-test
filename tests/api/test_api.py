@@ -194,6 +194,7 @@ def test_agents_are_listed_with_status_and_can_be_probed(runs: Path, tmp_path: P
     assert started["online"] is False and "不由本机管理" in started["error"]
     report = client.post("/api/agents/probe", json={"target": "remote"}).json()
     assert report["ok"] is False and report["checks"][0]["status"] == "FAIL"
+    assert report["describe"] is None and report["registered"] is None  # nothing to describe when the handshake fails
     assert client.post("/api/agents/probe", json={}).status_code == 400
     assert client.get("/api/targets").json()[0]["in_process"] is False
     run = client.post("/api/runs", json={"target": "remote", "transport": "http", "mode": "replay", "replay_from": "x"})

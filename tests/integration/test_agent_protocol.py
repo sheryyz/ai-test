@@ -204,3 +204,24 @@ def test_knowledge_base_is_read_and_searched_through_the_agents_own_retriever(tr
     assert adapter.search_knowledge("提前几天订机票", 3)[0] == "POL-02"
     with pytest.raises(AgentProtocolError, match="HTTP 404"):
         HttpAgentAdapter(URL, version="v1", client=approval).knowledge()
+
+
+def test_probe_through_the_api_describes_and_recognises_a_registered_agent(
+    monkeypatch: pytest.MonkeyPatch, travel: TestClient
+) -> None:
+    """The console's onboarding check shows what a registered agent's panel shows, matched by URL."""
+    import consenttrace.adapters.http as http_mod
+    import consenttrace.api.app as app_mod
+    from consenttrace.api.app import create_app
+
+    monkeypatch.setattr(app_mod, "probe_agent", lambda url, version=None: probe_agent(url, version=version, client=travel))
+    monkeypatch.setattr(http_mod, "protocol_client", lambda base_url, timeout=120.0: travel)
+    api = TestClient(
+        create_app(targets_path=ROOT / "configs" / "targets.yaml", runs_dir=Path("/nonexistent"), env_file=None, web_dist=None)
+    )
+    report = api.post("/api/agents/probe", json={"url": "http://localhost:9101/"}).json()
+    assert report["ok"] and report["registered"]["name"] == "travel"
+    assert {"action": "create_order", "tool": "book_flight"} in report["registered"]["actions"]
+    assert {t["function"]["name"] for t in report["describe"]["tools"]} >= {"book_flight", "cancel_booking"}
+    unknown = api.post("/api/agents/probe", json={"url": "http://127.0.0.1:9999"}).json()
+    assert unknown["ok"] and unknown["registered"] is None and unknown["describe"]

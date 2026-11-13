@@ -155,14 +155,116 @@ function ConnectNew() {
         </li>
       </ol>
       {error && <p className="mt-3 text-xs text-critical">{error}</p>}
-      {report && <ProbeTable report={report} />}
+      {report && <ProbeResult report={report} />}
     </Card>
+  );
+}
+
+/** What a probe found, laid out like a registered agent: connection, verified capabilities, registration, tools. */
+function ProbeResult({ report }: { report: ProbeReport }) {
+  const info = report.info;
+  const caps = info?.capabilities;
+  const status = Object.fromEntries(report.checks.map((c) => [c.key, c.status]));
+  const reg = report.registered;
+  const sensitive = new Map((reg?.actions ?? []).map((a) => [a.tool, a.action]));
+  const verified: Record<string, string | undefined> = { output: status.output, trace: status.trace, state: status.state, inject_tool_response: status.inject };
+  const known = useAsync(() => api.targets(), []);
+  const base = (info?.name ?? "my-agent").replace(/[^A-Za-z0-9_-]/g, "-");
+  const taken = new Set((known.data ?? []).map((t) => t.name));
+  const slug = taken.has(base) ? `${base}-${new URL(report.url).port || "new"}` : base; // a name the registry does not use yet
+  const snippet = `targets:
+  ${slug}:
+    description: ${info?.description || "（Agent 的一句话说明）"}
+    service: {url: ${report.url}}
+    contract: configs/${slug.replace(/-/g, "_")}_contract.yaml
+    versions: [${(info?.versions ?? ["v1"]).join(", ")}]
+    suites: {core: benchmarks/${slug.replace(/-/g, "_")}_core.yaml}`;
+  return (
+    <div className="mt-4 space-y-4">
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold text-white" style={{ background: report.ok ? "var(--good)" : "var(--critical)" }}>
+          接入检查{report.ok ? "通过" : "未通过"}
+        </span>
+        {info ? (
+          <span className="text-ink">
+            <b>{info.name}</b> <span className="text-ink-2">{info.description}</span>
+          </span>
+        ) : (
+          <span className="text-ink-2">没有拿到 Agent 的身份信息（协议握手失败）</span>
+        )}
+      </div>
+      {info && caps && (
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Section title="连接">
+            <KV k="协议地址" v={<span className="mono">{report.url}</span>} />
+            <KV k="协议版本" v={`v${info.protocol}`} />
+            <KV k="版本" v={<span className="flex flex-wrap gap-1">{info.versions.map((v) => <Pill key={v} color={versionColor(v)}>{v}</Pill>)}</span>} />
+            <KV k="模型" v={info.llm.live_available ? `${info.llm.model}（Agent 自己的 Key）` : "未配置 Key，只能回放"} />
+            <KV k="回放" v={info.llm.replay ? "支持（平台下发录制，逐次校验请求哈希）" : "不支持"} />
+          </Section>
+          <Section title="能力声明 → 平台能做的审计（已逐项核对）">
+            <ul className="space-y-1 text-xs">
+              {(Object.keys(CAPABILITY_LABELS) as (keyof typeof CAPABILITY_LABELS)[]).map((k) => {
+                const v = verified[k];
+                return (
+                  <li key={k} className="flex items-start gap-2">
+                    <span aria-hidden className="mt-0.5 inline-grid size-4 shrink-0 place-items-center rounded-full text-[10px] text-white" style={{ background: caps[k] ? (v === "FAIL" ? "var(--critical)" : "var(--good)") : "var(--muted)" }}>
+                      {caps[k] ? (v === "FAIL" ? "✕" : "✓") : "–"}
+                    </span>
+                    <span>
+                      <b className="text-ink">{CAPABILITY_LABELS[k].label}</b>{" "}
+                      <span className="text-ink-2">{caps[k] ? CAPABILITY_LABELS[k].unlocks : "未声明：相关断言为 UNSUPPORTED"}</span>
+                      {caps[k] && v && <span className="ml-1 text-[11px] text-muted">（{v === "PASS" ? "已实测" : v === "SKIP" ? "需在用例中观察" : "实测不符"}）</span>}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </Section>
+          {reg ? (
+            <Section title="已登记为被测 Agent">
+              <KV k="名称" v={<b className="text-ink">{reg.name}</b>} />
+              {reg.origin && <KV k="来源" v={reg.origin} />}
+              <KV k="契约" v={<span className="mono">{reg.contract_id}（{reg.actions.length} 个敏感动作、{reg.rules} 条规则）</span>} />
+              <KV k="用例集" v={<span className="flex flex-wrap gap-1">{Object.entries(reg.suites).map(([n, c]) => <Pill key={n}>{n} {c}</Pill>)}</span>} />
+              {Object.keys(reg.fixed_versions).length > 0 && (
+                <KV k="修复版" v={Object.entries(reg.fixed_versions).map(([a, b]) => `${a} → ${b}`).join("；")} />
+              )}
+              <div className="flex flex-wrap gap-2 pt-1">
+                <a href={href("console", reg.name, reg.versions[0], reg.suites.acceptance ? "acceptance" : Object.keys(reg.suites)[0])} className="rounded-md px-3 py-1.5 text-xs font-semibold text-white" style={{ background: "var(--s1)" }}>
+                  测试此 Agent
+                </a>
+                <a href={href("defects")} className="rounded-md px-3 py-1.5 text-xs font-medium text-ink" style={{ background: "var(--surface)", border: "1px solid var(--border-strong)" }}>
+                  查看缺陷
+                </a>
+              </div>
+            </Section>
+          ) : (
+            <Section title="尚未登记：接下来三步">
+              <ol className="list-decimal space-y-1 pl-4 text-xs text-ink-2">
+                <li>把下面这段加入 <span className="mono">configs/targets.yaml</span>（已按这个 Agent 的实际信息填好）</li>
+                <li>
+                  AI 起草测试契约：<span className="mono">uv run consenttrace draft-contract --target {slug}</span>，在「契约工作台」确认后保存
+                </li>
+                <li>编写或由 AI 扩增用例，然后在「测试任务」里批量执行</li>
+              </ol>
+              <pre className="mono mt-2 overflow-auto rounded-md p-2 text-[11px] text-ink-2" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+                {snippet}
+              </pre>
+            </Section>
+          )}
+        </div>
+      )}
+      <ProbeTable report={report} />
+      {report.describe && <ToolList desc={report.describe} sensitive={sensitive} />}
+    </div>
   );
 }
 
 function ProbeTable({ report }: { report: ProbeReport }) {
   return (
     <div className="mt-4 rounded-lg p-3" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
+      <div className="mb-1 text-xs font-semibold text-ink">逐项检查</div>
       <div className="mb-2 flex items-center gap-2 text-xs">
         <b className="text-ink">接入检查 {report.url}</b>
         <span className="rounded-full px-2 py-0.5 text-[11px] font-semibold text-white" style={{ background: report.ok ? "var(--good)" : "var(--critical)" }}>
@@ -189,16 +291,19 @@ function ProbeTable({ report }: { report: ProbeReport }) {
   );
 }
 
-function ToolList({ desc }: { desc: AgentDescription }) {
+function ToolList({ desc, sensitive }: { desc: AgentDescription; sensitive?: Map<string, string> }) {
   return (
     <div className="mt-4 grid gap-3 lg:grid-cols-2">
       <div className="rounded-lg p-3" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
-        <div className="mb-2 text-xs font-semibold text-ink">工具（{desc.tools.length}）</div>
+        <div className="mb-2 text-xs font-semibold text-ink">
+          工具（{desc.tools.length}）{sensitive && sensitive.size > 0 && <span className="ml-1 font-normal text-muted">红色标记的是契约里的敏感动作，每次调用都核对授权</span>}
+        </div>
         <ul className="space-y-1.5 text-xs">
           {desc.tools.map((t) => (
             <li key={t.function.name}>
               <span className="mono font-semibold text-ink">{t.function.name}</span>
               <span className="mono text-muted">({Object.keys(t.function.parameters.properties ?? {}).join(", ")})</span>
+              {sensitive?.get(t.function.name) && <Pill color="var(--critical)">敏感动作 {sensitive.get(t.function.name)}</Pill>}
               <div className="text-ink-2">{t.function.description}</div>
             </li>
           ))}
