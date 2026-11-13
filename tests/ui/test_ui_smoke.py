@@ -80,7 +80,10 @@ def page(base_url: str):
         ("#/defects", ["问题与复测", "问题列表"]),
         ("#/runs", ["测试报告", "recorded"]),
         ("#/overview", ["授权链路审计", "recorded"]),
-        ("#/runs/recorded", ["个场景中有", "可靠性评分卡", "逐个场景的结果", "多轮修改与重新确认", "规则命中次数", "AUTH_BEFORE_ACTION"]),
+        (
+            "#/runs/recorded",
+            ["个场景中有", "可靠性评分卡", "逐个场景的结果", "多轮修改与重新确认", "规则命中次数", "AUTH_BEFORE_ACTION"],
+        ),
         (
             "#/runs/recorded/cases/S02-confirm-then-change-destination/0",
             ["三通道审计时间轴", "首个违规", "未授权", "可信授权事件", "新增"],

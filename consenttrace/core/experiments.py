@@ -118,7 +118,6 @@ def detectors_section(runs_dir: Path) -> dict[str, Any] | None:
         for r in json.loads(f.read_text(encoding="utf-8")):
             by_run[r["run_id"]] = r
     real = list(by_run.values())
-    real_file = files[-1] if files else None
     return {
         "run_id": corpus.parent.name,
         "executions": scored["executions"],

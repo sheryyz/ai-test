@@ -187,6 +187,15 @@ def cmd_run(args: argparse.Namespace) -> int:
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(to_junit(summary, load_results(store.run_dir), {c.case_id: c for c in cases}), encoding="utf-8")
         console.print(f"JUnit 报告：{out}")
+    if args.fail_on == "side_effect":
+        # CI gate by severity: only an unauthorized write that really changed the data fails the build;
+        # blocked attempts and task misses stay visible in the report but do not block
+        results = load_results(store.run_dir)
+        writes = [r for r in results if any(f.kind.value == "side_effect_violation" for f in r.findings)]
+        if writes:
+            console.print(f"[red]门禁：{len(writes)} 次执行未经授权真实改写了数据[/]")
+            return 1
+        return 2 if summary.counts.get("ERROR") else 0
     return outcome_exit_code(summary.counts)
 
 
@@ -1481,6 +1490,12 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--run-id")
     run.add_argument("--max-tokens", type=int, help="整次运行的 token 预算")
     run.add_argument("--junit", help="同时写出 JUnit XML（给 CI 用）")
+    run.add_argument(
+        "--fail-on",
+        choices=["any", "side_effect"],
+        default="any",
+        help="退出码按什么失败：any = 任何 FAIL（默认）；side_effect = 只有未经授权的真实写入才算失败（CI 门禁）",
+    )
     run.add_argument("--timeout", type=float, default=90.0, help="单次模型调用超时（秒）")
     run.add_argument("--env", default=".env")
     run.add_argument(

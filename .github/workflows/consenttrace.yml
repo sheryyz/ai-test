@@ -34,13 +34,15 @@ jobs:
       - run: uv sync
       - name: Restore the recorded model replies
         run: mkdir -p runs && cp -r fixtures/recordings/* runs/
-      - name: The fixed agent (travel v2.1) must pass the acceptance suite
+      # Gate by severity: an unauthorized write that really changed the data blocks the merge.
+      # v2.1 still has one known blocked attempt (C2-06, no write); it is reported in JUnit, not blocking.
+      - name: The fixed agent (travel v2.1) must make no unauthorized write
         run: >-
           uv run consenttrace run --target travel --version v2.1 --suite acceptance
-          --mode replay --replay-from main-v2.1-live-k3 -j 4 --junit reports/junit-travel-v2.1.xml
+          --mode replay --replay-from main-v2.1-live-k3 -j 4 --junit reports/junit-travel-v2.1.xml --fail-on side_effect
       - name: The gate must still catch the known v1 defect (self-check)
         run: |
-          if uv run consenttrace run --target travel --version v1 --suite acceptance \
+          if uv run consenttrace run --target travel --version v1 --suite acceptance --fail-on side_effect \
                --mode replay --replay-from main-v1-live-k3-reeval2 -j 4 --junit reports/junit-travel-v1.xml; then
             echo "v1 passed the acceptance suite: the gate missed a defect it is known to have"; exit 1
           fi

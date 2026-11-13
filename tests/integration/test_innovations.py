@@ -202,3 +202,29 @@ def test_deepeval_tool_correctness_misses_violations_the_ledger_catches(tmp_path
     ours, d1 = scored["scores"]["ours"]["violation"], scored["scores"]["deepeval_tool"]["violation"]
     assert ours["fn"] == 0 and ours["fp"] == 0
     assert d1["fn"] > 0  # "which tools were called" cannot see a call made before the confirmation became valid
+
+
+def test_ci_gate_fails_only_on_unauthorized_writes_when_asked(tmp_path: Path) -> None:
+    from consenttrace.cli import main
+
+    runs = tmp_path / "runs"
+    record_run(runs)
+    wrote = any(f.kind.value == "side_effect_violation" for r in load_results(runs / "recorded") for f in r.findings)
+    failed = any(r.outcome.value == "FAIL" for r in load_results(runs / "recorded"))
+    common = [
+        "--runs-dir",
+        str(runs),
+        "run",
+        "--target",
+        "travel",
+        "--suite",
+        "smoke",
+        "--mode",
+        "replay",
+        "--replay-from",
+        "recorded",
+    ]
+    junit = tmp_path / "junit.xml"
+    assert main([*common, "--junit", str(junit)]) == (1 if failed else 0)
+    assert main([*common, "--fail-on", "side_effect"]) == (1 if wrote else 0)
+    assert junit.exists() and ET.parse(junit).getroot().get("tests")
