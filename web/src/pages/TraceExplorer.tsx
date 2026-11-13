@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { OutcomeCell } from "../components/charts";
 import { SwimlaneLegend, TraceSwimlane } from "../components/TraceSwimlane";
-import { Card, ErrorNote, GenericDiff, JsonBlock, Loading, Pill, Segmented, StatTile, StatusBadge } from "../components/ui";
+import { Card, ErrorNote, GenericDiff, JsonBlock, Loading, Pill, RichText, Segmented, StatTile, StatusBadge } from "../components/ui";
 import { api, type CaseBundle, type Finding, type SensitiveAttempt, type StateDiff, type StateSnapshot, type TraceEvent, type UserEvent } from "../lib/api";
 import { ACTION_NAMES, AUTH_META, CATEGORY_NAMES, OUTCOME_META, href, short, useAsync, versionColor } from "../lib/util";
 
@@ -11,14 +11,18 @@ const KIND_TEXT: Record<Finding["kind"], string> = {
   claim_violation: "陈述与状态不符",
 };
 
-export function TraceExplorer({ runId, caseId, rep }: { runId: string; caseId: string; rep: number }) {
-  const bundle = useAsync(() => api.caseBundle(runId, caseId, rep), [runId, caseId, rep]);
+/** One execution's evidence. Without an explicit rep, it opens the first execution that did not pass,
+ *  so a link to a case never lands on a passing run while its siblings failed. */
+export function TraceExplorer({ runId, caseId, rep: asked }: { runId: string; caseId: string; rep: number | null }) {
   const run = useAsync(() => api.run(runId), [runId]);
+  const row = run.data?.cases.find((c) => c.case_id === caseId);
+  const rep = asked ?? (run.data ? (row?.reps.find((r) => r.outcome !== "PASS")?.rep ?? row?.reps[0]?.rep ?? 0) : run.error ? 0 : null);
+  const bundle = useAsync(() => (rep === null ? Promise.resolve(null) : api.caseBundle(runId, caseId, rep)), [runId, caseId, rep]);
   const [selected, setSelected] = useState<number | null>(null);
   const [modelCalls, setModelCalls] = useState<"hide" | "show">("hide");
 
   if (bundle.error) return <ErrorNote error={bundle.error} />;
-  if (!bundle.data) return <Loading what="证据" />;
+  if (!bundle.data || rep === null) return <Loading what="证据" />;
   const b = bundle.data;
   const v = b.verdict;
   const attempts = b.auth?.attempts ?? [];
@@ -30,7 +34,7 @@ export function TraceExplorer({ runId, caseId, rep }: { runId: string; caseId: s
   return (
     <div className="space-y-5">
       <nav className="text-xs text-muted">
-        <a href={href("runs")} className="hover:text-ink">运行记录</a> / <a href={href("runs", runId)} className="hover:text-ink">{runId}</a> / <span className="text-ink-2">{caseId}</span>
+        <a href={href("runs")} className="hover:text-ink">测试报告</a> / <a href={href("runs", runId)} className="hover:text-ink">{runId}</a> / <span className="text-ink-2">{caseId}</span>
       </nav>
 
       <header className="card flex flex-wrap items-start justify-between gap-4 p-5">
@@ -48,7 +52,7 @@ export function TraceExplorer({ runId, caseId, rep }: { runId: string; caseId: s
             <Pill>{v.model_id ?? "—"}</Pill>
             {v.outcome === "FAIL" && b.target && (
               <a href={href("defects", `${b.target}:${v.agent_version}:${caseId}`)} className="rounded-md px-2 py-0.5 text-[11px] font-semibold text-white" style={{ background: "var(--critical)" }}>
-                缺陷与复测 →
+                问题与复测 →
               </a>
             )}
             {b.case?.fixture && b.case.fixture !== "default" && <Pill>初始数据 {b.case.fixture}</Pill>}
@@ -78,11 +82,13 @@ export function TraceExplorer({ runId, caseId, rep }: { runId: string; caseId: s
         </div>
       </header>
 
+      <Verdict b={b} rep={rep} firstBad={firstBad} others={repRows.filter((r) => r.rep !== rep && r.outcome !== "PASS").map((r) => r.rep)} runId={runId} caseId={caseId} onJump={setSelected} />
+
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-        <StatTile label="首个违规步骤" value={firstBad ? `step ${firstBad}` : "无"} accent={firstBad ? "var(--critical)" : "var(--good)"} />
-        <StatTile label="敏感调用（已授权/总数）" value={`${attempts.filter((a) => a.authorized).length}/${attempts.length}`} />
-        <StatTile label="真实写入的越权" value={attempts.filter((a) => !a.authorized && a.wrote).length} accent={attempts.some((a) => !a.authorized && a.wrote) ? "var(--critical)" : undefined} />
-        <StatTile label="注入到达 / 未触发" value={`${(v.metrics.injections_reached as string[] | undefined)?.length ?? 0} / ${(v.metrics.injections_skipped as string[] | undefined)?.length ?? 0}`} accent="var(--s7)" />
+        <StatTile label="第一次出错的步骤" value={firstBad ? `step ${firstBad}` : "无"} accent={firstBad ? "var(--critical)" : "var(--good)"} />
+        <StatTile label="敏感操作（获授权 / 总数）" value={`${attempts.filter((a) => a.authorized).length}/${attempts.length}`} />
+        <StatTile label="未经同意的数据改动" value={attempts.filter((a) => !a.authorized && a.wrote).length} accent={attempts.some((a) => !a.authorized && a.wrote) ? "var(--critical)" : undefined} />
+        <StatTile label="注入指令（到达 / 未触发）" value={`${(v.metrics.injections_reached as string[] | undefined)?.length ?? 0} / ${(v.metrics.injections_skipped as string[] | undefined)?.length ?? 0}`} accent="var(--s7)" />
         <StatTile label="模型调用 · tokens" value={`${v.metrics.llm_calls ?? 0} · ${tokens(v.metrics.usage)}`} sub={`${((v.metrics.duration_ms as number) / 1000).toFixed(1)} 秒`} />
       </div>
 
@@ -160,6 +166,40 @@ export function TraceExplorer({ runId, caseId, rep }: { runId: string; caseId: s
   );
 }
 
+function Verdict({ b, rep, firstBad, others, runId, caseId, onJump }: { b: CaseBundle; rep: number; firstBad: number | null; others: number[]; runId: string; caseId: string; onJump: (s: number) => void }) {
+  const v = b.verdict;
+  const f = v.findings[0];
+  const failedAssertion = v.assertions.find((a) => a.status === "FAIL");
+  const tone = v.outcome === "PASS" ? { bg: "var(--good-wash)", line: "var(--good)" } : v.outcome === "FAIL" ? { bg: "var(--critical-wash)", line: "var(--critical)" } : { bg: "var(--warning-wash)", line: "var(--warning)" };
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-xl px-5 py-3.5 text-sm" style={{ background: tone.bg, border: `1px solid ${tone.line}` }}>
+      <span className="text-ink">
+        {v.outcome === "PASS" && <>这次执行（第 {rep + 1} 次）<b>通过</b>：没有越权，Agent 说的和数据库里发生的一致。</>}
+        {v.outcome === "FAIL" &&
+          (f ? (
+            <>
+              这次执行在<b>第 {firstBad} 步</b>出了问题：{f.reason}
+            </>
+          ) : (
+            <>这次执行没有越权，但没有达到预期：{failedAssertion?.detail ?? "任务断言未通过"}</>
+          ))}
+        {v.outcome === "ERROR" && <>这次执行出错，未能完成判定：{short(v.errors.join("；"), 160)}</>}
+        {v.outcome === "UNSUPPORTED" && <>Agent 没有提供判定所需的信息，这次执行不可测。</>}
+      </span>
+      {f && firstBad && (
+        <button onClick={() => onJump(firstBad)} className="btn btn-secondary btn-sm">
+          定位到第 {firstBad} 步
+        </button>
+      )}
+      {others.length > 0 && (
+        <a href={href("runs", runId, "cases", caseId, others[0])} className="ml-auto text-xs font-semibold text-critical hover:underline">
+          同一场景第 {others.map((r) => r + 1).join("、")} 次执行出了问题 →
+        </a>
+      )}
+    </div>
+  );
+}
+
 function tokens(usage: unknown): string {
   const u = usage as { prompt_tokens?: number; completion_tokens?: number } | undefined;
   const n = (u?.prompt_tokens ?? 0) + (u?.completion_tokens ?? 0);
@@ -202,7 +242,7 @@ function EventDetail({ e, attempt, findings }: { e: TraceEvent; attempt?: Sensit
   );
 }
 
-function AuthCheck({ attempt, findings }: { attempt: SensitiveAttempt; findings: Finding[] }) {
+export function AuthCheck({ attempt, findings }: { attempt: SensitiveAttempt; findings: Finding[] }) {
   const meta = AUTH_META[attempt.status_at_attempt];
   const ref = attempt.reference_params ?? {};
   const fields = [...new Set([...Object.keys(ref), ...Object.keys(attempt.mapped)])];
@@ -341,7 +381,9 @@ function Conversation({ bundle, onJump }: { bundle: CaseBundle; onJump: (step: n
               {reply && (
                 <div className="max-w-3xl rounded-xl rounded-tl-sm px-3.5 py-2.5" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
                   <div className="mb-1 text-[11px] font-semibold text-ink-2">Agent</div>
-                  <div className="whitespace-pre-wrap text-[13px] leading-relaxed text-ink">{reply.content}</div>
+                  <div className="whitespace-pre-wrap text-[13px] leading-relaxed text-ink">
+                    <RichText text={reply.content} />
+                  </div>
                 </div>
               )}
             </div>

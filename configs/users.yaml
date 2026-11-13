@@ -1,0 +1,13 @@
+# Web console accounts. Passwords are stored only as salted scrypt hashes (consenttrace.core.auth).
+#
+# The demo account is public on purpose: the login page offers demo_login as
+# "演示账号一键进入", and it signs in through the same password check as any account.
+# Add your own accounts with: uv run consenttrace user add <name>
+# (they go to runs/_workspace/users.yaml, which stays on this machine).
+demo_login:
+  username: demo
+  password: demo2026
+users:
+  demo:
+    display_name: 演示账号
+    password_hash: scrypt$16384$8$1$MKlo8iWKoZCiW56Ay0l/QQ==$AzuHtYO3a5j6OwolrNnnRjMIwPJ3nyHK200lGD+LCSY=

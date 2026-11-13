@@ -13,6 +13,13 @@ recorded for the full suite can be replayed for the subset):
 
 Relative paths in the file are resolved against the project root (the parent of the
 directory holding targets.yaml).
+
+Agents a user connects from the web console are kept apart from the curated registry, in
+`<runs_dir>/_workspace/agents.yaml` (local, never committed). Such an entry names the
+built-in target whose business it shares (`like: tau-airline`) and inherits that target's
+contract and suites; it brings its own URL and versions:
+
+    my-airline: {like: tau-airline, service: {url: http://127.0.0.1:9201}, versions: [v1]}
 """
 
 from __future__ import annotations
@@ -37,6 +44,12 @@ class TargetSpec:
     launch: tuple[str, ...] = ()
     origin: str = ""  # who wrote the agent (shown to users; e.g. "自建对照靶场")
     fixed_versions: dict[str, str] = field(default_factory=dict)  # version -> the version that fixes it
+    like: str | None = None  # set for a user-registered agent: the built-in target whose contract and suites it uses
+    registered_at: str | None = None
+
+    @property
+    def registered(self) -> bool:
+        return self.like is not None
 
     def adapter_class(self) -> type:
         if not self.adapter:
@@ -64,38 +77,74 @@ class TargetSpec:
         return list(wanted)
 
 
-def load_targets(path: str | Path) -> dict[str, TargetSpec]:
+REGISTERED_FILE = Path("_workspace") / "agents.yaml"
+INHERITED = ("contract", "suites")  # what a registered agent takes from the built-in target it is `like`
+
+
+def registered_agents_path(runs_dir: str | Path) -> Path:
+    return Path(runs_dir) / REGISTERED_FILE
+
+
+def load_targets(path: str | Path, *, registered: str | Path | None = None) -> dict[str, TargetSpec]:
     path = Path(path).resolve()
     root = path.parent.parent
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    raw = dict(data.get("targets") or {})
+    extra = read_registered(registered) if registered else {}
+    for name, spec in extra.items():
+        base = raw.get(spec.get("like", ""))
+        if name in raw or base is None or "like" in base:
+            continue  # a registration may not shadow a built-in target, and must name one
+        raw[name] = {**{k: base[k] for k in INHERITED if k in base}, **spec}
     out = {}
-    for name, spec in (data.get("targets") or {}).items():
-        raw_suites = spec.get("suites") or {}
-        suites: dict[str, Path] = {}
-        subsets: dict[str, tuple[str, ...]] = {}
-        for key, value in raw_suites.items():
-            if isinstance(value, dict):
-                base = value["from"]
-                if base not in raw_suites or isinstance(raw_suites[base], dict):
-                    raise ValueError(f"target {name}: suite {key} must take its cases from a file-backed suite, got {base!r}")
-                suites[key] = root / raw_suites[base]
-                subsets[key] = tuple(value["cases"])
-            else:
-                suites[key] = root / value
-        service = spec.get("service") or {}
-        out[name] = TargetSpec(
-            name=name,
-            adapter=spec.get("adapter"),
-            contract=root / spec["contract"],
-            versions=tuple(spec.get("versions", ["v1"])),
-            suites=suites,
-            subsets=subsets,
-            description=spec.get("description", ""),
-            service_url=service.get("url"),
-            launch=tuple(str(x) for x in service.get("launch", ())),
-            origin=spec.get("origin", ""),
-            fixed_versions={str(k): str(v) for k, v in (spec.get("fixed_versions") or {}).items()},
-        )
-        if out[name].adapter is None and out[name].service_url is None:
-            raise ValueError(f"target {name}: needs an adapter, a service url, or both")
+    for name, spec in raw.items():
+        out[name] = _spec(name, spec, root)
+    return out
+
+
+def read_registered(path: str | Path) -> dict[str, dict]:
+    path = Path(path)
+    if not path.exists():
+        return {}
+    return dict((yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get("targets") or {})
+
+
+def write_registered(path: str | Path, entries: dict[str, dict]) -> None:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    header = "# Agents connected from the web console. Local to this machine; edit or delete freely.\n"
+    path.write_text(header + yaml.safe_dump({"targets": entries}, allow_unicode=True, sort_keys=False), encoding="utf-8")
+
+
+def _spec(name: str, spec: dict, root: Path) -> TargetSpec:
+    raw_suites = spec.get("suites") or {}
+    suites: dict[str, Path] = {}
+    subsets: dict[str, tuple[str, ...]] = {}
+    for key, value in raw_suites.items():
+        if isinstance(value, dict):
+            base = value["from"]
+            if base not in raw_suites or isinstance(raw_suites[base], dict):
+                raise ValueError(f"target {name}: suite {key} must take its cases from a file-backed suite, got {base!r}")
+            suites[key] = root / raw_suites[base]
+            subsets[key] = tuple(value["cases"])
+        else:
+            suites[key] = root / value
+    service = spec.get("service") or {}
+    out = TargetSpec(
+        name=name,
+        adapter=spec.get("adapter"),
+        contract=root / spec["contract"],
+        versions=tuple(spec.get("versions", ["v1"])),
+        suites=suites,
+        subsets=subsets,
+        description=spec.get("description", ""),
+        service_url=service.get("url"),
+        launch=tuple(str(x) for x in service.get("launch", ())),
+        origin=spec.get("origin", ""),
+        fixed_versions={str(k): str(v) for k, v in (spec.get("fixed_versions") or {}).items()},
+        like=spec.get("like"),
+        registered_at=spec.get("registered_at"),
+    )
+    if out.adapter is None and out.service_url is None:
+        raise ValueError(f"target {name}: needs an adapter, a service url, or both")
     return out

@@ -17,6 +17,7 @@ from rich.text import Text
 
 from consenttrace.adapters.probe import probe_agent
 from consenttrace.core.agents import AgentProcesses, AgentStatus
+from consenttrace.core.auth import LOCAL_USERS_FILE, UserStore, add_user
 from consenttrace.core.baselines import ORACLE_LABELS, ORACLES
 from consenttrace.core.detector_eval import (
     compare_on_run,
@@ -31,7 +32,7 @@ from consenttrace.core.evidence import EvidenceStore, load_results, load_summary
 from consenttrace.core.launch import LaunchError, RunRequest, prepare_run
 from consenttrace.core.loader import LoadError, load_cases, load_contract, load_suite
 from consenttrace.core.reevaluate import reevaluate_run
-from consenttrace.core.registry import load_targets
+from consenttrace.core.registry import load_targets, registered_agents_path
 from consenttrace.core.runner import outcome_exit_code
 from consenttrace.schemas import EventKind, RunResult, TraceEvent
 
@@ -49,11 +50,16 @@ LANE_STYLE = {
 }
 
 
+def _targets(args: argparse.Namespace):
+    """The curated registry plus the agents a user connected from the web console."""
+    return load_targets(args.targets, registered=registered_agents_path(args.runs_dir))
+
+
 # ---------------------------------------------------------------- validate
 
 
 def cmd_validate(args: argparse.Namespace) -> int:
-    targets = load_targets(args.targets)
+    targets = _targets(args)
     table = Table(title="ConsentTrace 配置校验", title_style="bold")
     for col in ("目标", "对象", "结果", "说明"):
         table.add_column(col)
@@ -331,7 +337,7 @@ def cmd_reevaluate(args: argparse.Namespace) -> int:
         console.print(f"[red]找不到运行 {source}[/]")
         return 2
     config = json.loads((source / "config.json").read_text(encoding="utf-8"))
-    spec = load_targets(args.targets).get(config.get("target", ""))
+    spec = _targets(args).get(config.get("target", ""))
     if spec is None or config.get("suite") not in spec.suites:
         console.print(f"[red]运行 {args.run} 的目标或套件已不在注册表中：{config.get('target')} / {config.get('suite')}[/]")
         return 2
@@ -428,7 +434,7 @@ def _detectors(args: argparse.Namespace) -> int:
     from consenttrace.ai.llm_judge import VIEWS
 
     corpus = load_corpus(args.corpus)
-    spec = load_targets(args.targets)[corpus.TARGET]
+    spec = _targets(args)[corpus.TARGET]
     contract = load_contract(spec.contract)
     suite = {c.case_id: c for c in load_cases(spec.suite(corpus.SUITE), contract)}
     judge = _build_judge(args) if args.llm_judge else None
@@ -470,7 +476,7 @@ def _detectors(args: argparse.Namespace) -> int:
     for real in args.on_run or []:
         source = Path(args.runs_dir) / real
         config = json.loads((source / "config.json").read_text(encoding="utf-8"))
-        real_spec = load_targets(args.targets)[config["target"]]
+        real_spec = _targets(args)[config["target"]]
         real_contract = load_contract(real_spec.contract)
         real_cases = {c.case_id: c for c in load_cases(real_spec.suite(config["suite"]), real_contract)}
         fallback = _declared_capabilities(real_spec)
@@ -509,7 +515,7 @@ def cmd_augment(args: argparse.Namespace) -> int:
     from consenttrace.config import LLMSettings
     from consenttrace.llm.client import OpenAICompatClient
 
-    spec = load_targets(args.targets)[args.target]
+    spec = _targets(args)[args.target]
     contract = load_contract(spec.contract)
     cases = load_cases(spec.suite(args.suite), contract)
     if args.case:
@@ -574,7 +580,7 @@ def cmd_phrasing(args: argparse.Namespace) -> int:
 
     source = Path(args.runs_dir) / args.run
     config = json.loads((source / "config.json").read_text(encoding="utf-8"))
-    spec = load_targets(args.targets)[config["target"]]
+    spec = _targets(args)[config["target"]]
     contract = load_contract(spec.contract)
     cases = {c.case_id: c for c in load_cases(spec.suite(config["suite"]), contract)}
     base = load_results(Path(args.runs_dir) / args.base) if args.base else []
@@ -618,7 +624,7 @@ def cmd_compare(args: argparse.Namespace) -> int:
     for run in (args.a, args.b):
         source = Path(args.runs_dir) / run
         config = json.loads((source / "config.json").read_text(encoding="utf-8"))
-        spec = load_targets(args.targets)[config["target"]]
+        spec = _targets(args)[config["target"]]
         contract = load_contract(spec.contract)
         cases = {c.case_id: c for c in load_cases(spec.suite(config["suite"]), contract)}
         breakdowns.append(run_breakdown(source, cases))
@@ -675,7 +681,7 @@ def cmd_draft_contract(args: argparse.Namespace) -> int:
     from consenttrace.config import LLMSettings
     from consenttrace.llm.client import OpenAICompatClient
 
-    spec = load_targets(args.targets)[args.target]
+    spec = _targets(args)[args.target]
     version = args.version or spec.versions[0]
     adapter = spec.adapter_class()(lambda: None, version=version)
     if not isinstance(adapter, DescribableAdapter):
@@ -819,7 +825,7 @@ def cmd_attacks(args: argparse.Namespace) -> int:
 
     spec_path = Path(args.spec or f"configs/{args.target}_attacks.yaml")
     attack_spec = AttackSpec.load(spec_path)
-    target = load_targets(args.targets)[args.target]
+    target = _targets(args)[args.target]
     contract = load_contract(target.contract)
     base = {c.case_id: c for c in load_cases(target.suite(attack_spec.base_suite), contract)}
     library = Path(args.library or f"benchmarks/{args.target}_injection_library.jsonl")
@@ -945,7 +951,7 @@ def cmd_kb_check(args: argparse.Namespace) -> int:
     """RAG knowledge-base health check: errors, redundancy, conflicts, retrieval quality."""
     from consenttrace.core.kb import run_kb_check
 
-    spec = load_targets(args.targets)[args.target]
+    spec = _targets(args)[args.target]
     root = Path(args.targets).resolve().parent.parent
     client = None
     if args.llm:
@@ -1005,7 +1011,7 @@ def cmd_annotate(args: argparse.Namespace) -> int:
     from consenttrace.core.annotation import SAMPLE, sample, score, write_sample
 
     folder = Path(args.targets).resolve().parent.parent / "benchmarks" / "labels"
-    targets = load_targets(args.targets)
+    targets = _targets(args)
     if args.action == "sample":
         if (folder / SAMPLE).exists() and not args.force:
             console.print(f"[red]{folder / SAMPLE} 已存在；样本冻结后不应重抽（确需重抽用 --force）[/]")
@@ -1066,7 +1072,7 @@ def _agent_table(statuses: list[AgentStatus]) -> Table:
 
 
 def cmd_agents(args: argparse.Namespace) -> int:
-    targets = load_targets(args.targets)
+    targets = _targets(args)
     root = Path(args.targets).resolve().parent.parent
     procs = AgentProcesses(root, log_dir=Path(args.runs_dir) / "_agent_logs")
     chosen = [targets[n] for n in args.name] if args.name else [t for t in targets.values() if t.service_url]
@@ -1089,7 +1095,7 @@ def cmd_agents(args: argparse.Namespace) -> int:
 def cmd_probe(args: argparse.Namespace) -> int:
     url = args.url
     if url is None:
-        spec = load_targets(args.targets).get(args.target or "")
+        spec = _targets(args).get(args.target or "")
         if spec is None or not spec.service_url:
             console.print("[red]用 --url 指定地址，或用 --target 指定一个配置了 service.url 的目标[/]")
             return 2
@@ -1115,15 +1121,43 @@ def cmd_serve(args: argparse.Namespace) -> int:  # pragma: no cover - blocks on 
     root = Path(args.targets).resolve().parent.parent
     procs = AgentProcesses(root, log_dir=Path(args.runs_dir) / "_agent_logs")
     if not args.no_agents:
-        targets = load_targets(args.targets)
+        targets = _targets(args)
         statuses = [procs.start(spec) for spec in targets.values() if spec.service_url and spec.launch]
         console.print(_agent_table(statuses))
-    app = create_app(targets_path=args.targets, runs_dir=args.runs_dir, env_file=args.env, agent_processes=procs)
+    users = None if args.no_auth else UserStore(Path(args.users), Path(args.runs_dir) / LOCAL_USERS_FILE)
+    app = create_app(targets_path=args.targets, runs_dir=args.runs_dir, env_file=args.env, agent_processes=procs, users=users)
     console.print(f"ConsentTrace 控制台：[underline]http://{args.host}:{args.port}[/]")
+    if users is not None and (demo := users.demo_login()):
+        console.print(f"演示账号：{demo['username']} / {demo['password']}（登录页可一键进入；--no-auth 关闭登录）")
     try:
         uvicorn.run(app, host=args.host, port=args.port, log_level="warning")
     finally:
         procs.stop_all()
+    return 0
+
+
+def cmd_user(args: argparse.Namespace) -> int:
+    import getpass
+
+    path = Path(args.runs_dir) / LOCAL_USERS_FILE
+    if args.action == "list":
+        store = UserStore(Path(args.users), path)
+        for user in store.users().values():
+            console.print(f"{user.username}\t{user.display_name}")
+        return 0
+    if not args.name:
+        console.print("[red]用法：consenttrace user add <用户名>[/]")
+        return 2
+    password = getpass.getpass(f"为 {args.name} 设置密码（至少 8 位）：")
+    if password != getpass.getpass("再输入一次："):
+        console.print("[red]两次输入不一致[/]")
+        return 2
+    try:
+        add_user(path, args.name, password, args.display_name)
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/]")
+        return 2
+    console.print(f"已添加账号 {args.name}（保存在 {path}，只存密码哈希）")
     return 0
 
 
@@ -1264,6 +1298,14 @@ def build_parser() -> argparse.ArgumentParser:
     serve.add_argument("--port", type=int, default=8765)
     serve.add_argument("--env", default=".env")
     serve.add_argument("--no-agents", action="store_true", help="不自动启动本机管理的被测 Agent 进程")
+    serve.add_argument("--users", default="configs/users.yaml", help="账号文件（另会读取 runs/_workspace/users.yaml）")
+    serve.add_argument("--no-auth", action="store_true", help="不要求登录（只在本机自用时）")
+
+    usr = sub.add_parser("user", help="管理 Web 控制台账号")
+    usr.add_argument("action", choices=["add", "list"])
+    usr.add_argument("name", nargs="?", default="")
+    usr.add_argument("--display-name")
+    usr.add_argument("--users", default="configs/users.yaml")
     return parser
 
 
@@ -1287,6 +1329,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "compare": cmd_compare,
         "draft-contract": cmd_draft_contract,
         "report": cmd_report,
+        "user": cmd_user,
     }
     try:
         return handlers[args.command](args)

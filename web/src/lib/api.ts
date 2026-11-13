@@ -237,6 +237,7 @@ export interface TargetInfo {
   in_process: boolean;
   origin: string;
   fixed_versions: Record<string, string>;
+  like: string | null;
 }
 
 // ------------------------------------------------------------------ agents under test, defects, workspace
@@ -285,6 +286,7 @@ export interface ProbeReport {
     suites: Record<string, number>;
     fixed_versions: Record<string, string>;
   } | null;
+  businesses?: Business[];
 }
 
 export type DefectKind = "side_effect" | "attempt" | "claim" | "task";
@@ -364,6 +366,8 @@ export interface WorkspaceAgent extends AgentStatus {
   fixed_versions: Record<string, string>;
   in_process: boolean;
   last_run: { run_id: string; version: string; suite: string; mode: string; counts: Partial<Record<Outcome, number>>; executions: number; finished_at: string } | null;
+  like: string | null; // set for an agent the user connected from the console
+  registered_at: string | null;
 }
 
 export interface AttackRates {
@@ -628,14 +632,26 @@ export interface ContractCheck {
   edits_from_draft?: Record<string, number> | null;
 }
 
-async function post<T>(path: string, body: unknown): Promise<T> {
+/** A 401 from any call means the session ended: the app shell listens and shows the sign-in page. */
+export const UNAUTHORIZED_EVENT = "consenttrace:unauthorized";
+
+function checkAuth(res: Response): void {
+  if (res.status === 401) window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
+}
+
+async function send<T>(method: string, path: string, body?: unknown): Promise<T> {
   if (window.__CONSENTTRACE_STATIC__) throw new Error("离线报告是只读的");
-  const res = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const res = await fetch(path, { method, headers: { "Content-Type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
+  checkAuth(res);
   if (!res.ok) {
     const detail = await res.json().catch(() => ({ detail: res.statusText }));
     throw new Error(typeof detail.detail === "string" ? detail.detail : JSON.stringify(detail.detail));
   }
   return (await res.json()) as T;
+}
+
+function post<T>(path: string, body: unknown): Promise<T> {
+  return send<T>("POST", path, body);
 }
 
 declare global {
@@ -652,7 +668,18 @@ async function get<T>(path: string): Promise<T> {
     throw new Error(`静态报告中没有包含 ${path}（只读的离线报告）`);
   }
   const res = await fetch(path);
-  if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+  checkAuth(res);
+  if (!res.ok) {
+    const text = await res.text();
+    let detail = text;
+    try {
+      const parsed = JSON.parse(text) as { detail?: unknown };
+      if (typeof parsed.detail === "string") detail = parsed.detail;
+    } catch {
+      /* not JSON: show the raw text */
+    }
+    throw new Error(`${res.status} ${detail}`);
+  }
   return (await res.json()) as T;
 }
 
@@ -689,12 +716,38 @@ export const api = {
     get<ReplaySource[]>(`/api/targets/${encodeURIComponent(target)}/replay-sources?version=${encodeURIComponent(version)}&case=${encodeURIComponent(caseId)}`),
   replaySources: (target: string, version: string, suite: string) =>
     get<ReplaySource[]>(`/api/targets/${encodeURIComponent(target)}/replay-sources?version=${encodeURIComponent(version)}&suite=${encodeURIComponent(suite)}`),
-  async startRun(body: Record<string, unknown>): Promise<{ run_id: string; total: number }> {
-    const res = await fetch("/api/runs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    if (!res.ok) {
-      const detail = await res.json().catch(() => ({ detail: res.statusText }));
-      throw new Error(typeof detail.detail === "string" ? detail.detail : JSON.stringify(detail.detail));
-    }
+  startRun: (body: Record<string, unknown>) => post<{ run_id: string; total: number }>("/api/runs", body),
+  authMe: async (): Promise<AuthState> => {
+    const res = await fetch("/api/auth/me");
+    if (!res.ok) return { enabled: false, user: null, demo: null }; // an older server without sign-in
     return res.json();
   },
+  login: (username: string, password: string) => post<{ user: AuthUser }>("/api/auth/login", { username, password }),
+  logout: () => post<{ ok: boolean }>("/api/auth/logout", {}),
+  registerAgent: (body: { name: string; url: string; like: string; description: string }) =>
+    post<{ name: string; versions: string[]; like: string; tools_checked: boolean }>("/api/agents/register", body),
+  unregisterAgent: (name: string) => send<{ ok: boolean }>("DELETE", `/api/agents/${encodeURIComponent(name)}`),
 };
+
+export interface AuthUser {
+  username: string;
+  display_name: string;
+}
+
+export interface AuthState {
+  enabled: boolean;
+  user: AuthUser | null;
+  demo: { username: string; password: string } | null;
+}
+
+export interface Business {
+  name: string;
+  description: string;
+  contract_id: string;
+  rules: number;
+  sensitive_tools: string[];
+  missing: string[];
+  checked: boolean;
+  compatible: boolean;
+  suites: Record<string, number>;
+}

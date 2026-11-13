@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import type { AssertionStatus } from "../lib/api";
-import { OUTCOME_META } from "../lib/util";
+import { GLOSSARY, OUTCOME_META } from "../lib/util";
 
 // ------------------------------------------------------------------ tooltip (one per app)
 
@@ -63,7 +63,7 @@ export function StatusBadge({ status, size = "md" }: { status: AssertionStatus; 
   const m = OUTCOME_META[status];
   const pad = size === "sm" ? "px-1.5 py-0.5 text-[11px]" : "px-2 py-0.5 text-xs";
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full font-semibold ${pad}`} style={{ background: m.wash, color: "var(--ink)" }}>
+    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full font-semibold ${pad}`} style={{ background: m.wash, color: "var(--ink)" }}>
       <span
         aria-hidden
         className="inline-grid size-3.5 place-items-center rounded-full text-[9px] leading-none text-white"
@@ -145,7 +145,7 @@ export function Empty({ children }: { children: ReactNode }) {
 
 export function Pill({ children, color, title }: { children: ReactNode; color?: string; title?: string }) {
   return (
-    <span title={title} className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium" style={{ background: "var(--surface-2)", border: "1px solid var(--border)", color: "var(--ink-2)" }}>
+    <span title={title} className="inline-flex items-center gap-1 whitespace-nowrap rounded-md px-1.5 py-0.5 text-[11px] font-medium" style={{ background: "var(--surface-2)", border: "1px solid var(--border)", color: "var(--ink-2)" }}>
       {color && <span aria-hidden className="size-1.5 rounded-full" style={{ background: color }} />}
       {children}
     </span>
@@ -229,4 +229,39 @@ export function GenericDiff({ diff }: { diff: { tables: Record<string, { inserte
       })}
     </div>
   );
+}
+
+// ------------------------------------------------------------------ product chrome
+
+/** A word with a dotted underline; hover or focus explains it in plain language. */
+export function Term({ children, k }: { children: ReactNode; k?: keyof typeof GLOSSARY | string }) {
+  const tip = useTooltip();
+  const key = k ?? (typeof children === "string" ? children : "");
+  const text = GLOSSARY[key];
+  if (!text) return <>{children}</>;
+  return (
+    <span tabIndex={0} className="term" {...tipHandlers(tip, () => <div className="max-w-xs leading-relaxed"><b>{key}</b>：{text}</div>)}>
+      {children}
+    </span>
+  );
+}
+
+export function PageHeader({ title, children, right, eyebrow }: { title: ReactNode; children?: ReactNode; right?: ReactNode; eyebrow?: ReactNode }) {
+  return (
+    <header className="flex flex-wrap items-end justify-between gap-4 pb-1">
+      <div className="max-w-3xl">
+        {eyebrow && <div className="mb-1 text-xs font-medium text-muted">{eyebrow}</div>}
+        <h1 className="text-[22px] font-semibold tracking-tight text-ink">{title}</h1>
+        {children && <p className="mt-1.5 text-sm leading-relaxed text-ink-2">{children}</p>}
+      </div>
+      {right}
+    </header>
+  );
+}
+
+/** Agent replies often use Markdown bold; show it as bold instead of literal asterisks. Nothing else is interpreted. */
+export function RichText({ text }: { text: string | null | undefined }) {
+  if (!text) return null;
+  const parts = text.split(/\*\*(.+?)\*\*/g);
+  return <>{parts.map((p, i) => (i % 2 ? <strong key={i}>{p}</strong> : p))}</>;
 }

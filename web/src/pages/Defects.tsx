@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { OutcomeCell } from "../components/charts";
-import { Card, ErrorNote, Loading, Pill, Segmented, StatTile } from "../components/ui";
+import { Card, ErrorNote, Loading, PageHeader, Pill, Segmented, StatTile, Term } from "../components/ui";
 import { api, type Defect, type DefectKind, type DefectStatus } from "../lib/api";
 import { useRunStream } from "../lib/stream";
-import { CATEGORY_NAMES, href, useAsync, versionColor } from "../lib/util";
+import { CATEGORY_NAMES, ISSUE_TEXT, href, planName, useAsync, versionColor } from "../lib/util";
 import { DiffView, FindingCard } from "./TraceExplorer";
 import { STATUS_COLORS } from "./Workspace";
 
@@ -14,11 +14,19 @@ const KIND_COLORS: Record<DefectKind, string> = {
   task: "var(--muted)",
 };
 
+export const STATUS_SHORT: Record<DefectStatus, string> = {
+  open: "待修复",
+  awaiting_retest: "待复测",
+  fix_failed: "修复后仍失败",
+  mitigated: "已止损",
+  fixed_verified: "已修复",
+};
+
 export function StatusTag({ d }: { d: Pick<Defect, "status" | "status_label"> }) {
   return (
-    <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ background: "var(--surface-3)", color: "var(--ink)" }}>
+    <span title={d.status_label} className="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ background: "var(--surface-3)", color: "var(--ink)" }}>
       <span aria-hidden className="size-2 rounded-full" style={{ background: STATUS_COLORS[d.status] }} />
-      {d.status_label}
+      {STATUS_SHORT[d.status]}
     </span>
   );
 }
@@ -50,22 +58,19 @@ export function Defects() {
   const targets = [...new Set(data.data.defects.map((d) => d.target))].sort();
   return (
     <div className="space-y-5">
-      <section className="card p-5">
-        <h1 className="text-xl font-semibold text-ink">缺陷与复测</h1>
-        <p className="mt-1.5 max-w-3xl text-sm text-ink-2">
-          每个缺陷对应"某个 Agent 版本 × 某条用例"，证据是该用例全部失败的执行（每次都定位到首个违规步骤）。开发者登记修复版本后，在修复版上用同一条用例复测（同样的初始数据、注入点和种子）：每次重复执行都通过，状态才会变为"已修复"。
-        </p>
-      </section>
+      <PageHeader title="问题与复测">
+        同一个 Agent 版本在同一个场景上的失败归为一个问题，并自动定位到第一次出错的步骤。开发者修好后，用同一个场景在修复版上<Term>复测</Term>：每次重复执行都通过，问题才标记为「已修复」。
+      </PageHeader>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-        <StatTile label="缺陷总数" value={s.total} sub="Agent 版本 × 用例" />
-        <StatTile label="越权且真实写入" value={s.by_kind.side_effect} accent="var(--critical)" sub="轨迹 + 数据库实际写入" />
-        <StatTile label="越权尝试（被拦截）" value={s.by_kind.attempt} accent="var(--serious)" />
-        <StatTile label="已修复 / 已止损" value={`${s.by_status.fixed_verified} / ${s.by_status.mitigated}`} accent="var(--good)" sub="复测通过 / 无真实写入" />
-        <StatTile label={`${s.status_labels.fix_failed} / ${s.status_labels.open}`} value={`${s.by_status.fix_failed} / ${s.by_status.open}`} accent="var(--critical)" />
+        <StatTile label="问题总数" value={s.total} sub="Agent 版本 × 场景" />
+        <StatTile label={ISSUE_TEXT.side_effect} value={s.by_kind.side_effect} accent="var(--critical)" sub="越权并真实写入了数据库" />
+        <StatTile label={ISSUE_TEXT.attempt} value={s.by_kind.attempt} accent="var(--serious)" />
+        <StatTile label="已修复 / 已止损" value={`${s.by_status.fixed_verified} / ${s.by_status.mitigated}`} accent="var(--good)" sub="复测通过 / 不再改动数据" />
+        <StatTile label="修复后仍失败 / 待修复" value={`${s.by_status.fix_failed} / ${s.by_status.open}`} accent="var(--critical)" />
       </div>
       <Card
-        title="缺陷列表"
-        subtitle={`${rows.length} 个；默认只看授权与陈述类（任务未完成另列）`}
+        title="问题列表"
+        subtitle={`${rows.length} 个；默认只看越权和“说的和做的不一致”（任务没完成的另列）`}
         right={
           <div className="flex flex-wrap gap-2">
             <Segmented label="被测 Agent" value={target} onChange={setTarget} options={[{ value: "all", label: "全部" }, ...targets.map((t) => ({ value: t, label: t }))]} />
@@ -74,8 +79,8 @@ export function Defects() {
               value={kind}
               onChange={setKind}
               options={[
-                { value: "safety", label: "授权与陈述" },
-                { value: "side_effect", label: "真实写入" },
+                { value: "safety", label: "越权与陈述" },
+                { value: "side_effect", label: "改了数据" },
                 { value: "task", label: "任务" },
                 { value: "all", label: "全部" },
               ]}
@@ -84,7 +89,7 @@ export function Defects() {
               label="状态"
               value={status}
               onChange={setStatus}
-              options={[{ value: "all", label: "全部" }, ...(Object.keys(s.status_labels) as DefectStatus[]).map((k) => ({ value: k, label: s.status_labels[k] }))]}
+              options={[{ value: "all", label: "全部" }, ...(Object.keys(s.status_labels) as DefectStatus[]).map((k) => ({ value: k, label: STATUS_SHORT[k] }))]}
             />
           </div>
         }
@@ -93,8 +98,8 @@ export function Defects() {
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="hairline-b text-muted">
-                {["状态", "类型", "被测 Agent", "用例", "命中规则", "首个违规", "出现次数", "修复版复测"].map((h) => (
-                  <th key={h} className="px-2 py-2 font-medium">
+                {["状态", "问题", "被测 Agent", "场景", "出错步骤", "出现次数", "修复版复测"].map((h) => (
+                  <th key={h} className="whitespace-nowrap px-2 py-2 font-medium">
                     {h}
                   </th>
                 ))}
@@ -107,21 +112,20 @@ export function Defects() {
                     <StatusTag d={d} />
                   </td>
                   <td className="px-2 py-2">
-                    <Pill color={KIND_COLORS[d.kind]}>{d.kind_label}</Pill>
+                    <Pill color={KIND_COLORS[d.kind]}>{ISSUE_TEXT[d.kind]}</Pill>
                   </td>
                   <td className="whitespace-nowrap px-2 py-2">
                     <Pill color={versionColor(d.version)}>
                       {d.target} {d.version}
                     </Pill>
                   </td>
-                  <td className="px-2 py-2">
+                  <td className="min-w-[220px] px-2 py-2">
                     <a href={href("defects", d.id)} className="font-medium text-ink hover:underline">
                       {d.title}
                     </a>
                     <div className="mono text-[11px] text-muted">{d.case_id}</div>
                   </td>
-                  <td className="mono px-2 py-2 text-ink-2">{d.rules.join(", ") || "—"}</td>
-                  <td className="mono px-2 py-2 text-ink-2">{d.first.first_bad_step ? `step ${d.first.first_bad_step}` : "—"}</td>
+                  <td className="mono whitespace-nowrap px-2 py-2 text-ink-2">{d.first.first_bad_step ? `第 ${d.first.first_bad_step} 步` : "—"}</td>
                   <td className="whitespace-nowrap px-2 py-2 text-ink-2">{occurrenceText(d)}</td>
                   <td className="whitespace-nowrap px-2 py-2 text-ink-2">
                     {d.retest ? `${d.retest.version}：${d.retest.passed}/${d.retest.total} 通过` : d.fixed_version ? `${d.fixed_version}：未复测` : "无修复版本"}
@@ -149,14 +153,14 @@ export function DefectDetail({ id }: { id: string }) {
     <div className="space-y-5">
       <nav className="text-xs text-muted">
         <a href={href("defects")} className="hover:text-ink">
-          缺陷与复测
+          问题与复测
         </a>{" "}
         / <span className="text-ink-2">{d.id}</span>
       </nav>
       <header className="card p-5">
         <div className="flex flex-wrap items-center gap-2">
           <StatusTag d={d} />
-          <Pill color={KIND_COLORS[d.kind]}>{d.kind_label}</Pill>
+          <Pill color={KIND_COLORS[d.kind]}>{ISSUE_TEXT[d.kind]}</Pill>
           <Pill color={versionColor(d.version)}>
             {d.target} {d.version}
           </Pill>
@@ -170,17 +174,17 @@ export function DefectDetail({ id }: { id: string }) {
         </div>
         <h1 className="mt-2 text-xl font-semibold text-ink">{d.title}</h1>
         <p className="mt-1 text-xs text-ink-2">
-          {occurrenceText(d)}；命中规则 <span className="mono">{d.rules.join("、") || "—"}</span>
+          首次发现于「{planName(d.first.suite)}」· {occurrenceText(d)}；命中规则 <span className="mono">{d.rules.join("、") || "—"}</span>
         </p>
       </header>
 
       <div className="grid gap-5 lg:grid-cols-[1.2fr_1fr]">
         <Card
-          title="自动定位的证据"
+          title="平台自动定位的证据"
           subtitle={`最近一次出现：${first.run_id} 第 ${first.rep} 次执行（${first.mode === "live" ? "Live 真实模型" : "回放"}，${first.transport === "http" ? "独立进程" : "同进程"}）`}
           right={
             <a href={traceHref} className="rounded-md px-3 py-1.5 text-xs font-semibold text-white" style={{ background: "var(--s1)" }}>
-              打开三泳道审计时间轴
+              查看完整审计时间轴
             </a>
           }
         >
@@ -266,7 +270,7 @@ function RetestPanel({ d, onDone }: { d: Defect; onDone: () => void }) {
     return (
       <Card title="修复与复测" subtitle="这个版本还没有登记修复版本">
         <p className="text-sm text-ink-2">
-          在 <span className="mono">configs/targets.yaml</span> 的 <span className="mono">fixed_versions</span> 里登记修复版本（例如 <span className="mono">{`{${d.version}: ${d.version}-fix}`}</span>）后，就可以在这里用同一条用例复测。
+          这个 Agent 还没有登记修复版本。修好 Agent 后，可以直接对同一个场景重新「发起测试」看问题是否消失；如果要保留修复前后两个版本对比复测，在 <span className="mono">configs/targets.yaml</span> 的 <span className="mono">fixed_versions</span> 里登记修复版本（例如 <span className="mono">{`{${d.version}: ${d.version}-fix}`}</span>）。
         </p>
       </Card>
     );

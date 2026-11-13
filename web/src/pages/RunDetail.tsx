@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { HBars, OutcomeBar, OutcomeCell } from "../components/charts";
-import { Card, ErrorNote, Loading, Pill, Segmented, StatTile } from "../components/ui";
+import { Icon } from "../components/icons";
+import { Card, ErrorNote, Loading, Pill, Segmented, StatTile, Term } from "../components/ui";
 import { api, type Breakdown, type CaseRow } from "../lib/api";
-import { CATEGORY_NAMES, OUTCOME_META, compact, frac, href, pct, useAsync, versionColor } from "../lib/util";
+import { CATEGORY_NAMES, ISSUE_TEXT, OUTCOME_META, compact, frac, href, pct, planName, useAsync, versionColor } from "../lib/util";
 
 export function RunDetail({ runId }: { runId: string }) {
   const run = useAsync(() => api.run(runId), [runId]);
@@ -18,16 +19,18 @@ export function RunDetail({ runId }: { runId: string }) {
   return (
     <div className="space-y-5">
       <nav className="text-xs text-muted">
-        <a href={href()} className="hover:text-ink">总览</a> / <span className="text-ink-2">{runId}</span>
+        <a href={href("runs")} className="hover:text-ink">测试报告</a> / <span className="text-ink-2">{runId}</span>
       </nav>
       <header className="card flex flex-wrap items-center justify-between gap-3 p-5">
         <div>
-          <h1 className="mono text-lg font-semibold text-ink">{runId}</h1>
-          <div className="mt-1.5 flex flex-wrap gap-2">
+          <h1 className="text-xl font-semibold tracking-tight text-ink">{s ? `${s.target} ${s.agent_version} · ${planName(s.suite)}` : runId}</h1>
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
             {s && <Pill color={versionColor(s.agent_version)}>{s.target} {s.agent_version}</Pill>}
-            {s && <Pill>{s.mode}</Pill>}
+            {s && <Pill>{s.mode === "live" ? "真实调用模型" : s.mode === "replay" ? "回放" : s.mode}</Pill>}
             {s && <Pill>{s.model_id ?? "—"}</Pill>}
-            {s && <Pill>套件 {s.suite} · 每例 {s.reps} 次</Pill>}
+            {s && <Pill>{t.cases} 个场景 · 每个 {s.reps} 次</Pill>}
+            {s && <span className="text-[11px] text-muted">{new Date(s.finished_at).toLocaleString("zh-CN")}</span>}
+            <span className="mono text-[11px] text-muted">{runId}</span>
             {typeof b.config.reevaluated_from === "string" && <Pill color="var(--s7)">重新判定自 {b.config.reevaluated_from}</Pill>}
           </div>
         </div>
@@ -36,19 +39,21 @@ export function RunDetail({ runId }: { runId: string }) {
         </div>
       </header>
 
+      <Conclusion runId={runId} b={b} />
+
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
-        <StatTile label="执行次数" value={t.executions} sub={`${t.cases} 条用例`} />
-        <StatTile label="越权（含被拦截的尝试）" value={frac(t.auth_violation)} sub={pct(t.auth_violation, 1)} accent="var(--serious)" />
-        <StatTile label="真实写入的越权" value={frac(t.side_effect)} sub={pct(t.side_effect, 1)} accent="var(--critical)" />
-        <StatTile label="陈述与状态不符" value={frac(t.claim_violation)} sub={pct(t.claim_violation, 1)} />
-        <StatTile label="任务成功率" value={pct(t.task_success)} sub={frac(t.task_success)} accent="var(--good)" />
-        <StatTile label="pass^k（k 次全部通过）" value={pct(t.pass_k)} sub={`${frac(t.pass_k)} 条用例`} />
-        <StatTile label="结果不一致的用例" value={t.inconsistent_cases} sub={`tokens ${compact(t.tokens)}`} />
+        <StatTile label="执行次数" value={t.executions} sub={`${t.cases} 个场景`} />
+        <StatTile label="越权（含被拦下的）" value={frac(t.auth_violation)} sub={pct(t.auth_violation, 1)} accent="var(--serious)" />
+        <StatTile label="越权且改了数据" value={frac(t.side_effect)} sub={pct(t.side_effect, 1)} accent="var(--critical)" />
+        <StatTile label="说的和做的不一致" value={frac(t.claim_violation)} sub={pct(t.claim_violation, 1)} />
+        <StatTile label="任务完成率" value={pct(t.task_success)} sub={frac(t.task_success)} accent="var(--good)" />
+        <StatTile label="稳定通过率 pass^k" value={pct(t.pass_k)} sub={`${frac(t.pass_k)} 个场景`} />
+        <StatTile label="时好时坏的场景" value={t.inconsistent_cases} sub={`tokens ${compact(t.tokens)}`} />
       </div>
 
       <Card
-        title="执行矩阵"
-        subtitle="每格代表一次执行（同一用例重复 k 次）；点击查看该次执行的审计时间轴"
+        title="逐个场景的结果"
+        subtitle="每格代表一次执行（同一场景重复 k 次）；点击查看那一次执行的完整审计时间轴"
         right={<Segmented label="筛选" value={filter} onChange={setFilter} options={[{ value: "all", label: "全部用例" }, { value: "issues", label: "只看未全部通过" }]} />}
       >
         <div className="space-y-4">
@@ -90,15 +95,74 @@ export function RunDetail({ runId }: { runId: string }) {
   );
 }
 
+/** The run in a sentence or two, then each problem scenario with what went wrong and where to look. */
+function Conclusion({ runId, b }: { runId: string; b: Breakdown }) {
+  const t = b.totals;
+  const bad = b.cases.filter((c) => !c.pass_all);
+  const reps = b.summary?.reps ?? 1;
+  if (b.cases.length === 0) return null;
+  if (bad.length === 0) {
+    return (
+      <section className="flex items-center gap-3 rounded-xl px-5 py-4" style={{ background: "var(--good-wash)", border: "1px solid var(--good)" }}>
+        <span className="grid size-8 place-items-center rounded-full text-white" style={{ background: "var(--good)" }}>
+          <Icon name="check" size={18} strokeWidth={2.4} />
+        </span>
+        <div className="text-sm text-ink">
+          <b>全部通过。</b>
+          {t.cases} 个场景{reps > 1 ? `、每个重复 ${reps} 次` : ""}，没有发现<Term>越权</Term>，Agent 说的和数据库里发生的一致。
+        </div>
+      </section>
+    );
+  }
+  const writes = bad.filter((c) => c.reps.some((r) => r.side_effect));
+  return (
+    <section className="card overflow-hidden">
+      <div className="flex flex-wrap items-center gap-3 px-5 py-4" style={{ background: "var(--critical-wash)", borderBottom: "1px solid var(--border)" }}>
+        <span className="grid size-8 place-items-center rounded-full text-sm font-bold text-white" style={{ background: "var(--critical)" }}>
+          {bad.length}
+        </span>
+        <div className="text-sm text-ink">
+          <b>
+            {b.cases.length} 个场景中有 {bad.length} 个出现问题
+          </b>
+          {writes.length > 0 && <>，其中 {writes.length} 个越权并<Term>真实写入</Term>了数据库</>}。点击查看出错的那一步。
+        </div>
+      </div>
+      <ul className="divide-y divide-[var(--border)]">
+        {bad.map((c) => {
+          const failing = c.reps.filter((r) => r.outcome !== "PASS");
+          const first = failing[0];
+          const issue = c.reps.some((r) => r.side_effect) ? ISSUE_TEXT.side_effect : c.reps.some((r) => r.auth_violation) ? ISSUE_TEXT.attempt : c.reps.some((r) => r.claim_violation) ? ISSUE_TEXT.claim : first?.outcome === "ERROR" ? "执行出错" : ISSUE_TEXT.task;
+          return (
+            <li key={c.case_id}>
+              <a href={href("runs", runId, "cases", c.case_id, first?.rep ?? 0)} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3 hover:bg-[var(--surface-2)]">
+                <span className="min-w-0 flex-1 text-[13px] font-medium text-ink">{c.title}</span>
+                <Pill color={issue === ISSUE_TEXT.side_effect ? "var(--critical)" : "var(--serious)"}>{issue}</Pill>
+                <span className="text-xs text-ink-2">
+                  {reps > 1 ? `${reps} 次中 ${failing.length} 次` : "出现 1 次"}
+                  {first?.first_bad_step ? ` · 第 ${first.first_bad_step} 步` : ""}
+                </span>
+                <span className="text-xs font-semibold" style={{ color: "var(--brand)" }}>
+                  查看 →
+                </span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 function MatrixRows({ runId, rows }: { runId: string; rows: CaseRow[] }) {
   return (
     <div className="grid gap-y-1" style={{ gridTemplateColumns: "minmax(0, 1fr) auto" }}>
       {rows.map((row) => (
         <div key={row.case_id} className="contents">
-          <a href={href("runs", runId, "cases", row.case_id, row.reps[0]?.rep ?? 0)} className="flex min-w-0 items-center gap-2 rounded px-1 py-0.5 hover:bg-surface-2">
+          <a href={href("runs", runId, "cases", row.case_id, (row.reps.find((r) => r.outcome !== "PASS") ?? row.reps[0])?.rep ?? 0)} className="flex min-w-0 items-center gap-2 rounded px-1 py-0.5 hover:bg-surface-2">
             <span className="mono shrink-0 text-[11px] text-muted">{row.case_id.split("-").slice(0, 2).join("-")}</span>
             <span className="truncate text-xs text-ink">{row.title}</span>
-            {!row.consistent && <Pill color="var(--warning)">k 次结果不一致</Pill>}
+            {!row.consistent && <Pill color="var(--warning)">时好时坏</Pill>}
           </a>
           <div className="flex gap-[2px] pl-3">
             {row.reps.map((r) => (

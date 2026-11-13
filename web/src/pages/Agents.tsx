@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Card, ErrorNote, Loading, Pill } from "../components/ui";
-import { api, type AgentDescription, type ProbeReport, type TargetInfo, type WorkspaceAgent } from "../lib/api";
-import { href, useAsync, versionColor } from "../lib/util";
+import { Card, ErrorNote, Loading, PageHeader, Pill } from "../components/ui";
+import { api, type AgentDescription, type Business, type ProbeReport, type TargetInfo, type WorkspaceAgent } from "../lib/api";
+import { href, planName, useAsync, versionColor } from "../lib/util";
 import { CAPABILITY_LABELS } from "./Workspace";
 
 const CHECK_COLORS = { PASS: "var(--good)", FAIL: "var(--critical)", SKIP: "var(--muted)" } as const;
@@ -13,16 +13,25 @@ export function Agents() {
   if (!ws.data || !targets.data) return <Loading what="被测 Agent" />;
   return (
     <div className="space-y-5">
-      <section className="card p-5">
-        <h1 className="text-xl font-semibold text-ink">被测 Agent</h1>
-        <p className="mt-1.5 max-w-3xl text-sm text-ink-2">
-          被测 Agent 是测试对象，运行在自己的进程里，用自己的模型 Key。ConsentTrace 只知道它的地址，通过 Agent 协议拿取对话、工具轨迹和业务状态。Agent 声明了哪些能力，平台就开启对应的断言；缺少某项能力时，相关断言显示 UNSUPPORTED，不会给出 PASS。
-        </p>
-      </section>
+      <PageHeader
+        title="我的 Agent"
+        right={
+          <a href="#connect" className="btn btn-primary btn-md">
+            + 接入新的 Agent
+          </a>
+        }
+      >
+        被测 Agent 运行在它自己的进程里、用它自己的模型 Key，平台只通过地址访问它，不改它的代码。Agent 能提供哪些信息（对话、工具调用、数据库状态），平台就开启对应的检查；缺少的检查会标为“不可测”，不会给出通过。
+      </PageHeader>
       {ws.data.agents.map((a) => (
-        <AgentPanel key={a.name} a={a} t={targets.data!.find((t) => t.name === a.name)} onChange={ws.reload} />
+        <AgentPanel key={a.name} a={a} t={targets.data!.find((t) => t.name === a.name)} onChange={() => (ws.reload(), targets.reload())} />
       ))}
-      <ConnectNew />
+      <ConnectNew
+        onRegistered={() => {
+          ws.reload();
+          targets.reload();
+        }}
+      />
     </div>
   );
 }
@@ -55,6 +64,7 @@ function AgentPanel({ a, t, onChange }: { a: WorkspaceAgent; t?: TargetInfo; onC
             <span aria-hidden className="size-1.5 rounded-full" style={{ background: a.online ? "var(--good)" : "var(--muted)" }} />
             {a.online ? "在线" : "离线"}
           </span>
+          {a.like && <Pill color="var(--brand)">我接入的 · 沿用 {a.like} 的契约与场景</Pill>}
         </span>
       }
       subtitle={a.description}
@@ -66,12 +76,26 @@ function AgentPanel({ a, t, onChange }: { a: WorkspaceAgent; t?: TargetInfo; onC
             </Button>
           )}
           <Button onClick={() => act("probe", async () => setReport(await api.probe({ target: a.name })))} busy={busy === "probe"} disabled={!a.url}>
-            接入检查
+            检查连接
           </Button>
           <Button onClick={() => act("describe", async () => setDesc(await api.describe(a.name)))} busy={busy === "describe"}>
             工具定义
           </Button>
-          <a href={href("console", a.name, a.versions[0], a.suites.acceptance ? "acceptance" : Object.keys(a.suites)[0])} className="rounded-md px-3 py-1.5 text-xs font-semibold text-white" style={{ background: "var(--s1)" }}>
+          {a.like && (
+            <Button
+              onClick={() =>
+                act("remove", async () => {
+                  if (!window.confirm(`移除 ${a.name}？只会删除接入登记，不影响 Agent 本身和已有的测试报告。`)) return;
+                  await api.unregisterAgent(a.name);
+                  onChange();
+                })
+              }
+              busy={busy === "remove"}
+            >
+              移除
+            </Button>
+          )}
+          <a href={href("console", a.name, a.versions[0], a.suites.acceptance ? "acceptance" : Object.keys(a.suites)[0])} className="btn btn-primary btn-sm">
             测试此 Agent
           </a>
         </div>
@@ -86,7 +110,7 @@ function AgentPanel({ a, t, onChange }: { a: WorkspaceAgent; t?: TargetInfo; onC
           <KV k="模型" v={a.info ? (a.info.llm.live_available ? `${a.info.llm.model}（Agent 自己的 Key）` : "未配置 Key，只能回放") : "—"} />
           {!a.online && a.error && <p className="mt-1 text-[11px] text-critical">{a.error}</p>}
         </Section>
-        <Section title="能力声明 → 平台能做的审计">
+        <Section title="它能提供的信息 → 平台能做的检查">
           {caps ? (
             <ul className="space-y-1 text-xs">
               {(Object.keys(CAPABILITY_LABELS) as (keyof typeof CAPABILITY_LABELS)[]).map((k) => (
@@ -107,8 +131,8 @@ function AgentPanel({ a, t, onChange }: { a: WorkspaceAgent; t?: TargetInfo; onC
         <Section title="测试资产">
           <KV k="版本" v={<span className="flex flex-wrap gap-1">{a.versions.map((v) => <Pill key={v} color={versionColor(v)}>{v}{a.fixed_versions[v] ? ` → ${a.fixed_versions[v]}` : ""}</Pill>)}</span>} />
           <KV k="契约" v={t ? <a className="mono text-s1 hover:underline" href={href("suite")}>{t.contract_id}（{t.rules} 条规则）</a> : "—"} />
-          <KV k="用例集" v={<span className="flex flex-wrap gap-1">{Object.entries(a.suites).map(([s, n]) => <Pill key={s}>{s} {n}</Pill>)}</span>} />
-          {a.last_run && <KV k="最近运行" v={<a className="mono text-s1 hover:underline" href={href("runs", a.last_run.run_id)}>{a.last_run.run_id}</a>} />}
+          <KV k="测试方案" v={<span className="flex flex-wrap gap-1">{Object.entries(a.suites).map(([s, n]) => <Pill key={s}>{planName(s)} {n}</Pill>)}</span>} />
+          {a.last_run && <KV k="最近测试" v={<a className="text-s1 hover:underline" href={href("runs", a.last_run.run_id)}>{planName(a.last_run.suite)} · {new Date(a.last_run.finished_at).toLocaleString("zh-CN")}</a>} />}
         </Section>
       </div>
       {error && <p className="mt-3 text-xs text-critical">{error}</p>}
@@ -118,50 +142,154 @@ function AgentPanel({ a, t, onChange }: { a: WorkspaceAgent; t?: TargetInfo; onC
   );
 }
 
-function ConnectNew() {
-  const [url, setUrl] = useState("http://127.0.0.1:9200");
+function ConnectNew({ onRegistered }: { onRegistered: () => void }) {
+  const [url, setUrl] = useState("http://127.0.0.1:9201");
   const [report, setReport] = useState<ProbeReport | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  async function check() {
+    setBusy(true);
+    setError(null);
+    setReport(null);
+    try {
+      setReport(await api.probe({ url }));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
-    <Card title="接入新的 Agent" subtitle="任何语言写的 Agent，实现 Agent 协议的 6 个接口即可接入（docs/agent_protocol.md）；Python Agent 可直接用 SDK 的 serve_agent 包一层">
-      <div className="flex flex-wrap items-end gap-2">
+    <section id="connect" className="card scroll-mt-6 p-5 sm:p-6">
+      <h2 className="text-[15px] font-semibold text-ink">接入新的 Agent</h2>
+      <p className="mt-1 max-w-3xl text-xs leading-relaxed text-ink-2">
+        三步完成：填地址并检查连接 → 选择它属于哪类业务 → 保存。任何语言写的 Agent，实现 Agent 协议的 6 个 HTTP 接口即可接入（<span className="mono">docs/agent_protocol.md</span>）；Python Agent 用 SDK 的 <span className="mono">serve_agent</span> 包一层即可。
+      </p>
+      <form
+        className="mt-4 flex flex-wrap items-end gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void check();
+        }}
+      >
         <label className="flex min-w-64 flex-1 flex-col gap-1 text-[11px] text-muted">
-          Agent 协议地址
-          <input value={url} onChange={(e) => setUrl(e.target.value)} className="mono rounded-md px-2 py-1.5 text-xs" style={{ background: "var(--surface-2)", border: "1px solid var(--border)", color: "var(--ink)" }} />
+          Agent 地址
+          <input value={url} onChange={(e) => setUrl(e.target.value)} className="field mono" />
         </label>
-        <Button
-          busy={busy}
-          onClick={async () => {
-            setBusy(true);
-            setError(null);
-            try {
-              setReport(await api.probe({ url }));
-            } catch (e) {
-              setError((e as Error).message);
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          接入检查
-        </Button>
-      </div>
-      <ol className="mt-3 list-decimal space-y-1 pl-5 text-xs text-ink-2">
-        <li>启动 Agent 进程，例如：<span className="mono">uv run python -m targets.approval_agent.service --port 9102</span></li>
-        <li>在这里做接入检查：协议握手、自我描述、输出 / 轨迹 / 状态能力是否如实、会话之间是否隔离（不调用模型）</li>
-        <li>
-          在 <span className="mono">configs/targets.yaml</span> 登记 <span className="mono">service.url</span>、契约与用例集；契约可以在「契约工作台」由 AI 根据工具定义起草
-        </li>
-      </ol>
+        <button type="submit" disabled={busy || !url} className="btn btn-primary btn-md">
+          {busy ? "检查中…" : "检查连接"}
+        </button>
+      </form>
+      <p className="mt-2 text-[11px] text-muted">
+        想先试一下？在终端运行 <span className="mono text-ink-2">uv run python -m targets.tau_airline.service --port 9201</span>，再用上面的地址检查。检查不会调用模型，不产生费用。
+      </p>
       {error && <p className="mt-3 text-xs text-critical">{error}</p>}
-      {report && <ProbeResult report={report} />}
-    </Card>
+      {report && (
+        <ProbeResult
+          report={report}
+          onRegistered={() => {
+            onRegistered();
+            void check(); // the same URL now shows as a connected agent
+          }}
+        />
+      )}
+    </section>
+  );
+}
+
+function RegisterForm({ report, onRegistered }: { report: ProbeReport; onRegistered: () => void }) {
+  const info = report.info!;
+  const businesses = report.businesses ?? [];
+  const firstOk = businesses.find((b) => b.compatible) ?? (businesses.some((b) => b.checked) ? undefined : businesses[0]);
+  const [like, setLike] = useState(firstOk?.name ?? "");
+  const [name, setName] = useState(`my-${info.name}`.toLowerCase().replace(/[^a-z0-9-]/g, "-").slice(0, 32));
+  const [description, setDescription] = useState(info.description ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<{ name: string; versions: string[] } | null>(null);
+  const picked = businesses.find((b) => b.name === like);
+
+  async function save() {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await api.registerAgent({ name, url: report.url, like, description });
+      setDone(res);
+      onRegistered();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (done) {
+    const plan = picked?.suites.acceptance ? "acceptance" : Object.keys(picked?.suites ?? {})[0];
+    return (
+      <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl p-4" style={{ background: "var(--good-wash)", border: "1px solid var(--good)" }}>
+        <span className="text-sm text-ink">
+          已接入 <b>{done.name}</b>（版本 {done.versions.join("、")}），可以开始测试了。
+        </span>
+        <a href={href("console", done.name, done.versions[0], plan ?? "")} className="btn btn-primary btn-sm ml-auto">
+          开始测试 →
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 rounded-xl p-4" style={{ border: "1px solid var(--brand)", background: "var(--brand-wash)" }}>
+      <div className="text-sm font-semibold text-ink">它属于哪类业务？</div>
+      <p className="mt-0.5 text-xs text-ink-2">选定后，这个 Agent 会沿用该业务已有的测试契约（哪些操作需要用户同意）和全部测试场景。平台已按 Agent 自己声明的工具逐一核对。</p>
+      <div className="mt-3 grid gap-2 md:grid-cols-3" role="radiogroup" aria-label="业务类型">
+        {businesses.map((b) => (
+          <BusinessChoice key={b.name} b={b} checked={b.name === like} onPick={() => setLike(b.name)} />
+        ))}
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-[1fr_2fr]">
+        <label className="flex flex-col gap-1 text-[11px] text-muted">
+          名称（小写字母、数字、连字符）
+          <input value={name} onChange={(e) => setName(e.target.value)} className="field mono" />
+        </label>
+        <label className="flex flex-col gap-1 text-[11px] text-muted">
+          一句话说明
+          <input value={description} onChange={(e) => setDescription(e.target.value)} className="field" placeholder="例如：我们的航空客服 Agent（测试环境）" />
+        </label>
+      </div>
+      {error && <p className="mt-3 text-xs text-critical">{error}</p>}
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <button onClick={save} disabled={busy || !like || !name || (picked ? picked.checked && !picked.compatible : true)} className="btn btn-primary btn-md">
+          {busy ? "保存中…" : "保存并接入"}
+        </button>
+        <span className="text-[11px] text-muted">保存在本机 runs/_workspace/agents.yaml，随时可以移除。</span>
+      </div>
+      {!businesses.some((b) => b.compatible) && (
+        <p className="mt-3 text-xs text-ink-2">
+          这个 Agent 的工具和现有业务都对不上，说明它是一种新业务：需要先在「契约工作台」由 AI 根据它的工具定义起草测试契约，再准备测试场景，然后在 <span className="mono">configs/targets.yaml</span> 中登记（下方“手动登记”有按它的实际信息填好的模板）。
+        </p>
+      )}
+    </div>
+  );
+}
+
+function BusinessChoice({ b, checked, onPick }: { b: Business; checked: boolean; onPick: () => void }) {
+  const disabled = b.checked && !b.compatible;
+  return (
+    <button role="radio" aria-checked={checked} disabled={disabled} onClick={onPick} className="choice p-3">
+      <div className="flex items-center gap-2">
+        <span className="text-[13px] font-semibold text-ink">{b.name}</span>
+        {b.compatible && <Pill color="var(--good)">工具匹配</Pill>}
+      </div>
+      <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-ink-2">{b.description}</p>
+      <p className="mt-1.5 text-[11px] text-muted">
+        {disabled ? `缺少工具：${b.missing.join("、")}` : `${b.rules} 条授权规则 · ${Object.entries(b.suites).map(([s, n]) => `${planName(s)} ${n}`).slice(0, 2).join(" · ")}`}
+      </p>
+    </button>
   );
 }
 
 /** What a probe found, laid out like a registered agent: connection, verified capabilities, registration, tools. */
-function ProbeResult({ report }: { report: ProbeReport }) {
+function ProbeResult({ report, onRegistered }: { report: ProbeReport; onRegistered: () => void }) {
   const info = report.info;
   const caps = info?.capabilities;
   const status = Object.fromEntries(report.checks.map((c) => [c.key, c.status]));
@@ -183,7 +311,7 @@ function ProbeResult({ report }: { report: ProbeReport }) {
     <div className="mt-4 space-y-4">
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold text-white" style={{ background: report.ok ? "var(--good)" : "var(--critical)" }}>
-          接入检查{report.ok ? "通过" : "未通过"}
+          连接检查{report.ok ? "通过" : "未通过"}
         </span>
         {info ? (
           <span className="text-ink">
@@ -202,7 +330,7 @@ function ProbeResult({ report }: { report: ProbeReport }) {
             <KV k="模型" v={info.llm.live_available ? `${info.llm.model}（Agent 自己的 Key）` : "未配置 Key，只能回放"} />
             <KV k="回放" v={info.llm.replay ? "支持（平台下发录制，逐次校验请求哈希）" : "不支持"} />
           </Section>
-          <Section title="能力声明 → 平台能做的审计（已逐项核对）">
+          <Section title="它能提供的信息 → 平台能做的检查（已逐项实测）">
             <ul className="space-y-1 text-xs">
               {(Object.keys(CAPABILITY_LABELS) as (keyof typeof CAPABILITY_LABELS)[]).map((k) => {
                 const v = verified[k];
@@ -240,23 +368,31 @@ function ProbeResult({ report }: { report: ProbeReport }) {
               </div>
             </Section>
           ) : (
-            <Section title="尚未登记：接下来三步">
-              <ol className="list-decimal space-y-1 pl-4 text-xs text-ink-2">
-                <li>把下面这段加入 <span className="mono">configs/targets.yaml</span>（已按这个 Agent 的实际信息填好）</li>
-                <li>
-                  AI 起草测试契约：<span className="mono">uv run consenttrace draft-contract --target {slug}</span>，在「契约工作台」确认后保存
-                </li>
-                <li>编写或由 AI 扩增用例，然后在「测试任务」里批量执行</li>
-              </ol>
-              <pre className="mono mt-2 overflow-auto rounded-md p-2 text-[11px] text-ink-2" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-                {snippet}
-              </pre>
+            <Section title="还没有接入">
+              <p className="text-xs leading-relaxed text-ink-2">{report.ok ? "检查通过。在下方选择它属于哪类业务，保存后就可以测试。" : "检查没有通过，先按下面的逐项检查修好 Agent 再试。"}</p>
+              <details className="pt-1 text-[11px]">
+                <summary className="cursor-pointer text-muted hover:text-ink">新业务：手动登记到 configs/targets.yaml</summary>
+                <ol className="mt-2 list-decimal space-y-1 pl-4 text-ink-2">
+                  <li>把下面这段加入 <span className="mono">configs/targets.yaml</span></li>
+                  <li>
+                    AI 起草测试契约：<span className="mono">uv run consenttrace draft-contract --target {slug}</span>，在「契约工作台」确认后保存
+                  </li>
+                  <li>编写或由 AI 扩增测试场景，然后在「发起测试」里运行</li>
+                </ol>
+                <pre className="mono mt-2 overflow-auto rounded-md p-2 text-[11px] text-ink-2" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+                  {snippet}
+                </pre>
+              </details>
             </Section>
           )}
         </div>
       )}
-      <ProbeTable report={report} />
-      {report.describe && <ToolList desc={report.describe} sensitive={sensitive} />}
+      {!reg && report.ok && info && <RegisterForm report={report} onRegistered={onRegistered} />}
+      <details>
+        <summary className="cursor-pointer text-xs font-medium text-ink-2 hover:text-ink">逐项检查结果与工具定义</summary>
+        <ProbeTable report={report} />
+        {report.describe && <ToolList desc={report.describe} sensitive={sensitive} />}
+      </details>
     </div>
   );
 }
@@ -266,7 +402,7 @@ function ProbeTable({ report }: { report: ProbeReport }) {
     <div className="mt-4 rounded-lg p-3" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
       <div className="mb-1 text-xs font-semibold text-ink">逐项检查</div>
       <div className="mb-2 flex items-center gap-2 text-xs">
-        <b className="text-ink">接入检查 {report.url}</b>
+        <b className="text-ink">连接检查 {report.url}</b>
         <span className="rounded-full px-2 py-0.5 text-[11px] font-semibold text-white" style={{ background: report.ok ? "var(--good)" : "var(--critical)" }}>
           {report.ok ? "通过" : "未通过"}
         </span>

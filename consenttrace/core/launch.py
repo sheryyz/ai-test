@@ -15,7 +15,7 @@ from consenttrace.adapters.http import AgentProtocolError, HttpAgentAdapter, fet
 from consenttrace.config import LLMSettings
 from consenttrace.core.evidence import EvidenceStore, load_summary
 from consenttrace.core.loader import load_contract, load_suite
-from consenttrace.core.registry import TargetSpec, load_targets
+from consenttrace.core.registry import TargetSpec, load_targets, registered_agents_path
 from consenttrace.core.runner import CaseJob, RunConfig, Runner
 from consenttrace.llm.client import OpenAICompatClient
 from consenttrace.llm.replay import RecordingClient, ReplayClient
@@ -117,7 +117,7 @@ def prepare_run(
     on_result: Callable[[RunResult], None] | None = None,
     on_event: Callable[[CaseJob, TraceEvent], None] | None = None,
 ) -> PreparedRun:
-    targets = load_targets(targets_path)
+    targets = load_targets(targets_path, registered=registered_agents_path(runs_dir))
     if request.target not in targets:
         raise LaunchError(f"未知目标 {request.target}；可选：{', '.join(targets)}")
     spec = targets[request.target]

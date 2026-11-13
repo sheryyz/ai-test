@@ -7,7 +7,9 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import threading
+import time
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -16,7 +18,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import yaml
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -25,16 +27,19 @@ from consenttrace.adapters.http import AgentProtocolError, HttpAgentAdapter
 from consenttrace.adapters.probe import probe_agent
 from consenttrace.core.agents import AgentProcesses
 from consenttrace.core.analysis import run_breakdown
+from consenttrace.core.auth import SESSION_TTL, Sessions, UserStore
 from consenttrace.core.defects import collect_defects, defect_summary, replay_sources, runs_in_force
 from consenttrace.core.evidence import load_results, load_summary, load_trace
 from consenttrace.core.experiments import experiment_summary
 from consenttrace.core.launch import LaunchError, RunRequest, prepare_run
 from consenttrace.core.loader import LoadError, load_cases, load_contract
-from consenttrace.core.registry import TargetSpec, load_targets
+from consenttrace.core.registry import TargetSpec, load_targets, read_registered, registered_agents_path, write_registered
 from consenttrace.core.runner import CaseJob
 from consenttrace.schemas import RunResult, TestCase, TraceEvent
 
 WEB_DIST = Path(__file__).resolve().parent.parent / "web" / "dist"
+SESSION_COOKIE = "ct_session"
+AGENT_NAME = re.compile(r"^[a-z0-9][a-z0-9-]{1,31}$")
 
 
 class ContractText(BaseModel):
@@ -69,6 +74,18 @@ class ProbeRequest(BaseModel):
     url: str | None = None
     target: str | None = None
     version: str | None = None
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class RegisterAgent(BaseModel):
+    name: str
+    url: str
+    like: str  # the built-in target whose business (contract and suites) this agent shares
+    description: str = ""
 
 
 @dataclass
@@ -173,16 +190,61 @@ def create_app(
     web_dist: Path | None = WEB_DIST,
     agent_processes: AgentProcesses | None = None,
     labels_dir: Path | None = None,
+    users: UserStore | None = None,
 ) -> FastAPI:
+    """`users=None` serves without sign-in (tests, local scripts); `consenttrace serve` passes the accounts."""
     targets_path, runs_dir = Path(targets_path), Path(runs_dir)
     manager = RunManager(targets_path, runs_dir, Path(env_file) if env_file else None)
     procs = agent_processes or AgentProcesses(targets_path.resolve().parent.parent, log_dir=runs_dir / "_agent_logs")
     app = FastAPI(title="ConsentTrace", version="0.1.0")
     app.state.manager = manager
     app.state.agents = procs
+    sessions = Sessions()
+    registered_path = registered_agents_path(runs_dir)
 
     def targets() -> dict[str, TargetSpec]:
-        return load_targets(targets_path)
+        return load_targets(targets_path, registered=registered_path)
+
+    def current_user(request: Request) -> str | None:
+        return sessions.get(request.cookies.get(SESSION_COOKIE)) if users is not None else None
+
+    # ------------------------------------------------------------ sign-in
+
+    if users is not None:
+
+        @app.middleware("http")
+        async def require_login(request: Request, call_next: Any) -> Any:
+            path = request.url.path
+            public = path.startswith("/api/auth/") or path == "/api/health" or not path.startswith("/api/")
+            if not public and current_user(request) is None:
+                return JSONResponse({"detail": "请先登录"}, status_code=401)
+            return await call_next(request)
+
+    @app.get("/api/auth/me")
+    def auth_me(request: Request) -> dict[str, Any]:
+        if users is None:
+            return {"enabled": False, "user": None, "demo": None}
+        name = current_user(request)
+        user = users.users().get(name) if name else None
+        return {"enabled": True, "user": user.public() if user else None, "demo": users.demo_login()}
+
+    @app.post("/api/auth/login")
+    def auth_login(body: LoginRequest, response: Response) -> dict[str, Any]:
+        if users is None:
+            raise HTTPException(404, "本服务未启用登录")
+        user = users.authenticate(body.username, body.password)
+        if user is None:
+            time.sleep(0.3)  # slows down guessing; the hash check already takes the same time for every name
+            raise HTTPException(401, "用户名或密码错误")
+        token = sessions.create(user.username)
+        response.set_cookie(SESSION_COOKIE, token, httponly=True, samesite="lax", max_age=int(SESSION_TTL), path="/")
+        return {"user": user.public()}
+
+    @app.post("/api/auth/logout")
+    def auth_logout(request: Request, response: Response) -> dict[str, Any]:
+        sessions.drop(request.cookies.get(SESSION_COOKIE))
+        response.delete_cookie(SESSION_COOKIE, path="/")
+        return {"ok": True}
 
     def target(name: str) -> TargetSpec:
         found = targets().get(name)
@@ -243,6 +305,7 @@ def create_app(
                     "in_process": bool(spec.adapter),
                     "origin": spec.origin,
                     "fixed_versions": spec.fixed_versions,
+                    "like": spec.like,
                 }
             )
         return out
@@ -380,7 +443,7 @@ def create_app(
         if not url:
             raise HTTPException(400, "需要 url，或一个配置了 service.url 的 target")
         report = probe_agent(url, version=body.version).to_dict()
-        report["describe"], report["registered"] = None, None
+        report["describe"], report["registered"], report["businesses"] = None, None, []
         info = report.get("info")
         if not info:
             return report
@@ -389,6 +452,7 @@ def create_app(
             report["describe"] = HttpAgentAdapter(url, version=version).describe().model_dump(mode="json")
         except AgentProtocolError:
             pass  # optional endpoint; the probe already reports it as SKIP
+        report["businesses"] = businesses_for(report["describe"])
         spec = next((t for t in targets().values() if t.service_url and _same_endpoint(t.service_url, url)), None)
         if spec is not None:
             contract = load_contract(spec.contract)
@@ -403,6 +467,81 @@ def create_app(
                 "fixed_versions": spec.fixed_versions,
             }
         return report
+
+    def businesses_for(describe: dict[str, Any] | None) -> list[dict[str, Any]]:
+        """Built-in targets whose contract this agent could be tested with: it has every sensitive tool."""
+        tools = _tool_names(describe) if describe else None
+        out = []
+        for spec in targets().values():
+            if spec.registered:
+                continue
+            contract = load_contract(spec.contract)
+            needed = sorted({a.tool for a in contract.sensitive_actions})
+            missing = [t for t in needed if tools is not None and t not in tools]
+            out.append(
+                {
+                    "name": spec.name,
+                    "description": spec.description,
+                    "contract_id": contract.contract_id,
+                    "rules": len(contract.rules),
+                    "sensitive_tools": needed,
+                    "missing": missing,
+                    "checked": tools is not None,
+                    "compatible": tools is not None and not missing,
+                    "suites": {name: len(suite_cases(spec, name)) for name in spec.suites},
+                }
+            )
+        return out
+
+    @app.post("/api/agents/register", status_code=201)
+    def register_agent(body: RegisterAgent, request: Request) -> dict[str, Any]:
+        specs = targets()
+        if not AGENT_NAME.match(body.name):
+            raise HTTPException(422, "名称只能用小写字母、数字和连字符，2–32 个字符，以字母或数字开头")
+        if body.name in specs:
+            raise HTTPException(409, f"名称 {body.name} 已被占用")
+        base = specs.get(body.like)
+        if base is None or base.registered:
+            raise HTTPException(400, f"没有这种业务：{body.like}")
+        taken = next((t.name for t in specs.values() if t.service_url and _same_endpoint(t.service_url, body.url)), None)
+        if taken:
+            raise HTTPException(409, f"这个地址已经接入为 {taken}")
+        report = probe_agent(body.url)
+        if not report.ok or not report.info:
+            failed = [f"{c.title}：{c.detail}" for c in report.checks if c.status == "FAIL"] or ["Agent 没有响应"]
+            raise HTTPException(400, "接入检查未通过，不能保存。" + "；".join(failed))
+        versions = [str(v) for v in report.info.get("versions") or []] or ["v1"]
+        try:
+            describe = HttpAgentAdapter(body.url, version=versions[0]).describe().model_dump(mode="json")
+        except AgentProtocolError:
+            describe = None
+        business = next(b for b in businesses_for(describe) if b["name"] == base.name)
+        if business["missing"]:
+            raise HTTPException(400, f"这个 Agent 没有 {base.name} 契约要求的敏感工具：{'、'.join(business['missing'])}")
+        now = datetime.now(UTC).astimezone()
+        who = current_user(request)
+        entries = read_registered(registered_path)
+        entries[body.name] = {
+            "like": base.name,
+            "description": body.description.strip() or f"{base.name} 同类业务的 Agent（{body.url}）",
+            "origin": f"用户接入（{who + '，' if who else ''}{now:%Y-%m-%d %H:%M}）；契约与用例沿用 {base.name}"
+            + ("" if describe else "；Agent 未提供工具定义，敏感工具未核对"),
+            "service": {"url": body.url.strip().rstrip("/")},
+            "versions": versions,
+            "registered_at": now.isoformat(timespec="seconds"),
+        }
+        write_registered(registered_path, entries)
+        return {"name": body.name, "versions": versions, "like": base.name, "tools_checked": describe is not None}
+
+    @app.delete("/api/agents/{name}")
+    def unregister_agent(name: str) -> dict[str, Any]:
+        spec = target(name)
+        if not spec.registered:
+            raise HTTPException(400, "内置的被测 Agent 在 configs/targets.yaml 中维护，不能在界面里删除")
+        entries = read_registered(registered_path)
+        entries.pop(name, None)
+        write_registered(registered_path, entries)
+        return {"ok": True}
 
     # ------------------------------------------------------------ defects, re-tests and the workspace
 
@@ -527,6 +666,8 @@ def create_app(
                     "fixed_versions": spec.fixed_versions,
                     "in_process": bool(spec.adapter),
                     "last_run": last_run.get(spec.name),
+                    "like": spec.like,
+                    "registered_at": spec.registered_at,
                 }
                 for spec in specs.values()
             ],
@@ -798,6 +939,15 @@ def _same_endpoint(a: str, b: str) -> bool:
         return u.strip().rstrip("/").replace("://localhost", "://127.0.0.1")
 
     return norm(a) == norm(b)
+
+
+def _tool_names(describe: dict[str, Any]) -> set[str]:
+    names = set()
+    for tool in describe.get("tools") or []:
+        fn = tool.get("function", tool) if isinstance(tool, dict) else {}
+        if isinstance(fn, dict) and fn.get("name"):
+            names.add(str(fn["name"]))
+    return names
 
 
 def _ts(iso: str) -> float:

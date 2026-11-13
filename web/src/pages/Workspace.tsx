@@ -1,5 +1,5 @@
 import { OutcomeBar } from "../components/charts";
-import { Card, ErrorNote, Loading, Pill } from "../components/ui";
+import { Card, ErrorNote, Loading, PageHeader, Pill } from "../components/ui";
 import { api, type Capabilities, type Defect, type DefectStatus, type Workspace as WorkspaceData, type WorkspaceAgent } from "../lib/api";
 import { href, useAsync, versionColor } from "../lib/util";
 
@@ -19,31 +19,17 @@ export const STATUS_COLORS: Record<DefectStatus, string> = {
   open: "var(--serious)",
 };
 
-export function Workspace() {
+/** For contest reviewers: the acceptance path, how the four path-2 directions map onto the product, and the raw boards. */
+export function Review() {
   const ws = useAsync(() => api.workspace(), []);
   if (ws.error) return <ErrorNote error={ws.error} />;
-  if (!ws.data) return <Loading what="工作台" />;
+  if (!ws.data) return <Loading what="评审说明" />;
   const w = ws.data;
   return (
     <div className="space-y-5">
-      <section className="card p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="max-w-3xl">
-            <h1 className="text-2xl font-semibold text-ink">测试工作台</h1>
-            <p className="mt-2 text-sm leading-relaxed text-ink-2">
-              ConsentTrace 是 AI Agent 的自动化测试平台。被测 Agent 以<b className="text-ink">独立进程</b>运行，平台只通过 Agent 协议拿到它的对话、工具轨迹和业务状态。用例里标注的可信用户事件驱动一个独立的授权账本；Agent 每调用一次敏感工具，平台都核对这一刻的授权是否有效，再用数据库的实际写入核实副作用。
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <a href={href("console")} className="rounded-md px-3.5 py-2 text-sm font-semibold text-white" style={{ background: "var(--s1)" }}>
-              新建测试
-            </a>
-            <a href={href("agents")} className="rounded-md px-3.5 py-2 text-sm font-medium text-ink" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
-              接入 Agent
-            </a>
-          </div>
-        </div>
-      </section>
+      <PageHeader eyebrow="面向比赛评审" title="评审说明">
+        这一页给评审老师：按下面 5 步可以亲自验证平台的核心能力，每一步都链接到可以重新执行的页面；下方是赛题路径二四类测试工具在本平台中的位置。普通用户从「首页」开始即可，不需要看这一页。
+      </PageHeader>
 
       <AcceptancePath steps={w.acceptance} />
 
@@ -77,9 +63,9 @@ function ToolMap({ w }: { w: WorkspaceData }) {
       what: "批量执行多轮授权用例，规则引擎逐步判定，缺陷归并与修复复测，版本回归对比",
       stat: `${s.total} 个缺陷 · ${s.by_status.fixed_verified} 个复测通过`,
       links: [
-        ["测试任务", href("console")],
-        ["缺陷与复测", href("defects")],
-        ["回归对比", href("compare")],
+        ["发起测试", href("console")],
+        ["问题与复测", href("defects")],
+        ["版本对比", href("compare")],
       ],
     },
     {
@@ -102,7 +88,7 @@ function ToolMap({ w }: { w: WorkspaceData }) {
       what: "三泳道时间轴：可信用户通道、Agent 与工具通道（含可见推理）、业务状态通道；首个违规步骤与数据库差分",
       stat: "每次执行都可回放审计",
       links: [
-        ["运行记录", href("runs")],
+        ["测试报告", href("runs")],
         ["实验分析", href("analysis")],
       ],
     },
@@ -202,7 +188,7 @@ function DefectBoard({ w }: { w: WorkspaceData }) {
   const s = w.defects.summary;
   const order: DefectStatus[] = ["open", "awaiting_retest", "fix_failed", "mitigated", "fixed_verified"];
   return (
-    <Card title="缺陷看板" subtitle={`${s.total} 个缺陷（Agent 版本 × 用例），从全部有效运行的判定中归并`} right={<a className="text-xs text-s1 hover:underline" href={href("defects")}>全部缺陷 →</a>}>
+    <Card title="缺陷看板" subtitle={`${s.total} 个缺陷（Agent 版本 × 用例），从全部有效运行的判定中归并`} right={<a className="text-xs text-s1 hover:underline" href={href("defects")}>全部问题 →</a>}>
       <div className="mb-3 flex h-2.5 overflow-hidden rounded-full" role="img" aria-label="缺陷状态分布">
         {order.map((k) => (s.by_status[k] ? <div key={k} style={{ width: `${(s.by_status[k] / s.total) * 100}%`, background: STATUS_COLORS[k] }} /> : null))}
       </div>
@@ -243,7 +229,7 @@ export function DefectLine({ d }: { d: Defect }) {
 
 function RecentRuns({ w }: { w: WorkspaceData }) {
   return (
-    <Card title="最近的测试任务" subtitle="复测任务会标出它复测的是哪个缺陷" right={<a className="text-xs text-s1 hover:underline" href={href("runs")}>全部运行记录 →</a>}>
+    <Card title="最近的测试任务" subtitle="复测任务会标出它复测的是哪个缺陷" right={<a className="text-xs text-s1 hover:underline" href={href("runs")}>全部测试报告 →</a>}>
       <ul className="space-y-2">
         {w.recent_runs.map((r) => (
           <li key={r.run_id}>
