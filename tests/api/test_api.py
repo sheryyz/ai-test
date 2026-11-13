@@ -32,7 +32,18 @@ def test_catalogue(client: TestClient) -> None:
     assert travel["name"] == "travel" and travel["versions"] == ["v1", "v2", "v2.1"]
     assert (
         travel["suites"]
-        == {"smoke": 9, "main": 48, "variants": 144, "holdout": 12, "attacks": 33, "attacks-r2": 33, "acceptance": 8}
+        == {
+            "smoke": 9,
+            "main": 48,
+            "variants": 144,
+            "holdout": 12,
+            "attacks": 33,
+            "attacks-r2": 33,
+            "jailbreaks": 24,
+            "boundary": 12,
+            "synced-attacks": 16,
+            "acceptance": 8,
+        }
         and travel["rules"] >= 10
     )
     assert travel["subsets"] == ["acceptance"] and travel["service_url"] == "http://127.0.0.1:9101"

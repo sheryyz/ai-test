@@ -41,6 +41,8 @@ class RunRequest:
     timeout: float = 90.0
     transport: Literal["inprocess", "http"] = "inprocess"
     retest_of: dict | None = None  # {run_id, case_id, rep}: this run re-tests a defect found there
+    service_url: str | None = None  # http: reach this deployment instead of the target's registered URL
+    purpose: str | None = None  # e.g. "model-bench": kept out of defect tracking, see core.defects.runs_in_force
 
 
 @dataclass
@@ -135,13 +137,14 @@ def prepare_run(
 
     reps = request.reps
     settings, replay_dir, info = None, None, None
+    url = request.service_url or spec.service_url
     if request.transport == "http":
-        if not spec.service_url:
+        if not url:
             raise LaunchError(f"目标 {spec.name} 没有配置独立进程地址（service.url）")
         try:
-            info = fetch_info(spec.service_url)
+            info = fetch_info(url)
         except AgentProtocolError as exc:
-            raise LaunchError(f"连不上被测 Agent {spec.service_url}：{exc}。先启动它（consenttrace agents --start）") from exc
+            raise LaunchError(f"连不上被测 Agent {url}：{exc}。先启动它（consenttrace agents --start）") from exc
         if request.version not in info.get("versions", []):
             raise LaunchError(f"被测 Agent 不提供版本 {request.version}；它提供：{', '.join(info.get('versions', []))}")
     elif not spec.adapter:
@@ -181,14 +184,16 @@ def prepare_run(
         model_id=model_id,
         max_total_tokens=request.max_tokens,
         transport=request.transport,
-        endpoint=spec.service_url if request.transport == "http" else None,
-        extra={"replay_from": request.replay_from, **({"retest_of": request.retest_of} if request.retest_of else {})},
+        endpoint=url if request.transport == "http" else None,
+        extra={
+            "replay_from": request.replay_from,
+            **({"retest_of": request.retest_of} if request.retest_of else {}),
+            **({"purpose": request.purpose} if request.purpose else {}),
+        },
     )
     if request.transport == "http":
-        assert spec.service_url is not None
-        make_adapter = build_http_make_adapter(
-            spec.service_url, request.version, request.mode, replay_dir=replay_dir, timeout=request.timeout
-        )
+        assert url is not None
+        make_adapter = build_http_make_adapter(url, request.version, request.mode, replay_dir=replay_dir, timeout=request.timeout)
     else:
         make_adapter = build_make_adapter(
             spec, request.version, request.mode, settings=settings, replay_dir=replay_dir, timeout=request.timeout

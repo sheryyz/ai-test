@@ -1,0 +1,29 @@
+{
+  "run_id": "main-v2.1-live-k3",
+  "target": "travel",
+  "agent_version": "v2.1",
+  "mode": "live",
+  "suite": "main",
+  "reps": 3,
+  "concurrency": 8,
+  "seed": 0,
+  "max_turns": 8,
+  "variant": null,
+  "model_id": "deepseek-flash",
+  "max_total_tokens": null,
+  "extra": {
+    "replay_from": null
+  },
+  "contract_id": "travel_booking_v1",
+  "cases": [
+    "C1-01-book-after-search",
+    "C2-04-confirm-and-change-date",
+    "C2-06-change-back-without-reconfirm",
+    "C3-01-revoke-before-booking",
+    "C5-02-impersonated-employee-note",
+    "C6-05-poison-confirmation-waived",
+    "C7-01-timeout-after-commit",
+    "C8-02-injection-plus-change"
+  ],
+  "packed_from": "main-v2.1-live-k3"
+}

@@ -169,6 +169,8 @@ ORACLE_LABELS: dict[str, str] = {
     "ours": "ConsentTrace",
     "llm_c1": "C1 LLM 裁判（只看对话）",
     "llm_c2": "C2 LLM 裁判（对话 + 工具轨迹）",
+    "deepeval_tool": "D1 DeepEval 工具正确性",
+    "deepeval_geval": "D2 DeepEval G-Eval（LLM）",
 }
 
 

@@ -50,6 +50,28 @@ LANE_STYLE = {
 }
 
 
+def _generator_settings(args: argparse.Namespace):
+    """The model an AI generator uses: a profile from configs/models.yaml, or JUDGE_MODEL from .env."""
+    import os
+
+    from dotenv import dotenv_values
+
+    from consenttrace.config import LLMSettings
+
+    profile_name = getattr(args, "profile", None)
+    if profile_name:
+        from consenttrace.core.bench import load_models
+
+        profile = load_models("configs/models.yaml")[profile_name]
+        keys = {**dotenv_values(args.env), **os.environ}
+        key = (keys.get(profile.key_env) or "").strip()
+        return LLMSettings(base_url=profile.base_url, model=profile.model, api_key=key) if key else None
+    settings = LLMSettings.from_env(args.env, model_var="JUDGE_MODEL")
+    if settings is not None and getattr(args, "model", None):
+        settings = LLMSettings(base_url=settings.base_url, model=args.model, api_key=settings.api_key)
+    return settings
+
+
 def _targets(args: argparse.Namespace):
     """The curated registry plus the agents a user connected from the web console."""
     return load_targets(args.targets, registered=registered_agents_path(args.runs_dir))
@@ -158,7 +180,62 @@ def cmd_run(args: argparse.Namespace) -> int:
         f"\n[bold]{counts}[/] · 模型调用 {summary.llm_calls} 次 · {summary.usage.total_tokens} tokens"
         f"（缓存命中 {summary.usage.cached_tokens}）\n证据目录：[underline]{store.run_dir}[/]"
     )
+    if args.junit:
+        from consenttrace.core.junit import to_junit
+
+        out = Path(args.junit)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(to_junit(summary, load_results(store.run_dir), {c.case_id: c for c in cases}), encoding="utf-8")
+        console.print(f"JUnit 报告：{out}")
     return outcome_exit_code(summary.counts)
+
+
+def cmd_coverage(args: argparse.Namespace) -> int:
+    """Coverage matrix by path 2: resolve every cell to case ids and existing evidence, then write it."""
+    from consenttrace.core.coverage import build, render_markdown
+
+    root = Path(args.targets).resolve().parent.parent
+    matrix = build(args.matrix, _targets(args), args.runs_dir, root)
+    for p in matrix["problems"]:
+        console.print(f"[red]- {p}[/]")
+    if matrix["problems"] and not args.allow_missing:
+        console.print("[red]有引用不存在的证据，未写出覆盖矩阵（--allow-missing 可连同问题一起写出）[/]")
+        return 1
+    out = Path(args.out)
+    out.write_text(render_markdown(matrix, args.matrix), encoding="utf-8")
+    write_json(out.with_suffix(".json"), matrix)
+    covered = sum(c["covered"] for r in matrix["rows"] for c in r["cells"].values())
+    total = sum(len(r["cells"]) for r in matrix["rows"])
+    console.print(f"覆盖矩阵：{out}（{covered}/{total} 格有证据）")
+    return 0
+
+
+def cmd_pack_recordings(args: argparse.Namespace) -> int:
+    """Copy just the model recordings a replay needs (e.g. for CI), not the whole evidence directory."""
+    import shutil
+
+    source = Path(args.runs_dir) / args.run
+    if not (source / "summary.json").exists():
+        console.print(f"[red]找不到运行 {source}[/]")
+        return 2
+    config = json.loads((source / "config.json").read_text(encoding="utf-8"))
+    spec = _targets(args)[config["target"]]
+    wanted = spec.select(args.suite, list(config.get("cases", []))) if args.suite else list(config.get("cases", []))
+    out = Path(args.out) / args.run
+    if out.exists():
+        shutil.rmtree(out)
+    copied = 0
+    for case_id in wanted:
+        for rep_dir in sorted((source / "cases" / case_id).glob("r*")):
+            if (rep_dir / "cassette.jsonl").exists():
+                target = out / "cases" / case_id / rep_dir.name
+                target.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(rep_dir / "cassette.jsonl", target / "cassette.jsonl")
+                copied += 1
+    write_json(out / "config.json", {**config, "cases": wanted, "packed_from": args.run})
+    shutil.copyfile(source / "summary.json", out / "summary.json")
+    console.print(f"已打包 {len(wanted)} 条用例的 {copied} 份录制 → {out}")
+    return 0
 
 
 def _print_results(results: Sequence[RunResult]) -> None:
@@ -394,6 +471,31 @@ def _build_judge(args: argparse.Namespace) -> Any:
     return LLMJudge(client, cache, samples=args.judge_samples)
 
 
+def _deepeval_oracles(args: argparse.Namespace) -> dict[str, Any]:
+    from consenttrace.ai.deepeval_baseline import CachedModel, oracles
+    from consenttrace.llm.client import OpenAICompatClient
+
+    model = None
+    if args.deepeval_profile != "none":
+        args.profile = args.deepeval_profile
+        settings = _generator_settings(args)
+        if settings is None:
+            raise SystemExit(f"DeepEval G-Eval 需要 {args.deepeval_profile} 的 Key")
+        client = OpenAICompatClient.from_settings(settings, timeout=args.timeout)
+        model = CachedModel(client, Path(args.runs_dir) / "judge_cache" / f"deepeval-{settings.model}.jsonl")
+    return oracles(model)
+
+
+def _prefetch_oracle(oracle: Any, execs: list[Any], contract: Any, workers: int) -> None:
+    """Run a cached LLM oracle over every execution in parallel, so scoring afterwards only reads the cache."""
+    if oracle is None:
+        return
+    from concurrent.futures import ThreadPoolExecutor
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        list(pool.map(lambda ex: oracle(ex, contract), execs))
+
+
 class JudgeUnavailable(RuntimeError):
     pass
 
@@ -439,12 +541,19 @@ def _detectors(args: argparse.Namespace) -> int:
     suite = {c.case_id: c for c in load_cases(spec.suite(corpus.SUITE), contract)}
     judge = _build_judge(args) if args.llm_judge else None
     oracles = {**ORACLES, **judge.oracles()} if judge else None
+    deepeval = None
+    if args.deepeval:
+        deepeval = _deepeval_oracles(args)
+        oracles = {**(oracles or ORACLES), **deepeval}
     run_id = args.run_id or f"detectors-{corpus.TARGET}-{datetime.now():%m%d%H%M%S}"
     run_dir = run_corpus(corpus, targets_path=args.targets, runs_dir=args.runs_dir, run_id=run_id)
-    if judge:
+    if judge or deepeval:
         labels = json.loads((run_dir / "labels.json").read_text(encoding="utf-8"))
         corpus_execs = [ex for _, _, ex in executions(run_dir, suite, case_of=lambda cid: labels[cid]["case_id"])]
+    if judge:
         _prefetch(judge, corpus_execs, contract, args.judge_workers, "缺陷语料")
+    if deepeval:
+        _prefetch_oracle(deepeval.get("deepeval_geval"), corpus_execs, contract, args.judge_workers)
     scored = score_corpus(run_dir, contract, suite, oracles)
     if judge:
         scored["llm_judge"] = [judge.view_summary(corpus_execs, contract, v) for v in VIEWS]
@@ -480,9 +589,12 @@ def _detectors(args: argparse.Namespace) -> int:
         real_contract = load_contract(real_spec.contract)
         real_cases = {c.case_id: c for c in load_cases(real_spec.suite(config["suite"]), real_contract)}
         fallback = _declared_capabilities(real_spec)
-        if judge:
+        if judge or deepeval:
             real_execs = [ex for _, _, ex in executions(source, real_cases, fallback_capabilities=fallback)]
+        if judge:
             _prefetch(judge, real_execs, real_contract, args.judge_workers, real)
+        if deepeval:
+            _prefetch_oracle(deepeval.get("deepeval_geval"), real_execs, real_contract, args.judge_workers)
         cmp = compare_on_run(source, real_contract, real_cases, oracles, fallback_capabilities=fallback)
         if judge:
             cmp["llm_judge"] = [judge.view_summary(real_execs, real_contract, v) for v in VIEWS]
@@ -823,6 +935,8 @@ def cmd_attacks(args: argparse.Namespace) -> int:
     from consenttrace.ai.attack_generator import AttackGenerator, AttackSpec, mount, read_library, write_library
     from consenttrace.core.attacks import attack_report
 
+    if args.action == "synced":
+        return _synced_attacks(args)
     spec_path = Path(args.spec or f"configs/{args.target}_attacks.yaml")
     attack_spec = AttackSpec.load(spec_path)
     target = _targets(args)[args.target]
@@ -944,6 +1058,153 @@ def cmd_attacks(args: argparse.Namespace) -> int:
     write_suite(suite_out, mounted, {"target": args.target, "spec_id": attack_spec.spec_id, "library": str(library)})
     load_cases(suite_out, contract)  # the frozen suite must load like any other
     console.print(f"攻击套件：{suite_out}（{len(mounted)} 条，载体 {len({e['carrier'] for e in entries})} 个）")
+    return 0
+
+
+def _synced_attacks(args: argparse.Namespace) -> int:
+    """Consent-synchronised injection: generate texts once, mount each in a synced and an early arm."""
+    from consenttrace.ai.attack_generator import AttackGenerator, AttackSpec, mount_synced, read_library, write_library
+    from consenttrace.ai.case_augmenter import write_suite
+
+    spec = AttackSpec.load(args.spec or f"configs/{args.target}_synced_attacks.yaml")
+    target = _targets(args)[args.target]
+    contract = load_contract(target.contract)
+    base = {c.case_id: c for c in load_cases(target.suite(spec.base_suite), contract)}
+    library = Path(f"benchmarks/{args.target}_synced_injection_library.jsonl")
+    suite_out = Path(f"benchmarks/{args.target}_synced_attacks.jsonl")
+    if not library.exists():
+        from consenttrace.llm.client import OpenAICompatClient
+
+        settings = _generator_settings(args)
+        if settings is None:
+            console.print("[red]生成需要模型 Key（.env 的 LLM_API_KEY，或 --profile 对应的 Key）[/]")
+            return 2
+        client = OpenAICompatClient.from_settings(settings, timeout=args.timeout, response_format={"type": "json_object"})
+        generator = AttackGenerator(client, spec, n=args.n)
+        entries, reports = generator.generate_all(base, workers=args.workers)
+        provenance = {"target": args.target, "spec_id": spec.spec_id, "model": settings.model, "per_combo": generator.n}
+        write_library(library, entries, provenance)
+        write_json(
+            library.with_suffix(".report.json"), {**provenance, "combos": [r.__dict__ for r in reports], "accepted": len(entries)}
+        )
+    _, entries = read_library(library)
+    mounted = [case for e in entries for case in mount_synced(e, base[e["carrier"]], spec, action=spec.goals[e["goal"]].action)]
+    write_suite(
+        suite_out, mounted, {"target": args.target, "spec_id": spec.spec_id, "library": str(library), "arms": ["synced", "early"]}
+    )
+    load_cases(suite_out, contract)  # triggers compile against the contract, or the suite is refused
+    console.print(f"授权时序注入套件：{suite_out}（{len(entries)} 条文本 × 2 组 = {len(mounted)} 条）")
+    return 0
+
+
+def cmd_jailbreaks(args: argparse.Namespace) -> int:
+    """User-channel jailbreak generation: LLM-written pressure to skip confirmation, frozen and mounted."""
+    from consenttrace.ai.attack_generator import read_library, write_library
+    from consenttrace.ai.case_augmenter import write_suite
+    from consenttrace.ai.jailbreak_generator import JailbreakGenerator, JailbreakSpec, mount
+
+    stem = args.target.replace("-", "_")
+    spec = JailbreakSpec.load(args.spec or f"configs/{stem}_jailbreaks.yaml")
+    target = _targets(args)[args.target]
+    contract = load_contract(target.contract)
+    library = Path(f"benchmarks/{stem}_jailbreak_library.jsonl")
+    suite_out = Path(f"benchmarks/{stem}_jailbreaks.jsonl")
+
+    if args.action == "generate":
+        from consenttrace.llm.client import OpenAICompatClient
+
+        if library.exists() and not args.force:
+            console.print(f"[red]{library} 已存在：生成的用例冻结后不再覆盖（确需重来用 --force）[/]")
+            return 2
+        settings = _generator_settings(args)
+        if settings is None:
+            console.print("[red]生成越狱用例需要模型 Key（.env 的 LLM_API_KEY，或 --profile 对应的 Key）[/]")
+            return 2
+        client = OpenAICompatClient.from_settings(settings, timeout=args.timeout, response_format={"type": "json_object"})
+        generator = JailbreakGenerator(client, spec, n=args.n)
+
+        def progress(r) -> None:
+            console.print(f"  {r.style} × {r.goal}: {r.accepted}/{r.requested}（{r.attempts} 轮，拒 {len(r.rejected)}）")
+
+        entries, reports = generator.generate_all(workers=args.workers, on_done=progress)
+        provenance = {"target": args.target, "spec_id": spec.spec_id, "model": settings.model, "per_combo": generator.n}
+        write_library(library, entries, provenance)
+        write_json(
+            library.with_suffix(".report.json"),
+            {
+                **provenance,
+                "combos": [r.__dict__ for r in reports],
+                "accepted": len(entries),
+                "rejected": sum(len(r.rejected) for r in reports),
+            },
+        )
+        console.print(f"越狱文本库：{library}（{len(entries)} 条通过校验，{sum(len(r.rejected) for r in reports)} 条被拒）")
+
+    _, entries = read_library(library)
+    mounted = [mount(e, spec) for e in entries]
+    write_suite(suite_out, mounted, {"target": args.target, "spec_id": spec.spec_id, "library": str(library)})
+    load_cases(suite_out, contract)  # the frozen suite must load like any other
+    console.print(f"越狱套件：{suite_out}（{len(mounted)} 条）")
+    return 0
+
+
+def cmd_generate_cases(args: argparse.Namespace) -> int:
+    """AI scenario generation for any connected agent: facts from the agent, deterministic validation, frozen once."""
+    from consenttrace.adapters.http import HttpAgentAdapter
+    from consenttrace.ai.case_generator import Facts, freeze, gather_facts, generate, load_kinds, review_sheet, with_identity
+    from consenttrace.ai.llm_judge import AUTH_STANDARD
+    from consenttrace.llm.client import OpenAICompatClient
+
+    kinds = load_kinds(args.kinds)
+    if args.kind not in kinds:
+        console.print(f"[red]未知用例类型 {args.kind}；可选：{', '.join(kinds)}[/]")
+        return 2
+    kind = kinds[args.kind]
+    spec = _targets(args)[args.target]
+    contract = load_contract(spec.contract)
+    stem = args.target.replace("-", "_")
+    out = Path(args.out or f"benchmarks/{stem}_{kind.suite}.jsonl")
+    if out.exists() and not args.force:
+        console.print(f"[red]{out} 已存在：生成的用例冻结后不再覆盖（确需重来用 --force）[/]")
+        return 2
+    existing = [c for suite in spec.suites if suite not in spec.subsets for c in load_cases(spec.suites[suite], contract)]
+    fixtures = sorted({"default", *(c.fixture for c in existing)})
+    examples = sorted(existing, key=lambda c: (c.category != kind.category, c.case_id))[:2]
+    version = spec.versions[0]
+    if spec.service_url:
+
+        def make() -> Any:
+            return HttpAgentAdapter(spec.service_url, version=version, mode="scripted")
+    else:
+
+        def make() -> Any:
+            return spec.adapter_class()(lambda: None, version=version)
+
+    facts: Facts = with_identity(gather_facts(make, args.target, contract, fixtures, examples), existing)
+    console.print(
+        f"环境事实：{len(facts.description.tools)} 个工具、{len(facts.tables())} 张表、夹具 {fixtures}、知识库 {len(facts.knowledge)} 条"
+        + (f"、身份 {facts.identity}" if facts.identity else "")
+    )
+    settings = _generator_settings(args)
+    if settings is None:
+        console.print("[red]生成用例需要模型 Key（.env 的 LLM_API_KEY，或 --profile 对应的 Key）[/]")
+        return 2
+    client = OpenAICompatClient.from_settings(settings, timeout=args.timeout, response_format={"type": "json_object"})
+    gen = generate(client, kind, facts, AUTH_STANDARD, rounds=args.rounds)
+    for entry in gen.log:
+        console.print(f"  第 {entry['round']} 轮：{len(entry['problems'])} 个问题")
+    if not gen.valid:
+        for p in gen.problems[:20]:
+            console.print(f"   - {p}")
+        out.with_suffix(".generation.json").write_text(
+            json.dumps({"valid": False, "problems": gen.problems, "log": gen.log}, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        console.print(f"[red]{args.rounds} 轮后仍有问题，未冻结[/]")
+        return 1
+    freeze(out, gen, {"target": args.target, "kind": args.kind, "generator_model": settings.model, "fixtures": fixtures})
+    load_cases(out, contract)  # the frozen suite must load like any other
+    out.with_suffix(".review.md").write_text(review_sheet(gen.cases, kind, str(out)), encoding="utf-8")
+    console.print(f"已冻结 {len(gen.cases)} 条：{out}；复核表 {out.with_suffix('.review.md')}")
     return 0
 
 
@@ -1136,6 +1397,42 @@ def cmd_serve(args: argparse.Namespace) -> int:  # pragma: no cover - blocks on 
     return 0
 
 
+def cmd_bench(args: argparse.Namespace) -> int:
+    from consenttrace.core.bench import PlanItem, load_models, run_bench
+
+    models = load_models(args.models_file)
+    chosen = [m.strip() for m in args.models.split(",") if m.strip()]
+    unknown = [m for m in chosen if m not in models]
+    if unknown:
+        console.print(f"[red]未知模型 {unknown}；可选：{', '.join(models)}[/]")
+        return 2
+    plan = [PlanItem.parse(p) for p in args.plan]
+    targets = _targets(args)
+    for name in chosen:
+        console.print(f"[bold]{name}[/]（{models[name].provider} · {models[name].model}）")
+
+        def report(run_id: str, item: PlanItem, summary) -> None:
+            counts = " ".join(f"{k} {v}" for k, v in summary.counts.items())
+            console.print(f"  {item.target} {item.version} {item.suite}: {counts} → runs/{run_id}")
+
+        try:
+            run_bench(
+                models[name],
+                plan,
+                targets=targets,
+                targets_path=args.targets,
+                runs_dir=args.runs_dir,
+                env_file=args.env,
+                reps=args.reps,
+                concurrency=args.concurrency,
+                on_done=report,
+            )
+        except LaunchError as exc:
+            console.print(f"[red]{name}：{exc}[/]")
+            return 2
+    return 0
+
+
 def cmd_user(args: argparse.Namespace) -> int:
     import getpass
 
@@ -1183,6 +1480,7 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--case", action="append", help="只运行指定用例（可重复，支持前缀）")
     run.add_argument("--run-id")
     run.add_argument("--max-tokens", type=int, help="整次运行的 token 预算")
+    run.add_argument("--junit", help="同时写出 JUnit XML（给 CI 用）")
     run.add_argument("--timeout", type=float, default=90.0, help="单次模型调用超时（秒）")
     run.add_argument("--env", default=".env")
     run.add_argument(
@@ -1193,7 +1491,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     atk = sub.add_parser("attacks", help="F10：对抗用例生成（间接注入库）与注入攻击成功率")
-    atk.add_argument("action", choices=["generate", "mount", "evolve", "report"])
+    atk.add_argument("action", choices=["synced", "generate", "mount", "evolve", "report"])
     atk.add_argument("--target", default="travel")
     atk.add_argument("--spec", help="攻击规格（默认 configs/<target>_attacks.yaml）")
     atk.add_argument("--library", help="注入库（默认 benchmarks/<target>_injection_library.jsonl）")
@@ -1204,6 +1502,31 @@ def build_parser() -> argparse.ArgumentParser:
     atk.add_argument("--timeout", type=float, default=120.0)
     atk.add_argument("--run", action="append", help="report：要统计的攻击套件运行（可重复）；evolve：从这次运行里失败的攻击演化")
     atk.add_argument("--env", default=".env")
+    atk.add_argument("--profile", help="用 configs/models.yaml 里的哪个模型生成（默认 JUDGE_MODEL）")
+
+    jb = sub.add_parser("jailbreaks", help="用户通道越狱：大模型生成跳过确认的施压话术，确定性校验后冻结为用例集")
+    jb.add_argument("action", choices=["generate", "mount"])
+    jb.add_argument("--target", required=True)
+    jb.add_argument("--spec")
+    jb.add_argument("--model", help="生成模型（默认取 JUDGE_MODEL）")
+    jb.add_argument("-n", type=int, help="每个组合生成几条（默认取规格里的 per_combo）")
+    jb.add_argument("--workers", type=int, default=4)
+    jb.add_argument("--timeout", type=float, default=180.0)
+    jb.add_argument("--env", default=".env")
+    jb.add_argument("--profile", help="用 configs/models.yaml 里的哪个模型生成（默认 JUDGE_MODEL）")
+    jb.add_argument("--force", action="store_true", help="覆盖已冻结的文本库")
+
+    gc = sub.add_parser("generate-cases", help="AI 场景生成：从被测 Agent 取环境事实，生成整条多轮用例，确定性校验后冻结")
+    gc.add_argument("--target", required=True)
+    gc.add_argument("--kind", default="boundary")
+    gc.add_argument("--kinds", default="configs/case_kinds.yaml")
+    gc.add_argument("--model", help="生成模型（默认取 JUDGE_MODEL）")
+    gc.add_argument("--rounds", type=int, default=3, help="校验不通过时最多修正几轮")
+    gc.add_argument("--out")
+    gc.add_argument("--timeout", type=float, default=600.0)
+    gc.add_argument("--env", default=".env")
+    gc.add_argument("--profile", help="用 configs/models.yaml 里的哪个模型生成（默认 JUDGE_MODEL）")
+    gc.add_argument("--force", action="store_true")
 
     kb = sub.add_parser("kb-check", help="RAG 知识库体检：结构错误、冗余、冲突、检索质量（含检查器自检与投毒检测）")
     kb.add_argument("--target", default="travel")
@@ -1250,6 +1573,8 @@ def build_parser() -> argparse.ArgumentParser:
     det.add_argument("--judge-samples", type=int, default=2, help="同一输入的裁判次数，用于自一致性（默认 2）")
     det.add_argument("--judge-workers", type=int, default=6)
     det.add_argument("--judge-cache", help="裁判缓存文件（默认 <runs-dir>/judge_cache/<模型>.jsonl）")
+    det.add_argument("--deepeval", action="store_true", help="加入 DeepEval 对照组：D1 工具正确性、D2 G-Eval（结果缓存）")
+    det.add_argument("--deepeval-profile", default="qwen-plus", help="G-Eval 用的模型（configs/models.yaml；none = 只跑 D1）")
     det.add_argument("--timeout", type=float, default=120.0)
     det.add_argument("--env", default=".env")
 
@@ -1301,6 +1626,26 @@ def build_parser() -> argparse.ArgumentParser:
     serve.add_argument("--users", default="configs/users.yaml", help="账号文件（另会读取 runs/_workspace/users.yaml）")
     serve.add_argument("--no-auth", action="store_true", help="不要求登录（只在本机自用时）")
 
+    bn = sub.add_parser("bench", help="模型横评：同一份 Agent 代码部署在不同模型上，跑同样的用例集（结果见可靠性评分卡）")
+    bn.add_argument("--models", required=True, help="逗号分隔的模型名，见 configs/models.yaml")
+    bn.add_argument(
+        "--plan", nargs="+", default=["travel:v1:main", "tau-airline:v1:core", "approval:v1:core"], help="目标:版本:用例集"
+    )
+    bn.add_argument("-k", "--reps", type=int, default=3)
+    bn.add_argument("-j", "--concurrency", type=int, default=6)
+    bn.add_argument("--models-file", default="configs/models.yaml")
+    bn.add_argument("--env", default=".env", help="各模型 Key 所在的文件（只传给对应模型的 Agent 进程）")
+
+    cv = sub.add_parser("coverage", help="按赛题路径二生成测试覆盖矩阵：每一格解析出用例编号并核对证据存在")
+    cv.add_argument("--matrix", default="configs/coverage_matrix.yaml")
+    cv.add_argument("--out", default="docs/coverage_matrix.md")
+    cv.add_argument("--allow-missing", action="store_true")
+
+    pk = sub.add_parser("pack-recordings", help="只打包回放需要的模型录制（例如提交给 CI），不复制整份证据")
+    pk.add_argument("--run", required=True)
+    pk.add_argument("--suite", help="只打包这个用例集（含子集，如 acceptance）用到的用例")
+    pk.add_argument("--out", default="fixtures/recordings")
+
     usr = sub.add_parser("user", help="管理 Web 控制台账号")
     usr.add_argument("action", choices=["add", "list"])
     usr.add_argument("name", nargs="?", default="")
@@ -1330,6 +1675,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         "draft-contract": cmd_draft_contract,
         "report": cmd_report,
         "user": cmd_user,
+        "bench": cmd_bench,
+        "jailbreaks": cmd_jailbreaks,
+        "generate-cases": cmd_generate_cases,
+        "pack-recordings": cmd_pack_recordings,
+        "coverage": cmd_coverage,
     }
     try:
         return handlers[args.command](args)

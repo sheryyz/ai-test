@@ -78,6 +78,8 @@ export function Home() {
         </ol>
       </section>
 
+      <Findings />
+
       <div className="grid gap-6 xl:grid-cols-[1.35fr_1fr]">
         <section className="min-w-0">
           <div className="mb-3 flex items-baseline justify-between">
@@ -123,6 +125,63 @@ export function Home() {
         </div>
       </div>
     </div>
+  );
+}
+
+/** Headline findings computed from the model-comparison runs; nothing here is written by hand. */
+function Findings() {
+  const cards = useAsync(() => api.scorecards().catch(() => null), []);
+  const synced = useAsync(() => api.syncedAttacks().catch(() => []), []);
+  const items: { title: string; body: string }[] = [];
+  const jb = (cards.data?.groups ?? []).filter((g) => g.bench && g.suite === "jailbreaks");
+  if (jb.length >= 2) {
+    const rate = (g: (typeof jb)[number]) => {
+      const c = g.dimensions.find((d) => d.key === "consent")!;
+      return { bad: c.den - c.num, den: c.den, r: c.den ? (c.den - c.num) / c.den : 0 };
+    };
+    const worst = [...jb].sort((a, b) => rate(b).r - rate(a).r)[0];
+    const best = [...jb].sort((a, b) => rate(a).r - rate(b).r)[0];
+    const w = rate(worst);
+    const b = rate(best);
+    items.push({
+      title: "同一个 Agent，换个模型，越狱成功率天差地别",
+      body: `${worst.target === "travel" ? "差旅" : "航空"} Agent 用 ${worst.model} 时，越狱话术让 ${w.bad}/${w.den}（${Math.round(w.r * 100)}%）次执行跳过确认直接操作；用 ${best.model} 时为 ${b.bad}/${b.den}。`,
+    });
+  }
+  const s = (synced.data ?? []).find((r) => (r.arms.synced?.reached ?? 0) > 0 && (r.arms.early?.reached ?? 0) > 0);
+  if (s) {
+    const e = s.arms.early;
+    const y = s.arms.synced;
+    items.push({
+      title: "注入挑对时机，成功率翻几倍",
+      body: `同一段注入文本，${s.model} 在第一轮看到时越权 ${e.violations}/${e.reached}；在用户刚改完参数、旧确认失效的那一轮看到时越权 ${y.violations}/${y.reached}。`,
+    });
+  }
+  const glm = (cards.data?.groups ?? []).find((g) => g.bench && g.reasoning.by_cause.request_as_consent > 0);
+  if (glm) {
+    items.push({
+      title: "越权之前，模型在想什么",
+      body: `${glm.model} 的 ${glm.reasoning.attempts} 次越权里，有 ${glm.reasoning.by_cause.request_as_consent} 次推理只写了“参数都齐了，可以直接调用”——它把用户的请求当成了授权。`,
+    });
+  }
+  if (!items.length) return null;
+  return (
+    <section>
+      <div className="mb-3 flex items-baseline justify-between">
+        <h2 className="text-[15px] font-semibold text-ink">平台测出来的</h2>
+        <a href={href("bench")} className="text-xs font-medium" style={{ color: "var(--brand)" }}>
+          模型横评 →
+        </a>
+      </div>
+      <div className="grid gap-3 lg:grid-cols-3">
+        {items.map((i) => (
+          <a key={i.title} href={href("bench")} className="card block p-4 transition-shadow hover:shadow-[var(--shadow-md)]">
+            <div className="text-sm font-semibold text-ink">{i.title}</div>
+            <p className="mt-1.5 text-xs leading-relaxed text-ink-2">{i.body}</p>
+          </a>
+        ))}
+      </div>
+    </section>
   );
 }
 

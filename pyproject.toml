@@ -9,7 +9,7 @@ dependencies = [
     "pyyaml>=6.0",
     "openai>=1.40",
     "python-dotenv>=1.0",
-    "rich>=15.0.0",
+    "rich>=13.7",
     "fastapi>=0.162.5",
     "uvicorn>=0.30",
     "httpx>=0.28.1",  # in-process API calls for `consenttrace report`
@@ -17,6 +17,11 @@ dependencies = [
 
 [project.scripts]
 consenttrace = "consenttrace.cli:main"
+
+[project.optional-dependencies]
+baselines = [
+    "deepeval>=3",
+]
 
 [dependency-groups]
 dev = [
@@ -45,7 +50,9 @@ packages = ["consenttrace", "targets"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
-addopts = "-m 'not live and not ui'"
+# deepeval / langsmith (optional "baselines" extra) ship pytest plugins we do not use
+addopts = "-m 'not live and not ui' -p no:deepeval -p no:langsmith_plugin -p no:repeat -p no:rerunfailures"
+asyncio_default_fixture_loop_scope = "function"
 markers = [
     "live: calls a real LLM API; needs LLM_API_KEY (run with -m live)",
     "ui: drives the built web console in Chromium (run with -m ui)",

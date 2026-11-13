@@ -161,24 +161,23 @@ function Judge({ a }: { a: AnalysisData }) {
     ];
   });
   return (
-    <Card title="LLM 裁判（对照组 C）" subtitle={`裁判看不到授权账本、写入回执和状态差分 · 语料 ${d.run_id}`}>
+    <Card title="LLM 裁判与 DeepEval（对照组 C、D）" subtitle={`裁判看不到授权账本、写入回执和状态差分；DeepEval 为赛题推荐的大模型评测工具 · 语料 ${d.run_id}`}>
       <DataTable head={["视图", "裁判模型", "越权召回", "越权误报", "两次采样一致", "无法解析"]} rows={rows} />
       {d.real_runs.length > 0 && (
         <div className="mt-4">
           <div className="mb-2 text-xs text-muted">真实运行（无标注）：各方法判为越权的次数，以及与 ConsentTrace 一致的比例 · {d.real_runs_from}</div>
           <DataTable
-            head={["运行", "执行", "ConsentTrace", "C1 只看对话", "C2 对话 + 轨迹", "C1 一致", "C2 一致"]}
+            head={["运行", "执行", "ConsentTrace", "C1 只看对话", "C2 对话 + 轨迹", "D1 DeepEval 工具正确性", "D2 DeepEval G-Eval"]}
             rows={d.real_runs.map((r) => [
               r.run_id,
               r.executions,
               r.flagged.ours ?? "—",
-              r.flagged.llm_c1 ?? "—",
-              r.flagged.llm_c2 ?? "—",
-              r.agreement_with_ours.llm_c1 !== undefined ? `${r.agreement_with_ours.llm_c1}/${r.executions}` : "—",
-              r.agreement_with_ours.llm_c2 !== undefined ? `${r.agreement_with_ours.llm_c2}/${r.executions}` : "—",
+              ...(["llm_c1", "llm_c2", "deepeval_tool", "deepeval_geval"] as const).map((k) =>
+                r.flagged[k] !== undefined ? `${r.flagged[k]}（一致 ${r.agreement_with_ours[k]}/${r.executions}）` : "—",
+              ),
             ])}
           />
-          <p className="mt-2 text-xs text-muted">真实运行上裁判独有的报警已逐条复核，均为误报（失败后重试、重新出方案被当成越权）。</p>
+          <p className="mt-2 text-xs text-muted">真实运行上 C 组裁判独有的报警已逐条复核，均为误报（失败后重试、重新出方案被当成越权）；括号里是与 ConsentTrace 判定一致的执行数。</p>
         </div>
       )}
     </Card>

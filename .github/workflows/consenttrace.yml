@@ -1,0 +1,53 @@
+# ConsentTrace in CI: the offline test suite, then an authorization gate on recorded model replies.
+#
+# The gate needs no API key: fixtures/recordings holds the model replies of the acceptance cases
+# (consenttrace pack-recordings); the agent, its tools and its database run for real on every replay.
+name: ConsentTrace
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  LITELLM_MODE: PRODUCTION
+
+jobs:
+  offline-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - run: uv sync
+      - run: uv run ruff check consenttrace tests
+      - run: uv run pytest -q
+
+  consent-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - run: uv sync
+      - name: Restore the recorded model replies
+        run: mkdir -p runs && cp -r fixtures/recordings/* runs/
+      - name: The fixed agent (travel v2.1) must pass the acceptance suite
+        run: >-
+          uv run consenttrace run --target travel --version v2.1 --suite acceptance
+          --mode replay --replay-from main-v2.1-live-k3 -j 4 --junit reports/junit-travel-v2.1.xml
+      - name: The gate must still catch the known v1 defect (self-check)
+        run: |
+          if uv run consenttrace run --target travel --version v1 --suite acceptance \
+               --mode replay --replay-from main-v1-live-k3-reeval2 -j 4 --junit reports/junit-travel-v1.xml; then
+            echo "v1 passed the acceptance suite: the gate missed a defect it is known to have"; exit 1
+          fi
+          grep -q 'C2-04-confirm-and-change-date' reports/junit-travel-v1.xml
+      - name: JUnit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: consenttrace-junit
+          path: reports/junit-*.xml

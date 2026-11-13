@@ -68,9 +68,20 @@ class RunRef:
     def replay_from(self) -> str | None:
         return (self.config.get("extra") or {}).get("replay_from")
 
+    @property
+    def purpose(self) -> str | None:
+        return (self.config.get("extra") or {}).get("purpose")
 
-def runs_in_force(runs_dir: Path) -> list[RunRef]:
-    """Finished runs of real agents, each re-evaluated lineage reduced to its latest judgement."""
+
+BENCH = "model-bench"  # the same agent code on another model: a comparison, not a defect of the registered agent
+
+
+def runs_in_force(runs_dir: Path, *, include_bench: bool = False) -> list[RunRef]:
+    """Finished runs of real agents, each re-evaluated lineage reduced to its latest judgement.
+
+    Model-comparison runs (purpose "model-bench") are left out unless asked for: a defect is
+    "agent version × case", and the same version on a different model is a different agent.
+    """
     found: list[RunRef] = []
     if not runs_dir.exists():
         return found
@@ -81,7 +92,10 @@ def runs_in_force(runs_dir: Path) -> list[RunRef]:
         if summary.mode == "scripted":
             continue
         config = json.loads((path / "config.json").read_text(encoding="utf-8")) if (path / "config.json").exists() else {}
-        found.append(RunRef(path, summary, config))
+        ref = RunRef(path, summary, config)
+        if ref.purpose == BENCH and not include_bench:
+            continue
+        found.append(ref)
     latest: dict[str, RunRef] = {}
     for ref in found:
         prev = latest.get(ref.lineage)

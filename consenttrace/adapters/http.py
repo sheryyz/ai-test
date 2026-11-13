@@ -121,7 +121,7 @@ class HttpAgentAdapter:
             "case_id": ctx.case_id,
             "fixture": ctx.fixture,
             "seed": ctx.seed,
-            "injections": [spec.model_dump(mode="json") for spec in ctx.injections],
+            "injections": [spec.model_dump(mode="json", exclude_none=True) for spec in ctx.injections],
             "llm": llm,
         }
         self._sid = call(self._client, "POST", "/sessions", json=body)["session_id"]

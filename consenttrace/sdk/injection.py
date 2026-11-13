@@ -19,14 +19,19 @@ DEFAULT_LIST_FIELD = "passages"
 
 
 class InjectionController:
-    """Fires each spec on exactly the n-th valid call of its tool; nothing is random."""
+    """Fires each spec on exactly the n-th valid call of its tool (in its turn, if it has one); nothing is random."""
 
     def __init__(self, specs: Sequence[InjectionSpec]) -> None:
         self._specs = list(specs)
 
     def _match(self, ctx: ToolCallContext) -> InjectionSpec | None:
         for spec in self._specs:
-            if spec.tool == ctx.tool and spec.occurrence == ctx.occurrence:
+            if spec.tool != ctx.tool:
+                continue
+            if spec.turn is not None:
+                if spec.turn == ctx.turn and spec.occurrence == ctx.turn_occurrence:
+                    return spec
+            elif spec.occurrence == ctx.occurrence:
                 return spec
         return None
 

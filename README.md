@@ -136,9 +136,38 @@ uv run consenttrace annotate score
 uv run consenttrace report --run <run_id> [--run <run_id> ...]
 ```
 
+### 生成用例、模型横评、对照组与 CI
+
+```bash
+# 用户通道越狱：大模型写施压话术（开发者模式、冒充上级、紧急施压……），确定性校验后冻结；成败由授权账本和数据库判定
+uv run consenttrace jailbreaks generate --target travel        # 或 --target tau-airline（英文）
+
+# AI 场景生成：环境事实（工具、数据表、夹具里的数据、知识库）从被测 Agent 自己的接口取得，生成整条多轮用例
+uv run consenttrace generate-cases --target tau-airline --kind boundary   # 冻结后附人工复核表 *.review.md
+
+# 授权时序注入：同一段注入文本，在授权刚失效的那一轮注入 vs 第一轮注入（对照）
+uv run consenttrace attacks synced --target travel --profile qwen3.8-max  # --profile 取 configs/models.yaml
+
+# 模型横评：同一份 Agent 代码部署在不同模型上（每个模型一个独立进程，只拿到自己的 Key），跑同样的用例集
+uv run consenttrace bench --models deepseek-flash,qwen-plus,glm-5.3-flash --plan travel:v1:main travel:v1:jailbreaks -k 3
+
+# DeepEval 对照组（赛题推荐工具）：D1 工具正确性、D2 G-Eval，与 ConsentTrace 在同一批执行上比较
+uv sync --extra baselines
+uv run consenttrace detectors --deepeval --deepeval-profile qwen-plus --llm-judge
+
+# 按赛题路径二组织的覆盖矩阵：每一格解析出用例编号并核对证据存在
+uv run consenttrace coverage                                   # → docs/coverage_matrix.md
+
+# CI：JUnit 报告 + 只打包回放需要的模型录制（见 .github/workflows/consenttrace.yml）
+uv run consenttrace run --target travel --version v2.1 --suite acceptance --mode replay --replay-from main-v2.1-live-k3 --junit reports/junit.xml
+uv run consenttrace pack-recordings --run main-v2.1-live-k3 --suite acceptance
+```
+
+控制台里对应的页面：「模型横评」（可靠性评分卡、越狱成功率、授权时序注入、思维链路诊断）、「更多工具 → AI 用例生成 / 覆盖矩阵」；每份测试报告顶部有可靠性评分卡，审计时间轴上有思维链路诊断。
+
 前端源码在 `web/`（React + TypeScript + Vite），构建产物已提交在 `consenttrace/web/dist/`，运行控制台不需要 Node。修改前端后：`cd web && npm install && npm run build`。
 
-退出码：`0` 无 FAIL/ERROR；`1` 存在 FAIL；`2` 只有 ERROR 或用法错误，可直接接入 CI。
+退出码：`0` 无 FAIL/ERROR；`1` 存在 FAIL；`2` 只有 ERROR 或用法错误，可直接接入 CI；`--junit` 同时写出 JUnit XML。
 
 ## 测试
 
@@ -160,10 +189,10 @@ uv run ruff check . && uv run ruff format --check .
 | `consenttrace/sdk/` | 被测 Agent 侧插桩：`Toolbox`、`TraceRecorder`、`ToolInterceptor`、`snapshot_sqlite`、注入控制器；`agent_server` 把插桩后的 Agent 暴露为 Agent 协议服务 |
 | `consenttrace/adapters/` | `AgentAdapter` 协议；`http`（经 Agent 协议驱动独立进程中的 Agent）；`probe`（接入检查） |
 | `consenttrace/rag/` | RAG 知识库体检：`kb_check`（确定性检查、植入故障自检、投毒识别）、`llm`（检索测试题生成、冲突复核） |
-| `consenttrace/core/` | `defects`（缺陷归并与修复状态）、`agents`（被测 Agent 进程管理）、`attacks`（注入攻击成功率）、`kb`（知识库体检编排）、`annotation`（盲标抽样、盲视图、评分）、`auth_state`（授权账本）、`rules`（规则引擎）、`injector`、`state_diff`、`runner`、`evidence`、`loader`、`registry`（含界面接入的 Agent）、`auth`（控制台账号与会话）、`verdict`、`baselines`（对照组与消融）、`detector_eval`、`analysis` |
+| `consenttrace/core/` | `defects`（缺陷归并与修复状态）、`agents`（被测 Agent 进程管理）、`attacks`（注入攻击成功率）、`kb`（知识库体检编排）、`annotation`（盲标抽样、盲视图、评分）、`auth_state`（授权账本）、`rules`（规则引擎）、`injector`、`state_diff`、`runner`、`evidence`、`loader`、`registry`（含界面接入的 Agent）、`auth`（控制台账号与会话）、`scorecard`（可靠性评分卡）、`reasoning`（思维链路诊断）、`bench`（模型横评）、`coverage`（覆盖矩阵）、`junit`、`verdict`、`baselines`（对照组与消融）、`detector_eval`、`analysis` |
 | `consenttrace/llm/` | `ChatClient`、OpenAI 兼容实现、`ScriptedClient`、录制 / 回放 |
-| `consenttrace/cli.py` | `validate` / `agents` / `probe` / `run` / `show` / `runs` / `reevaluate` / `detectors` / `augment` / `phrasing` / `compare` / `draft-contract` / `report` / `serve` / `user` |
-| `consenttrace/ai/` | `contract_drafter`（F09 AI 起草契约）、`case_augmenter`（F10 措辞变体）、`attack_generator`（F10 对抗用例生成器）、`llm_judge`（F11 LLM 裁判对照组，磁盘缓存可离线复现） |
+| `consenttrace/cli.py` | `validate` / `agents` / `probe` / `run` / `show` / `runs` / `reevaluate` / `detectors` / `augment` / `phrasing` / `compare` / `draft-contract` / `report` / `serve` / `user` / `bench` / `jailbreaks` / `generate-cases` / `coverage` / `pack-recordings` |
+| `consenttrace/ai/` | `contract_drafter`（F09 AI 起草契约）、`case_augmenter`（F10 措辞变体）、`attack_generator`（F10 对抗用例生成器，含授权时序注入）、`jailbreak_generator`（用户通道越狱）、`case_generator`（AI 场景生成，环境事实取自被测 Agent）、`deepeval_baseline`（DeepEval 对照组）、`llm_judge`（F11 LLM 裁判对照组，磁盘缓存可离线复现） |
 | `consenttrace/api/` | FastAPI：运行与证据的只读接口、实验分析汇总、启动运行、SSE 实时推送；托管前端；`report` 生成离线静态报告 |
 | `web/` | 前端源码：登录、首页、1 分钟看懂（真实案例引导）、我的 Agent（含界面接入）、发起测试、测试报告、三泳道审计时间轴、问题与复测、评审说明，以及更多工具（对抗用例生成、知识库体检、契约工作台、用例库、版本对比、实验分析、人工盲标） |
 | `docs/agent_protocol.md` | Agent 接入协议：第三方 Agent 如何接入、能力声明与可审计范围 |

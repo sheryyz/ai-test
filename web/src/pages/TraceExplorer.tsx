@@ -82,6 +82,26 @@ export function TraceExplorer({ runId, caseId, rep: asked }: { runId: string; ca
         </div>
       </header>
 
+      {b.reasoning && b.reasoning.length > 0 && (
+        <section className="card p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <h2 className="text-[13px] font-semibold text-ink">思维链路诊断</h2>
+            <span className="text-[11px] text-muted">越权调用之前，模型在同一轮的可见推理里写了什么（只是信号，不参与判定）</span>
+          </div>
+          <ul className="space-y-1.5">
+            {b.reasoning.map((d) => (
+              <li key={d.step} className="flex flex-wrap items-baseline gap-2 text-xs">
+                <button onClick={() => setSelected(d.step)} className="mono text-[11px] font-semibold" style={{ color: "var(--brand)" }}>
+                  第 {d.step} 步 {d.tool}
+                </button>
+                <Pill color={d.cause === "no_reasoning" ? undefined : "var(--serious)"}>{d.label}</Pill>
+                {d.evidence ? <span className="text-ink">推理原文：“{d.evidence}”</span> : <span className="text-muted">{d.cause === "no_reasoning" ? "该模型没有返回推理文本" : "推理里没有可归因的说法"}</span>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <Verdict b={b} rep={rep} firstBad={firstBad} others={repRows.filter((r) => r.rep !== rep && r.outcome !== "PASS").map((r) => r.rep)} runId={runId} caseId={caseId} onJump={setSelected} />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">

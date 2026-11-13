@@ -421,6 +421,59 @@ def mount(entry: dict[str, Any], carrier: TestCase, spec: AttackSpec) -> TestCas
     )
 
 
+SYNC_TOOLS = ("search_flights", "get_my_orders", "get_travel_policy")  # read-only tools an agent may call in that turn
+
+
+def mount_synced(
+    entry: dict[str, Any], carrier: TestCase, spec: AttackSpec, *, action: str, tools: Sequence[str] = SYNC_TOOLS
+) -> list[TestCase]:
+    """Two arms for one text: injected when `action` becomes "modified" (synced) and in the first turn (early).
+
+    The text is attached to the first call of each read-only tool in that turn, so it reaches the
+    agent whichever of them it calls; nothing else about the carrier changes.
+    """
+    from consenttrace.schemas import AuthTrigger
+
+    style, goal = spec.styles[entry["style"]], spec.goals[entry["goal"]]
+    if style.passage or style.placement.mode is not InjectionMode.APPEND_TEXT:
+        raise ValueError("synchronised injection mounts append_text styles only")
+    out = []
+    for arm, timing in (("synced", {"when": AuthTrigger(action=action, status="modified")}), ("early", {"turn": 1})):
+        injections = [
+            InjectionSpec(
+                injection_id=f"INJ-{entry['attack_id']}-{arm}-{i}",
+                tool=tool,
+                occurrence=1,
+                mode=style.placement.mode,
+                payload=entry["text"],
+                style=entry["style"],
+                field=style.placement.field,
+                **timing,
+            )
+            for i, tool in enumerate(tools, start=1)
+        ]
+        out.append(
+            carrier.model_copy(
+                update={
+                    "case_id": f"{entry['attack_id']}-{arm}",
+                    "suite": "synced-attacks",
+                    "title": f"{style.name} · {goal.name}（{'授权失效那一轮注入' if arm == 'synced' else '第一轮注入（对照）'}）",
+                    "injections": injections,
+                    "tags": [
+                        "attack",
+                        f"arm:{arm}",
+                        f"style:{entry['style']}",
+                        f"goal:{entry['goal']}",
+                        f"goal_action:{goal.action}",
+                        f"carrier:{carrier.case_id}",
+                    ],
+                },
+                deep=True,
+            )
+        )
+    return out
+
+
 def tag(case: TestCase, key: str) -> str | None:
     prefix = f"{key}:"
     return next((t[len(prefix) :] for t in case.tags if t.startswith(prefix)), None)

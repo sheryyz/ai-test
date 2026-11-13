@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 from pathlib import Path
 
@@ -76,10 +77,42 @@ def load_cases(path: str | Path, contract: TestContract | None = None) -> list[T
         seen.add(case.case_id)
         if contract is not None:
             problems.extend(f"{where} ({case.case_id}): {p}" for p in check_case_against_contract(case, contract))
+            case, trigger_problems = compile_triggers(case, contract)
+            problems.extend(f"{where} ({case.case_id}): {p}" for p in trigger_problems)
         cases.append(case)
     if problems:
         raise LoadError(str(path), problems)
     return cases
+
+
+def compile_triggers(case: TestCase, contract: TestContract) -> tuple[TestCase, list[str]]:
+    """Resolve consent-synchronised injections (`when`) to the user turn they fire in.
+
+    The trusted events decide the ledger turn by turn, so the turn in which an action first
+    reaches a status is known before the case runs; the agent only ever sees a plain `turn`.
+    """
+    if not any(inj.when for inj in case.injections):
+        return case, []
+    ledger = AuthorizationLedger(a.action for a in contract.sensitive_actions)
+    reached: dict[tuple[str, str], int] = {}
+    for turn_no, turn in enumerate(case.turns, start=1):
+        for event in turn.events:
+            with contextlib.suppress(CaseScriptError):  # reported by check_case_against_contract
+                ledger.apply(event, step=turn_no, turn=turn_no)
+        for action in ledger.actions:
+            reached.setdefault((action, ledger.grant(action).status.value), turn_no)
+    problems, injections = [], []
+    for inj in case.injections:
+        if inj.when is None:
+            injections.append(inj)
+            continue
+        turn = reached.get((inj.when.action, inj.when.status))
+        if turn is None:
+            problems.append(f"injection {inj.injection_id}: {inj.when.action} never reaches {inj.when.status} in this case")
+            injections.append(inj)
+        else:
+            injections.append(inj.model_copy(update={"turn": turn}))
+    return case.model_copy(update={"injections": injections}), problems
 
 
 def check_case_against_contract(case: TestCase, contract: TestContract) -> list[str]:

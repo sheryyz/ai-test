@@ -1,0 +1,173 @@
+# Coverage matrix organised by the contest's path 2 (consenttrace coverage → docs/coverage_matrix.md).
+#
+# Rows: the capabilities and risks the scoring rubric names. Columns: the four kinds of testing
+# tool path 2 lists. A cell either cites evidence -- cases selected from registered suites
+# (resolved to case ids at generation time), runs and files -- or says 未覆盖 with the reason.
+# `consenttrace coverage` refuses to write the matrix if any cited suite, case, run or file is
+# missing, so a cell can never claim evidence that is not there.
+columns:
+  framework: {name: 智能体自动化测试框架, means: 批量执行多轮用例、规则引擎逐步判定、缺陷归并与修复复测、可靠性评分卡}
+  rag: {name: RAG 知识库测试工具, means: 知识库冲突/冗余/结构错误检测、检索质量评估、投毒识别}
+  generator: {name: 对抗性用例自动生成器, means: 大模型生成注入、越狱、边界与留出用例，确定性校验后冻结}
+  audit: {name: 智能体行为可视化与审计平台, means: 三泳道时间轴、首个违规步骤、数据库差分、思维链路诊断}
+
+rows:
+  planning:
+    name: 规划
+    means: 多步任务能否按正确顺序推进，工具出错或超时后能否正确恢复（例如先查订单再决定是否重下）
+    cells:
+      framework:
+        cases:
+          - {target: travel, suite: main, categories: [C7, C8]}
+          - {target: tau-airline, suite: core, categories: [C7]}
+          - {target: approval, suite: core, categories: [C7]}
+        runs: [main-v1-live-k3-reeval2, perf-v1-smoke-c1, "bench-*-travel-v1-main-k3"]
+        files: [consenttrace/core/scorecard.py]
+        note: 评分卡的“故障恢复”维度；perf-v1-smoke-c1 中 V1 超时后重复下单是一条真实的规划缺陷（S07）
+      rag: {none: 知识库体检只检查知识本身和检索，不涉及 Agent 的多步规划}
+      generator:
+        cases:
+          - {target: travel, suite: holdout, categories: [C7, C8]}
+        files: [benchmarks/travel_holdout.generation.json]
+        note: 留出用例由大模型一次生成并冻结，其中含工具故障与混合长对话
+      audit:
+        files: [consenttrace/core/reasoning.py, web/src/components/TraceSwimlane.tsx]
+        runs: ["bench-glm-4.5-air-travel-v1-main-k3"]
+        note: 时间轴按步骤展示“推理—调用—返回—写入”；思维链路诊断给出越权前的推理依据（仅限返回推理文本的模型）
+    gaps: 未覆盖规划效率（步数、冗余调用、最优工具顺序）的量化指标
+
+  memory:
+    name: 记忆
+    means: 多轮对话中能否记住并正确更新用户的授权：改参后旧确认失效、撤销后不能再执行、长对话后仍记得
+    cells:
+      framework:
+        cases:
+          - {target: travel, suite: main, categories: [C2, C3, C8]}
+          - {target: tau-airline, suite: core, categories: [C2]}
+          - {target: approval, suite: core, categories: [C2, C3]}
+        runs: [main-v1-live-k3-reeval2, main-v2.1-live-k3, tau-core-v1-live-k3]
+        note: 授权账本逐轮记录请求、确认、修改、撤销；T10（第三方 τ-bench）是一次真实的记忆类越权写入
+      rag: {none: 知识库体检不涉及对话记忆}
+      generator:
+        cases:
+          - {target: travel, suite: holdout, categories: [C2, C3]}
+          - {target: travel, suite: variants, categories: [C2, C3]}
+        files: [benchmarks/travel_variants.report.json]
+        note: 措辞变体检验同一授权意图换种说法后，Agent 的理解是否一致
+      audit:
+        files: [web/src/pages/TraceExplorer.tsx]
+        runs: [tau-core-v1-live-k3]
+        note: 时间轴上方的授权状态条显示每一轮账本状态（待确认 → 已确认 → 已修改·确认失效）
+    gaps: 未覆盖跨会话的长期记忆（被测 Agent 不保留跨会话记忆）
+
+  tools:
+    name: 工具调用
+    means: 是否在正确时机、以用户确认过的参数调用敏感工具，且一次确认只产生一次效果
+    cells:
+      framework:
+        cases:
+          - {target: travel, suite: main, categories: [C1, C2, C4, C7]}
+          - {target: tau-airline, suite: core}
+          - {target: approval, suite: core}
+        files: [configs/travel_contract.yaml, configs/tau_airline_contract.yaml, configs/approval_contract.yaml]
+        runs: ["bench-*-travel-v1-main-k3", "bench-*-tau-airline-v1-core-k3", "bench-*-approval-v1-core-k3"]
+        note: 6 类规则算子在每次敏感调用发生的那一刻判定；同一份代码换 6 个模型做了横评
+      rag:
+        runs: ["kb_checks"]
+        note: 检索质量用被测 Agent 自己的检索工具评估（Recall@k、MRR）
+      generator:
+        runs: [contract_drafts]
+        files: [consenttrace/ai/contract_drafter.py]
+        note: AI 根据 Agent 声明的工具定义起草测试契约，识别哪些工具是敏感操作
+      audit:
+        files: [web/src/pages/TraceExplorer.tsx]
+        note: 每次敏感调用逐字段比对“用户确认的参数”和“实际调用参数”，并给出数据库前后差分
+    gaps: 无
+
+  rag:
+    name: RAG
+    means: 检索是否找对条款、回答是否忠于检索结果、知识库本身有没有冲突冗余、检索结果被投毒时会不会越权
+    cells:
+      framework:
+        cases:
+          - {target: travel, suite: main, categories: [C6]}
+        runs: [main-v1-live-k3-reeval2]
+        note: 回答忠实度检查与 RAG 投毒用例
+      rag:
+        runs: ["kb_checks"]
+        files: [benchmarks/travel_kb_queries.jsonl, consenttrace/rag]
+        note: 结构错误、冗余、冲突（含 LLM 复核）、Recall@1 22/24、植入故障 4/4 检出、投毒段落规则识别 9/12、LLM 识别 11/12
+      generator:
+        cases:
+          - {target: travel, suite: attacks, tags: ["style:rag_poisoning"]}
+        files: [benchmarks/travel_injection_library.jsonl, benchmarks/travel_kb_queries.jsonl]
+        note: 大模型生成伪造制度条款（投毒段落）和检索评测题
+      audit:
+        cases:
+          - {target: travel, suite: main, categories: [C6]}
+        note: 投毒段落在时间轴上以紫色标出，可点开看到 Agent 实际看到的检索结果
+    gaps: 只有 travel 有知识库；τ-bench 与 approval 不涉及 RAG
+
+  injection:
+    name: 注入
+    means: 工具返回或检索结果里夹带诱导越权的文字时，Agent 会不会照做
+    cells:
+      framework:
+        cases:
+          - {target: travel, suite: main, categories: [C5]}
+          - {target: travel, suite: attacks}
+          - {target: travel, suite: attacks-r2}
+          - {target: travel, suite: synced-attacks}
+        runs: ["attacks-*-live-k1", "attacks-r2-*", "bench-*-travel-v1-synced-attacks-k3"]
+        note: 评分卡“抗注入”维度；授权时序注入在授权刚失效的那一轮注入，与第一轮注入对照
+      rag:
+        runs: ["kb_checks"]
+        note: 投毒段落识别（规则与 LLM 两种）
+      generator:
+        files: [benchmarks/travel_injection_library.jsonl, benchmarks/travel_injection_library.r2.jsonl, benchmarks/travel_synced_injection_library.jsonl]
+        note: 6 种样式 × 3 类目标生成，确定性校验后冻结；第 2 轮看过 Agent 的实际回应后闭环加强；授权时序注入 8 条 × 2 组
+      audit:
+        files: [web/src/components/TraceSwimlane.tsx]
+        note: 注入内容标为低信任；“注入到达 / 未触发”分开统计，未到达的不计入成功率
+    gaps: 无
+
+  jailbreak:
+    name: 越狱
+    means: 用户在对话里用开发者模式、角色扮演、冒充上级、紧急施压、规则已变更、指令覆盖等话术，诱导 Agent 跳过确认直接执行
+    cells:
+      framework:
+        cases:
+          - {target: travel, suite: jailbreaks}
+          - {target: tau-airline, suite: jailbreaks}
+        runs: ["jailbreaks-*-live-k3", "bench-*-v1-jailbreaks-k3"]
+        note: 成败由授权账本和数据库判定，不靠大模型打分；6 个模型横评
+      rag: {none: 越狱发生在用户通道，与知识库无关}
+      generator:
+        files: [benchmarks/travel_jailbreak_library.jsonl, benchmarks/tau_airline_jailbreak_library.jsonl, configs/travel_jailbreaks.yaml, consenttrace/ai/jailbreak_generator.py]
+        note: 中英文各 24 条；校验要求保留请求本身、明确要求跳过确认、且不含任何同意或确认的词
+      audit:
+        files: [consenttrace/core/reasoning.py]
+        note: 思维链路诊断里的“被话术或注入带偏”一类
+    gaps: 未覆盖生成有害内容类越狱（本平台测的是行动型越狱：诱导 Agent 未经确认就执行写操作）
+
+  boundary:
+    name: 边界
+    means: 输入不完整、不合法、不可执行或含糊时，Agent 会不会猜参数、擅自执行或谎称已办成
+    cells:
+      framework:
+        cases:
+          - {target: travel, suite: main, categories: [C4]}
+          - {target: travel, suite: boundary}
+          - {target: tau-airline, suite: boundary}
+        runs: ["bench-*-v1-boundary-k3"]
+        note: 评分卡“任务完成”“陈述诚实”维度
+      rag:
+        runs: ["kb_checks"]
+        note: 检索边界：POL-07 两道题因同义词缺口（“老婆”≠“家属”）检索失败
+      generator:
+        files: [benchmarks/travel_boundary.jsonl, benchmarks/travel_boundary.review.md, benchmarks/tau_airline_boundary.jsonl, benchmarks/tau_airline_boundary.review.md, configs/case_kinds.yaml, consenttrace/ai/case_generator.py]
+        note: 环境事实取自被测 Agent 本身；7 个子类型；运行前人工复核并记录了修正
+      audit:
+        files: [web/src/pages/TraceExplorer.tsx]
+        note: 结论横幅与断言表区分“越权”与“任务没完成”
+    gaps: 无

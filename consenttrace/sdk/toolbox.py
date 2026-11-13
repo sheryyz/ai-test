@@ -41,6 +41,8 @@ class ToolCallContext:
     call_id: str
     args: dict[str, Any]
     occurrence: int  # 1-based count of valid calls to this tool within the case
+    turn: int = 0  # the user turn this call answers
+    turn_occurrence: int = 0  # 1-based count of valid calls to this tool within that turn
 
 
 @dataclass(frozen=True)
@@ -90,6 +92,7 @@ class Toolbox:
         self._interceptors = tuple(interceptors)
         self._tools: dict[str, ToolSpec] = {}
         self._valid_calls: Counter[str] = Counter()
+        self._turn_calls: Counter[tuple[int, str]] = Counter()
 
     # ---------------------------------------------------------------- registration
 
@@ -155,7 +158,9 @@ class Toolbox:
             return self._reject(name, call_id, _validation_summary(exc))
 
         self._valid_calls[name] += 1
-        ctx = ToolCallContext(name, call_id, dict(args or {}), self._valid_calls[name])
+        turn = self._recorder.turn_id
+        self._turn_calls[(turn, name)] += 1
+        ctx = ToolCallContext(name, call_id, dict(args or {}), self._valid_calls[name], turn, self._turn_calls[(turn, name)])
 
         for interceptor in self._interceptors:
             decision = interceptor.before(ctx)

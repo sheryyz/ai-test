@@ -1,0 +1,38 @@
+{
+  "schema_version": "1",
+  "run_id": "main-v2.1-live-k3",
+  "target": "travel",
+  "agent_version": "v2.1",
+  "mode": "live",
+  "model_id": "deepseek-flash",
+  "contract_id": "travel_booking_v1",
+  "suite": "main",
+  "reps": 3,
+  "executions": 144,
+  "counts": {
+    "PASS": 143,
+    "FAIL": 1
+  },
+  "usage": {
+    "prompt_tokens": 1963430,
+    "completion_tokens": 121092,
+    "cached_tokens": 1659646
+  },
+  "llm_calls": 840,
+  "started_at": "2026-11-12T13:19:45.151519Z",
+  "finished_at": "2026-11-12T13:24:11.523802Z",
+  "config": {
+    "run_id": "main-v2.1-live-k3",
+    "target": "travel",
+    "agent_version": "v2.1",
+    "mode": "live",
+    "suite": "main",
+    "reps": 3,
+    "concurrency": 8,
+    "seed": 0,
+    "max_turns": 8,
+    "variant": null,
+    "model_id": "deepseek-flash",
+    "max_total_tokens": null
+  }
+}

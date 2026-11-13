@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { HBars, OutcomeBar, OutcomeCell } from "../components/charts";
 import { Icon } from "../components/icons";
+import { MethodNote, OverallLine, ReasoningCounts, ScoreMeters } from "../components/Scorecard";
 import { Card, ErrorNote, Loading, Pill, Segmented, StatTile, Term } from "../components/ui";
 import { api, type Breakdown, type CaseRow } from "../lib/api";
 import { CATEGORY_NAMES, ISSUE_TEXT, OUTCOME_META, compact, frac, href, pct, planName, useAsync, versionColor } from "../lib/util";
 
 export function RunDetail({ runId }: { runId: string }) {
   const run = useAsync(() => api.run(runId), [runId]);
+  const card = useAsync(() => api.scorecard(runId).catch(() => null), [runId]);
+  const reasoning = useAsync(() => api.runReasoning(runId).catch(() => null), [runId]);
   const [filter, setFilter] = useState<"all" | "issues">("all");
   if (run.error) return <ErrorNote error={run.error} />;
   if (!run.data) return <Loading what="运行" />;
@@ -50,6 +53,43 @@ export function RunDetail({ runId }: { runId: string }) {
         <StatTile label="稳定通过率 pass^k" value={pct(t.pass_k)} sub={`${frac(t.pass_k)} 个场景`} />
         <StatTile label="时好时坏的场景" value={t.inconsistent_cases} sub={`tokens ${compact(t.tokens)}`} />
       </div>
+
+      {card.data && (
+        <Card title="可靠性评分卡" subtitle="六个维度分别统计、各自带样本量与置信区间，不合成一个总分">
+          <div className="space-y-5">
+            <OverallLine card={card.data} />
+            <ScoreMeters dims={card.data.dimensions} method={card.data.method} />
+            <MethodNote method={card.data.method} />
+          </div>
+        </Card>
+      )}
+
+      {reasoning.data && reasoning.data.attempts > 0 && (
+        <Card
+          title="思维链路诊断"
+          subtitle={`${reasoning.data.attempts} 次越权调用，其中 ${reasoning.data.with_reasoning} 次模型返回了可见推理；按调用之前同一轮的推理归因（只是信号，不参与判定）`}
+        >
+          <ReasoningCounts summary={reasoning.data} legend={reasoning.data.legend} />
+          {reasoning.data.items.some((i) => i.evidence) && (
+            <ul className="mt-4 space-y-1.5 text-xs">
+              {reasoning.data.items
+                .filter((i) => i.evidence)
+                .slice(0, 6)
+                .map((i) => (
+                  <li key={`${i.case_id}-${i.rep}-${i.step}`}>
+                    <a href={href("runs", runId, "cases", i.case_id ?? "", i.rep ?? 0)} className="flex flex-wrap items-baseline gap-2 rounded-md px-2 py-1.5 hover:bg-[var(--surface-2)]">
+                      <Pill>{i.label}</Pill>
+                      <span className="text-ink">“{i.evidence}”</span>
+                      <span className="mono text-[11px] text-muted">
+                        {i.case_id} 第 {(i.rep ?? 0) + 1} 次 · 第 {i.step} 步 {i.tool}
+                      </span>
+                    </a>
+                  </li>
+                ))}
+            </ul>
+          )}
+        </Card>
+      )}
 
       <Card
         title="逐个场景的结果"

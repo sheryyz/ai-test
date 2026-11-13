@@ -110,8 +110,15 @@ def detectors_section(runs_dir: Path) -> dict[str, Any] | None:
     if corpus is None:
         return None
     scored = json.loads(corpus.read_text(encoding="utf-8"))
-    real_file = _newest(list(runs_dir.glob("*/real_run_comparison.json")))
-    real = json.loads(real_file.read_text(encoding="utf-8")) if real_file else []
+    # real-run comparisons accumulate across detector runs (each compared different runs or judges);
+    # for a run compared more than once, the newest comparison wins
+    files = sorted(runs_dir.glob("*/real_run_comparison.json"), key=lambda p: p.stat().st_mtime)
+    by_run: dict[str, dict[str, Any]] = {}
+    for f in files:
+        for r in json.loads(f.read_text(encoding="utf-8")):
+            by_run[r["run_id"]] = r
+    real = list(by_run.values())
+    real_file = files[-1] if files else None
     return {
         "run_id": corpus.parent.name,
         "executions": scored["executions"],
@@ -119,7 +126,7 @@ def detectors_section(runs_dir: Path) -> dict[str, Any] | None:
         "scores": scored["scores"],
         "labels": {k: ORACLE_LABELS.get(k, k) for k in scored["scores"]},
         "llm_judge": scored.get("llm_judge", []),
-        "real_runs_from": real_file.parent.name if real_file else None,
+        "real_runs_from": "、".join(sorted({f.parent.name for f in files})) if files else None,
         "real_runs": [
             {k: r[k] for k in ("run_id", "executions", "flagged", "agreement_with_ours") if k in r}
             | {"llm_judge": r.get("llm_judge", [])}

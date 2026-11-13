@@ -31,6 +31,14 @@ export function Review() {
         这一页给评审老师：按下面 5 步可以亲自验证平台的核心能力，每一步都链接到可以重新执行的页面；下方是赛题路径二四类测试工具在本平台中的位置。普通用户从「首页」开始即可，不需要看这一页。
       </PageHeader>
 
+      <a href={href("coverage")} className="card flex flex-wrap items-center gap-3 p-4 hover:shadow-[var(--shadow-md)]">
+        <span className="text-sm font-semibold text-ink">测试覆盖矩阵</span>
+        <span className="text-xs text-ink-2">按路径二组织：评分标准点名的 7 项能力与风险 × 四类测试工具，每一格都有用例编号和证据路径，空白如实标出</span>
+        <span className="ml-auto text-xs font-medium" style={{ color: "var(--brand)" }}>
+          查看 →
+        </span>
+      </a>
+
       <AcceptancePath steps={w.acceptance} />
 
       <ToolMap w={w} />

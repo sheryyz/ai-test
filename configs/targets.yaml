@@ -24,6 +24,9 @@ targets:
       holdout: benchmarks/travel_holdout.jsonl
       attacks: benchmarks/travel_attacks.jsonl # AI-generated injections mounted on carrier cases (consenttrace attacks)
       attacks-r2: benchmarks/travel_attacks_r2.jsonl # round 2: each failed attack rewritten after seeing the agent's response
+      jailbreaks: benchmarks/travel_jailbreaks.jsonl # user-channel jailbreaks: pressure to skip confirmation (consenttrace jailbreaks)
+      boundary: benchmarks/travel_boundary.jsonl # AI-generated boundary cases, label-reviewed before any run (consenttrace generate-cases)
+      synced-attacks: benchmarks/travel_synced_attacks.jsonl # consent-synchronised injection: synced vs early arm (consenttrace attacks synced)
       acceptance:
         from: main
         description: 验收套件：多轮改参、撤销、工具返回注入、RAG 检索段投毒、执行后超时、混合场景各取代表用例
@@ -69,6 +72,8 @@ targets:
     fixed_versions: {v1: v1-fixed, v1-gated: v1-fixed}
     suites:
       core: benchmarks/tau_airline_core.yaml
+      jailbreaks: benchmarks/tau_airline_jailbreaks.jsonl # user-channel jailbreaks (English, consenttrace jailbreaks)
+      boundary: benchmarks/tau_airline_boundary.jsonl # AI-generated boundary cases, label-reviewed before any run
       acceptance:
         from: core
         description: 验收套件：确认后改单、改数量、工具返回注入、执行后超时

@@ -819,6 +819,85 @@ def create_app(
             raise HTTPException(422, str(exc)) from exc
         return append_label(labels_dir, label)
 
+    @app.get("/api/synced-attacks")
+    def synced_attacks() -> list[dict[str, Any]]:
+        """Consent-synchronised injection: per run, the synced arm against the early arm (same texts)."""
+        out = []
+        for ref in runs_in_force(runs_dir, include_bench=True):
+            s = ref.summary
+            if s.suite != "synced-attacks" or s.mode != "live":
+                continue
+            arms: dict[str, dict[str, int]] = {}
+            for r in load_results(ref.path):
+                arm = "synced" if r.case_id.endswith("-synced") else "early"
+                a = arms.setdefault(arm, {"executions": 0, "reached": 0, "violations": 0, "writes": 0})
+                a["executions"] += 1
+                if r.metrics.get("injections_reached"):
+                    a["reached"] += 1
+                    kinds = {f.kind.value for f in r.findings}
+                    a["violations"] += bool(kinds & {"attempt_violation", "side_effect_violation"})
+                    a["writes"] += "side_effect_violation" in kinds
+            out.append({"run_id": ref.run_id, "target": s.target, "version": s.agent_version, "model": s.model_id, "arms": arms})
+        return out
+
+    @app.get("/api/generated")
+    def generated() -> list[dict[str, Any]]:
+        """Every AI-generated suite: who generated it, what was accepted or rejected, what review changed."""
+        root = targets_path.resolve().parent.parent
+        out = []
+        for spec in targets().values():
+            if spec.registered:
+                continue
+            for suite, path in spec.suites.items():
+                if suite in spec.subsets or not path.exists() or path.suffix != ".jsonl":
+                    continue
+                first = path.read_text(encoding="utf-8").split("\n", 1)[0]
+                header = json.loads(first[3:]) if first.startswith("// ") else {}
+                library = header.get("library")
+                gen: dict[str, Any] = {}
+                lib_path = root / library if library else None
+                if lib_path and lib_path.with_suffix(".report.json").exists():
+                    rep = json.loads(lib_path.with_suffix(".report.json").read_text(encoding="utf-8"))
+                    gen = {"model": rep.get("model"), "accepted": rep.get("accepted"), "rejected": rep.get("rejected")}
+                elif path.with_suffix(".generation.json").exists():
+                    rep = json.loads(path.with_suffix(".generation.json").read_text(encoding="utf-8"))
+                    gen = {"model": rep.get("generator_model"), "rounds": rep.get("rounds"), "valid": rep.get("valid")}
+                elif path.with_name(path.stem + ".report.json").exists():
+                    rep = json.loads(path.with_name(path.stem + ".report.json").read_text(encoding="utf-8"))
+                    gen = {"model": rep.get("model")}
+                if not gen and not header.get("generator_model") and not header.get("spec_id"):
+                    continue
+                cases = list(suite_cases(spec, suite).values())
+                out.append(
+                    {
+                        "target": spec.name,
+                        "suite": suite,
+                        "file": str(path.relative_to(root)),
+                        "cases": len(cases),
+                        "spec_id": header.get("spec_id"),
+                        "model": gen.get("model") or header.get("generator_model") or header.get("model"),
+                        "accepted": gen.get("accepted"),
+                        "rejected": gen.get("rejected"),
+                        "rounds": gen.get("rounds") or header.get("rounds"),
+                        "review": header.get("review"),
+                        "review_sheet": str(path.with_suffix(".review.md").relative_to(root))
+                        if path.with_suffix(".review.md").exists()
+                        else None,
+                        "created_at": header.get("created_at"),
+                        "samples": [
+                            {"case_id": c.case_id, "title": c.title, "text": c.turns[0].text, "tags": c.tags} for c in cases[:60]
+                        ],
+                    }
+                )
+        return out
+
+    @app.get("/api/coverage")
+    def coverage() -> dict[str, Any]:
+        from consenttrace.core.coverage import build
+
+        root = targets_path.resolve().parent.parent
+        return build(root / "configs" / "coverage_matrix.yaml", targets(), runs_dir, root)
+
     @app.get("/api/analysis")
     def analysis() -> dict[str, Any]:
         return experiment_summary(runs_dir, targets(), suite_cases)
@@ -847,6 +926,72 @@ def create_app(
         )
         return breakdown
 
+    def run_reasoning(path: Path) -> dict[str, Any]:
+        from consenttrace.core.reasoning import diagnose, summarize
+
+        diags = []
+        for r in load_results(path):
+            if r.outcome.value == "FAIL":
+                diags += [
+                    {**d, "case_id": r.case_id, "rep": r.rep}
+                    for d in diagnose(r, load_trace(path / "cases" / r.case_id / f"r{r.rep}"))
+                ]
+        return {**summarize(diags), "items": diags}
+
+    @app.get("/api/runs/{run_id}/reasoning")
+    def get_run_reasoning(run_id: str) -> dict[str, Any]:
+        from consenttrace.core.reasoning import legend
+
+        return {**run_reasoning(run_dir(run_id)), "legend": legend()}
+
+    @app.get("/api/runs/{run_id}/scorecard")
+    def run_scorecard(run_id: str) -> dict[str, Any]:
+        from consenttrace.core.scorecard import method, scorecard
+
+        path = run_dir(run_id)
+        return {**scorecard(load_results(path), run_cases(path)), "method": method()}
+
+    @app.get("/api/scorecards")
+    def scorecards() -> dict[str, Any]:
+        """Every live run's scorecard, grouped by agent × version × suite × model (model-bench runs included)."""
+        from consenttrace.core.bench import load_models
+        from consenttrace.core.defects import BENCH
+        from consenttrace.core.scorecard import method, scorecard
+
+        root = targets_path.resolve().parent.parent
+        profiles = load_models(root / "configs" / "models.yaml") if (root / "configs" / "models.yaml").exists() else {}
+        by_model = {p.model: p for p in profiles.values()}
+        specs = targets()
+        groups = []
+        for ref in runs_in_force(runs_dir, include_bench=True):
+            s = ref.summary
+            if s.mode != "live" or s.target not in specs:
+                continue
+            profile = by_model.get(s.model_id or "")
+            groups.append(
+                {
+                    "run_id": ref.run_id,
+                    "target": s.target,
+                    "version": s.agent_version,
+                    "suite": s.suite,
+                    "reps": s.reps,
+                    "model": s.model_id,
+                    "provider": profile.provider if profile else None,
+                    "bench": ref.purpose == BENCH,
+                    "finished_at": s.finished_at.isoformat(),
+                    **scorecard(load_results(ref.path), suite_cases(specs[s.target], s.suite)),
+                    "reasoning": {k: v for k, v in run_reasoning(ref.path).items() if k != "items"},
+                }
+            )
+        from consenttrace.core.reasoning import legend
+
+        return {
+            "groups": groups,
+            "models": [{"name": p.name, "provider": p.provider, "model": p.model} for p in profiles.values()],
+            "method": method(),
+            "reasoning_legend": legend(),
+        }
+
     @app.get("/api/runs/{run_id}/results")
     def get_results(run_id: str) -> list[dict[str, Any]]:
         return [r.model_dump(mode="json") for r in load_results(run_dir(run_id))]
@@ -862,8 +1007,12 @@ def create_app(
             f = case_dir / name
             return json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
 
+        from consenttrace.core.reasoning import diagnose
+
         case = run_cases(path).get(case_id)
         config = read("../../../config.json") or {}
+        trace = load_trace(case_dir)
+        verdict = read("verdict.json")
         spec = targets().get(config.get("target", ""))
         contract = load_contract(spec.contract).model_dump(mode="json") if spec else None
         return {
@@ -871,8 +1020,9 @@ def create_app(
             "target": config.get("target"),
             "transport": config.get("transport") or "inprocess",
             "case": case.model_dump(mode="json") if case else None,
-            "verdict": read("verdict.json"),
-            "trace": [e.model_dump(mode="json") for e in load_trace(case_dir)],
+            "verdict": verdict,
+            "trace": [e.model_dump(mode="json") for e in trace],
+            "reasoning": diagnose(RunResult.model_validate(verdict), trace) if verdict else [],
             "auth": read("auth_timeline.json"),
             "state_before": read("state_before.json"),
             "state_after": read("state_after.json"),

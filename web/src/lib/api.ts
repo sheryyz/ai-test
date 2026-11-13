@@ -221,6 +221,7 @@ export interface CaseBundle {
   state_before: StateSnapshot | null;
   state_after: StateSnapshot | null;
   state_diff: StateDiff | null;
+  reasoning?: ReasoningItem[];
   contract: { contract_id: string; rules: { id: string; kind: string; action: string | null; entity: string | null; severity: string }[] } | null;
   reps: number[];
 }
@@ -726,8 +727,121 @@ export const api = {
   logout: () => post<{ ok: boolean }>("/api/auth/logout", {}),
   registerAgent: (body: { name: string; url: string; like: string; description: string }) =>
     post<{ name: string; versions: string[]; like: string; tools_checked: boolean }>("/api/agents/register", body),
+  scorecard: (runId: string) => get<Scorecard & { method: ScoreMethod }>(`/api/runs/${encodeURIComponent(runId)}/scorecard`),
+  scorecards: () => get<{ groups: ScoreGroup[]; models: { name: string; provider: string; model: string }[]; method: ScoreMethod; reasoning_legend: Legend[] }>("/api/scorecards"),
+  runReasoning: (runId: string) => get<ReasoningSummary & { items: ReasoningItem[]; legend: Legend[] }>(`/api/runs/${encodeURIComponent(runId)}/reasoning`),
+  syncedAttacks: () => get<{ run_id: string; target: string; version: string; model: string | null; arms: Record<string, SyncedArm> }[]>("/api/synced-attacks"),
+  coverage: () => get<Coverage>("/api/coverage"),
+  generated: () => get<GeneratedSuite[]>("/api/generated"),
   unregisterAgent: (name: string) => send<{ ok: boolean }>("DELETE", `/api/agents/${encodeURIComponent(name)}`),
 };
+
+export interface ScoreDim {
+  key: string;
+  label: string;
+  means: string;
+  num: number;
+  den: number;
+  rate: number | null;
+  ci: [number, number] | null;
+  grade: "A" | "B" | "C" | "D" | null;
+}
+
+export interface ScoreMethod {
+  z: number;
+  min_n: number;
+  grades: { grade: string; lower_bound_at_least: number }[];
+  overall: string;
+  dimensions: { key: string; label: string; means: string }[];
+}
+
+export interface Scorecard {
+  executions: number;
+  errors: number;
+  cases: number;
+  dimensions: ScoreDim[];
+  overall: string | null;
+  weakest: string | null;
+  tokens: number;
+  avg_duration_ms: number | null;
+}
+
+export interface ReasoningSummary {
+  attempts: number;
+  with_reasoning: number;
+  by_cause: Record<string, number>;
+}
+
+export interface ScoreGroup extends Scorecard {
+  run_id: string;
+  target: string;
+  version: string;
+  suite: string;
+  reps: number;
+  model: string | null;
+  provider: string | null;
+  bench: boolean;
+  finished_at: string;
+  reasoning: ReasoningSummary;
+}
+
+export interface ReasoningItem {
+  step: number;
+  turn: number;
+  tool: string | null;
+  cause: string;
+  label: string;
+  word: string | null;
+  evidence: string | null;
+  reasoning_steps: number[];
+  case_id?: string;
+  rep?: number;
+}
+
+export interface Legend {
+  key: string;
+  label: string;
+  means: string;
+}
+
+export interface SyncedArm {
+  executions: number;
+  reached: number;
+  violations: number;
+  writes: number;
+}
+
+export interface CoverageCell {
+  covered: boolean;
+  reason?: string;
+  cases?: { target: string; suite: string; filter: Record<string, string[]>; case_ids: string[] }[];
+  case_count?: number;
+  runs?: string[];
+  files?: string[];
+  note?: string;
+}
+
+export interface Coverage {
+  columns: Record<string, { name: string; means: string }>;
+  rows: { key: string; name: string; means: string; gaps: string; cells: Record<string, CoverageCell> }[];
+  problems: string[];
+}
+
+export interface GeneratedSuite {
+  target: string;
+  suite: string;
+  file: string;
+  cases: number;
+  spec_id: string | null;
+  model: string | null;
+  accepted: number | null;
+  rejected: number | null;
+  rounds: number | null;
+  review: { reviewer: string; edits: string[]; facts_checked?: string } | null;
+  review_sheet: string | null;
+  created_at: string | null;
+  samples: { case_id: string; title: string; text: string; tags: string[] }[];
+}
 
 export interface AuthUser {
   username: string;

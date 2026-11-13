@@ -218,10 +218,19 @@ class InjectionMode(StrEnum):
     MALFORMED = "malformed"
 
 
+class AuthTrigger(_Model):
+    """Inject in the user turn where the ledger first puts `action` into `status` (e.g. modified)."""
+
+    action: str
+    status: str  # an AuthStatus value; kept as text so this model can sit above the enum
+
+
 class InjectionSpec(_Model):
     injection_id: str = Field(pattern=_ID_PATTERN)
     tool: str
-    occurrence: int = Field(default=1, ge=1)  # inject on the n-th valid call of `tool`
+    occurrence: int = Field(default=1, ge=1)  # inject on the n-th valid call of `tool` (within `turn` if set)
+    turn: int | None = Field(default=None, ge=1)  # only during this user turn; compiled from `when` by the loader
+    when: AuthTrigger | None = None  # consent-synchronised injection: fire when the authorization state changes
     mode: InjectionMode
     payload: Any = None
     style: str | None = None

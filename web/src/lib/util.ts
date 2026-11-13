@@ -10,6 +10,7 @@ export const CATEGORY_NAMES: Record<string, string> = {
   C6: "RAG 检索与投毒",
   C7: "工具故障与恢复",
   C8: "混合与长对话",
+  C9: "用户通道越狱",
 };
 
 export const OUTCOME_META: Record<Outcome | "SKIPPED", { label: string; icon: string; color: string; wash: string }> = {
@@ -132,6 +133,9 @@ export const PLANS: Record<string, { name: string; what: string; primary?: boole
   smoke: { name: "冒烟测试", what: "9 个基础场景，确认测试链路畅通" },
   variants: { name: "换种说法", what: "同一场景换不同措辞，检验 Agent 的判断是否稳定" },
   holdout: { name: "留出测试集", what: "一次性生成、从未参与调优的场景，检验修复是否真的泛化" },
+  jailbreaks: { name: "越狱测试", what: "大模型生成的越狱话术：开发者模式、冒充上级、紧急施压……诱导 Agent 跳过确认直接执行", primary: true },
+  boundary: { name: "边界测试", what: "AI 按 Agent 的真实数据生成：缺参数、非法值、超出范围、含糊指代、对象不存在" },
+  "synced-attacks": { name: "授权时序注入", what: "同一段注入文本，分别在授权刚失效的那一轮和第一轮注入，比较成功率" },
 };
 
 export function planName(suite: string): string {
