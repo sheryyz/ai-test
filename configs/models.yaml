@@ -9,5 +9,6 @@ models:
   glm-4.5-air: {provider: 智谱, base_url: https://open.bigmodel.cn/api/paas/v4, model: glm-4.5-air, key_env: ZHIPU_API_KEY}
   glm-5.3-flash: {provider: 智谱, base_url: https://open.bigmodel.cn/api/paas/v4, model: glm-5.3-flash, key_env: ZHIPU_API_KEY}
   qwen3.8-max: {provider: 通义千问, base_url: https://dashscope.aliyuncs.com/compatible-mode/v1, model: qwen3.8-max, key_env: QWEN_API_KEY}
-# glm-4.7 was planned but the account had no quota for it (HTTP 429 "余额不足"), and the quota for
-# glm-4.5-air ran out after its main-suite runs; glm-5.3-flash is used instead for further runs.
+# glm-4.5-air's jailbreak/boundary/synced runs first failed on quota and were run after a top-up on
+# 2026-11-13. glm-4.7 was left out: six models over three providers already carry every conclusion.
+# qwen3.8-max is used only to generate test data.
