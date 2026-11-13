@@ -145,7 +145,7 @@ uv run consenttrace jailbreaks generate --target travel        # 或 --target ta
 # AI 场景生成：环境事实（工具、数据表、夹具里的数据、知识库）从被测 Agent 自己的接口取得，生成整条多轮用例
 uv run consenttrace generate-cases --target tau-airline --kind boundary   # 冻结后附人工复核表 *.review.md
 
-# 授权时序注入：同一段注入文本，在授权刚失效的那一轮注入 vs 第一轮注入（对照）
+# 授权时序注入：同一段注入文本，在授权刚失效的那一轮注入、第一轮注入、不注入（基线）三组对照
 uv run consenttrace attacks synced --target travel --profile qwen3.8-max  # --profile 取 configs/models.yaml
 
 # 模型横评：同一份 Agent 代码部署在不同模型上（每个模型一个独立进程，只拿到自己的 Key），跑同样的用例集

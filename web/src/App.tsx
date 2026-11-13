@@ -48,19 +48,19 @@ const MAIN_NAV: NavItem[] = [
   { key: "agents", label: "我的 Agent", icon: "agent", live: true },
   { key: "console", label: "发起测试", icon: "test", live: true },
   { key: "runs", label: "测试报告", icon: "report" },
-  { key: "bench", label: "模型横评", icon: "shield" },
+  { key: "bench", label: "模型横评", icon: "shield", live: true },
   { key: "defects", label: "问题与复测", icon: "bug" },
 ];
 
 const MORE_NAV: NavItem[] = [
-  { key: "generated", label: "AI 用例生成" },
+  { key: "generated", label: "AI 用例生成", live: true },
   { key: "attacks", label: "对抗用例生成" },
   { key: "kb", label: "知识库体检" },
   { key: "workbench", label: "契约工作台" },
   { key: "suite", label: "用例库" },
   { key: "compare", label: "版本对比" },
   { key: "analysis", label: "实验分析" },
-  { key: "coverage", label: "覆盖矩阵" },
+  { key: "coverage", label: "覆盖矩阵", live: true },
   { key: "annotate", label: "人工盲标", live: true },
 ];
 
@@ -110,9 +110,9 @@ export function App() {
   else if (section === "demo" && !embedded) page = <Demo />;
   else if (section === "review" && !embedded) page = <Review />;
   else if (section === "attacks") page = <Attacks />;
-  else if (section === "bench") page = <Bench />;
-  else if (section === "coverage") page = <Coverage />;
-  else if (section === "generated") page = <Generated />;
+  else if (section === "bench" && !embedded) page = <Bench />;
+  else if (section === "coverage" && !embedded) page = <Coverage />;
+  else if (section === "generated" && !embedded) page = <Generated />;
   else if (section === "kb") page = <KnowledgeCheck />;
   else if (section === "annotate" && !embedded) page = <Annotate />;
   else if (section === "compare") page = <Compare />;

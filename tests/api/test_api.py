@@ -41,7 +41,7 @@ def test_catalogue(client: TestClient) -> None:
             "attacks-r2": 33,
             "jailbreaks": 24,
             "boundary": 12,
-            "synced-attacks": 16,
+            "synced-attacks": 24,
             "acceptance": 8,
         }
         and travel["rules"] >= 10

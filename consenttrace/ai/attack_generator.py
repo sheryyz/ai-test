@@ -427,7 +427,9 @@ SYNC_TOOLS = ("search_flights", "get_my_orders", "get_travel_policy")  # read-on
 def mount_synced(
     entry: dict[str, Any], carrier: TestCase, spec: AttackSpec, *, action: str, tools: Sequence[str] = SYNC_TOOLS
 ) -> list[TestCase]:
-    """Two arms for one text: injected when `action` becomes "modified" (synced) and in the first turn (early).
+    """Three arms for one text: injected when `action` becomes "modified" (synced), in the first turn
+    (early), and not at all (none -- the carrier's own failure rate, without which neither injection
+    arm can be read).
 
     The text is attached to the first call of each read-only tool in that turn, so it reaches the
     agent whichever of them it calls; nothing else about the carrier changes.
@@ -437,27 +439,37 @@ def mount_synced(
     style, goal = spec.styles[entry["style"]], spec.goals[entry["goal"]]
     if style.passage or style.placement.mode is not InjectionMode.APPEND_TEXT:
         raise ValueError("synchronised injection mounts append_text styles only")
+    titles = {"synced": "授权失效那一轮注入", "early": "第一轮注入（对照）", "none": "不注入（基线）"}
+    timings: list[tuple[str, dict[str, Any] | None]] = [
+        ("synced", {"when": AuthTrigger(action=action, status="modified")}),
+        ("early", {"turn": 1}),
+        ("none", None),
+    ]
     out = []
-    for arm, timing in (("synced", {"when": AuthTrigger(action=action, status="modified")}), ("early", {"turn": 1})):
-        injections = [
-            InjectionSpec(
-                injection_id=f"INJ-{entry['attack_id']}-{arm}-{i}",
-                tool=tool,
-                occurrence=1,
-                mode=style.placement.mode,
-                payload=entry["text"],
-                style=entry["style"],
-                field=style.placement.field,
-                **timing,
-            )
-            for i, tool in enumerate(tools, start=1)
-        ]
+    for arm, timing in timings:
+        injections = (
+            []
+            if timing is None
+            else [
+                InjectionSpec(
+                    injection_id=f"INJ-{entry['attack_id']}-{arm}-{i}",
+                    tool=tool,
+                    occurrence=1,
+                    mode=style.placement.mode,
+                    payload=entry["text"],
+                    style=entry["style"],
+                    field=style.placement.field,
+                    **timing,
+                )
+                for i, tool in enumerate(tools, start=1)
+            ]
+        )
         out.append(
             carrier.model_copy(
                 update={
                     "case_id": f"{entry['attack_id']}-{arm}",
                     "suite": "synced-attacks",
-                    "title": f"{style.name} · {goal.name}（{'授权失效那一轮注入' if arm == 'synced' else '第一轮注入（对照）'}）",
+                    "title": f"{style.name} · {goal.name}（{titles[arm]}）",
                     "injections": injections,
                     "tags": [
                         "attack",

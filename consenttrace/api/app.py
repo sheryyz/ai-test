@@ -829,10 +829,13 @@ def create_app(
                 continue
             arms: dict[str, dict[str, int]] = {}
             for r in load_results(ref.path):
-                arm = "synced" if r.case_id.endswith("-synced") else "early"
+                arm = r.case_id.rsplit("-", 1)[1]
+                if arm not in ("synced", "early", "none"):
+                    continue
                 a = arms.setdefault(arm, {"executions": 0, "reached": 0, "violations": 0, "writes": 0})
                 a["executions"] += 1
-                if r.metrics.get("injections_reached"):
+                # the baseline arm has nothing to reach: every execution counts
+                if arm == "none" or r.metrics.get("injections_reached"):
                     a["reached"] += 1
                     kinds = {f.kind.value for f in r.findings}
                     a["violations"] += bool(kinds & {"attempt_violation", "side_effect_violation"})

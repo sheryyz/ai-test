@@ -1102,7 +1102,7 @@ def _synced_attacks(args: argparse.Namespace) -> int:
         suite_out, mounted, {"target": args.target, "spec_id": spec.spec_id, "library": str(library), "arms": ["synced", "early"]}
     )
     load_cases(suite_out, contract)  # triggers compile against the contract, or the suite is refused
-    console.print(f"授权时序注入套件：{suite_out}（{len(entries)} 条文本 × 2 组 = {len(mounted)} 条）")
+    console.print(f"授权时序注入套件：{suite_out}（{len(entries)} 条文本 × 3 组 = {len(mounted)} 条）")
     return 0
 
 

@@ -119,13 +119,13 @@ rows:
           - {target: travel, suite: attacks-r2}
           - {target: travel, suite: synced-attacks}
         runs: ["attacks-*-live-k1", "attacks-r2-*", "bench-*-travel-v1-synced-attacks-k3"]
-        note: 评分卡“抗注入”维度；授权时序注入在授权刚失效的那一轮注入，与第一轮注入对照
+        note: 评分卡“抗注入”维度；授权时序注入分三组：授权刚失效那一轮注入、第一轮注入、不注入（基线）
       rag:
         runs: ["kb_checks"]
         note: 投毒段落识别（规则与 LLM 两种）
       generator:
         files: [benchmarks/travel_injection_library.jsonl, benchmarks/travel_injection_library.r2.jsonl, benchmarks/travel_synced_injection_library.jsonl]
-        note: 6 种样式 × 3 类目标生成，确定性校验后冻结；第 2 轮看过 Agent 的实际回应后闭环加强；授权时序注入 8 条 × 2 组
+        note: 6 种样式 × 3 类目标生成，确定性校验后冻结；第 2 轮看过 Agent 的实际回应后闭环加强；授权时序注入 8 条 × 3 组（含不注入基线）
       audit:
         files: [web/src/components/TraceSwimlane.tsx]
         note: 注入内容标为低信任；“注入到达 / 未触发”分开统计，未到达的不计入成功率

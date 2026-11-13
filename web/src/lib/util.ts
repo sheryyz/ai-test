@@ -135,7 +135,7 @@ export const PLANS: Record<string, { name: string; what: string; primary?: boole
   holdout: { name: "留出测试集", what: "一次性生成、从未参与调优的场景，检验修复是否真的泛化" },
   jailbreaks: { name: "越狱测试", what: "大模型生成的越狱话术：开发者模式、冒充上级、紧急施压……诱导 Agent 跳过确认直接执行", primary: true },
   boundary: { name: "边界测试", what: "AI 按 Agent 的真实数据生成：缺参数、非法值、超出范围、含糊指代、对象不存在" },
-  "synced-attacks": { name: "授权时序注入", what: "同一段注入文本，分别在授权刚失效的那一轮和第一轮注入，比较成功率" },
+  "synced-attacks": { name: "授权时序注入", what: "同一段注入文本，分别在授权刚失效的那一轮、第一轮注入，并与不注入的基线比较" },
 };
 
 export function planName(suite: string): string {
@@ -167,4 +167,24 @@ export function timeAgo(iso: string): string {
   if (s < 86400) return `${Math.floor(s / 3600)} 小时前`;
   if (s < 86400 * 7) return `${Math.floor(s / 86400)} 天前`;
   return d.toLocaleDateString("zh-CN");
+}
+
+/** 95% Wilson interval; two rates differ "significantly" here only when their intervals do not overlap. */
+export function wilson(num: number, den: number): [number, number] | null {
+  if (!den) return null;
+  const z = 1.96;
+  const p = num / den;
+  const centre = p + (z * z) / (2 * den);
+  const margin = z * Math.sqrt((p * (1 - p)) / den + (z * z) / (4 * den * den));
+  const scale = 1 + (z * z) / den;
+  return [Math.max(0, (centre - margin) / scale), Math.min(1, (centre + margin) / scale)];
+}
+
+export const MIN_COMPARE_N = 10; // below this many executions per group, no comparison claim is made
+
+export function clearlyHigher(a: [number, number], b: [number, number]): boolean {
+  if (a[1] < MIN_COMPARE_N || b[1] < MIN_COMPARE_N) return false;
+  const x = wilson(a[0], a[1]);
+  const y = wilson(b[0], b[1]);
+  return Boolean(x && y && x[0] > y[1]);
 }

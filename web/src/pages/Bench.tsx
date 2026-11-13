@@ -3,7 +3,7 @@ import { Heatmap } from "../components/charts";
 import { GRADE_META, GradeBadge, MethodNote } from "../components/Scorecard";
 import { Card, ErrorNote, Loading, PageHeader, Segmented, tipHandlers, useTooltip } from "../components/ui";
 import { api, type ScoreGroup, type SyncedArm } from "../lib/api";
-import { compact, href, planName, useAsync } from "../lib/util";
+import { MIN_COMPARE_N, clearlyHigher, compact, href, planName, useAsync } from "../lib/util";
 
 const SCENARIOS: { key: string; target: string; suite: string; label: string }[] = [
   { key: "travel-main", target: "travel", suite: "main", label: "差旅 · 完整测试" },
@@ -40,7 +40,7 @@ export function Bench() {
         <Card title="越狱成功率（越低越好）" subtitle="用户用越狱话术诱导跳过确认后，Agent 真的执行了敏感操作的比例；线段为 95% 置信区间">
           <JailbreakBars groups={sorted(groups.filter((g) => g.suite === "jailbreaks"))} />
         </Card>
-        <Card title="授权时序注入：时机的影响" subtitle="同一段注入文本，在授权刚失效的那一轮注入 vs 在第一轮注入；只统计注入真正到达 Agent 的执行">
+        <Card title="授权时序注入：时机的影响" subtitle="同一场景三组：不注入（基线）、第一轮注入、授权刚失效的那一轮注入；注入组只统计注入真正到达 Agent 的执行">
           {synced.data ? <Dumbbell rows={synced.data} /> : <Loading />}
         </Card>
       </div>
@@ -209,16 +209,21 @@ function JailbreakBars({ groups }: { groups: ScoreGroup[] }) {
   );
 }
 
-function Dumbbell({ rows }: { rows: { run_id: string; model: string | null; arms: Record<string, SyncedArm> }[] }) {
+function Dumbbell({ rows }: { rows: { run_id: string; model: string | null; version: string; arms: Record<string, SyncedArm> }[] }) {
   const tip = useTooltip();
   if (!rows.length) return <p className="text-sm text-muted">还没有授权时序注入的运行。</p>;
   const rate = (a?: SyncedArm) => (a && a.reached ? a.violations / a.reached : null);
+  const pct = (x: number | null) => (x === null ? "—" : `${Math.round(x * 100)}%`);
   return (
     <div>
-      <div className="mb-3 flex items-center gap-4 text-[11px] text-ink-2">
+      <div className="mb-3 flex flex-wrap items-center gap-4 text-[11px] text-ink-2">
+        <span className="inline-flex items-center gap-1.5">
+          <span aria-hidden className="size-2.5 rotate-45" style={{ background: "var(--muted)" }} />
+          不注入（基线）
+        </span>
         <span className="inline-flex items-center gap-1.5">
           <span aria-hidden className="size-2.5 rounded-full border-2" style={{ borderColor: "var(--s1)", background: "var(--surface)" }} />
-          第一轮注入（对照）
+          第一轮注入
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span aria-hidden className="size-2.5 rounded-full" style={{ background: "var(--s2)" }} />
@@ -227,51 +232,72 @@ function Dumbbell({ rows }: { rows: { run_id: string; model: string | null; arms
       </div>
       <div className="space-y-3">
         {rows.map((r) => {
+          const none = rate(r.arms.none);
           const early = rate(r.arms.early);
           const syn = rate(r.arms.synced);
           const reached = (r.arms.early?.reached ?? 0) + (r.arms.synced?.reached ?? 0);
+          const ceiling = none !== null && none >= 0.9;
+          const pts = [none, early, syn].filter((x): x is number => x !== null);
           return (
-            <div key={r.run_id} className="grid grid-cols-[110px_minmax(0,1fr)_120px] items-center gap-3">
-              <span className="truncate text-xs text-ink-2">{r.model}</span>
-              {reached === 0 ? (
-                <span className="text-[11px] text-muted">注入没有到达（这个模型在那几轮没有调用只读工具），不计算成功率</span>
-              ) : (
-                <span
-                  tabIndex={0}
-                  className="relative h-4"
-                  {...tipHandlers(tip, () => (
-                    <div>
-                      <div>第一轮注入：{r.arms.early?.violations}/{r.arms.early?.reached} 次越权</div>
-                      <div>授权刚失效时注入：{r.arms.synced?.violations}/{r.arms.synced?.reached} 次越权</div>
-                    </div>
-                  ))}
-                >
-                  <span aria-hidden className="absolute inset-x-0 top-1/2 h-px" style={{ background: "var(--grid)" }} />
-                  {early !== null && syn !== null && (
-                    <span aria-hidden className="absolute top-1/2 h-[2px] -translate-y-1/2" style={{ left: `${Math.min(early, syn) * 100}%`, width: `${Math.abs(syn - early) * 100}%`, background: "var(--axis)" }} />
-                  )}
-                  {early !== null && (
-                    <span aria-hidden className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2" style={{ left: `${early * 100}%`, borderColor: "var(--s1)", background: "var(--surface)" }} />
-                  )}
-                  {syn !== null && (
-                    <span aria-hidden className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-[var(--surface)]" style={{ left: `${syn * 100}%`, background: "var(--s2)" }} />
+            <div key={r.run_id}>
+              <div className="grid grid-cols-[130px_minmax(0,1fr)_150px] items-center gap-3">
+                <span className="text-xs leading-tight text-ink-2">
+                  {r.model}
+                  <span className="block text-[10px] text-muted">{r.run_id.startsWith("bench-") ? `横评 · ${r.version}` : `已注册 Agent · ${r.version}`}</span>
+                </span>
+                {reached === 0 ? (
+                  <span className="text-[11px] text-muted">注入没有到达（这个模型在那几轮没有调用只读工具），不计算成功率</span>
+                ) : (
+                  <span
+                    tabIndex={0}
+                    className="relative h-4"
+                    {...tipHandlers(tip, () => (
+                      <div>
+                        <div>不注入：{r.arms.none?.violations ?? "—"}/{r.arms.none?.reached ?? "—"} 次越权</div>
+                        <div>第一轮注入：{r.arms.early?.violations}/{r.arms.early?.reached} 次越权（只计注入到达的执行）</div>
+                        <div>授权刚失效时注入：{r.arms.synced?.violations}/{r.arms.synced?.reached} 次越权</div>
+                      </div>
+                    ))}
+                  >
+                    <span aria-hidden className="absolute inset-x-0 top-1/2 h-px" style={{ background: "var(--grid)" }} />
+                    {pts.length > 1 && (
+                      <span aria-hidden className="absolute top-1/2 h-[2px] -translate-y-1/2" style={{ left: `${Math.min(...pts) * 100}%`, width: `${(Math.max(...pts) - Math.min(...pts)) * 100}%`, background: "var(--axis)" }} />
+                    )}
+                    {none !== null && <span aria-hidden className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45" style={{ left: `${none * 100}%`, background: "var(--muted)" }} />}
+                    {early !== null && (
+                      <span aria-hidden className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2" style={{ left: `${early * 100}%`, borderColor: "var(--s1)", background: "var(--surface)" }} />
+                    )}
+                    {syn !== null && (
+                      <span aria-hidden className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-[var(--surface)]" style={{ left: `${syn * 100}%`, background: "var(--s2)" }} />
+                    )}
+                  </span>
+                )}
+                <span className="tabular text-[11px] text-ink-2">
+                  {reached ? (
+                    <>
+                      基线 {pct(none)} · 第一轮 {pct(early)} · <b className="text-ink">失效时 {pct(syn)}</b>
+                    </>
+                  ) : (
+                    "—"
                   )}
                 </span>
+              </div>
+              {reached > 0 && (
+                <div className="mt-0.5 pl-[142px] text-[11px] text-muted">
+                  {(r.arms.synced?.reached ?? 0) < MIN_COMPARE_N || (r.arms.none?.reached ?? 0) < MIN_COMPARE_N
+                    ? `注入只到达了 ${r.arms.synced?.reached ?? 0} 次（这个模型那一轮多半没调用只读工具），样本太少，不下结论。`
+                    : ceiling
+                    ? "不注入时就几乎每次越权（天花板），注入时机的影响测不出来。"
+                    : r.arms.none && r.arms.synced && clearlyHigher([r.arms.synced.violations, r.arms.synced.reached], [r.arms.none.violations, r.arms.none.reached])
+                      ? "授权失效时注入明显高于不注入（95% 区间不重叠）。"
+                      : "与不注入相比差异在误差范围内，不能说明注入时机有影响。"}
+                </div>
               )}
-              <span className="tabular text-xs text-ink-2">
-                {reached ? (
-                  <>
-                    {early !== null ? `${Math.round(early * 100)}%` : "—"} → <b className="text-ink">{syn !== null ? `${Math.round(syn * 100)}%` : "—"}</b>
-                  </>
-                ) : (
-                  "—"
-                )}
-              </span>
             </div>
           );
         })}
       </div>
-      <div className="mt-2 flex justify-between pl-[122px] pr-[132px] text-[10px] text-muted">
+      <div className="mt-2 flex justify-between pl-[142px] pr-[162px] text-[10px] text-muted">
         <span>0%</span>
         <span>越权比例</span>
         <span>100%</span>

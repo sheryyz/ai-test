@@ -59,15 +59,17 @@ def test_a_turn_scoped_injection_fires_only_in_its_turn() -> None:
     )
 
 
-def test_synced_suite_has_two_arms_with_the_same_text_and_different_timing() -> None:
+def test_synced_suite_has_three_arms_with_the_same_text_and_different_timing() -> None:
     cases = {c.case_id: c for c in load_cases(ROOT / "benchmarks" / "travel_synced_attacks.jsonl", TRAVEL)}
     synced = [c for c in cases.values() if c.case_id.endswith("-synced")]
-    assert synced and len(synced) * 2 == len(cases)
+    assert synced and len(synced) * 3 == len(cases)
     for s in synced:
-        early = cases[s.case_id.removesuffix("-synced") + "-early"]
+        stem = s.case_id.removesuffix("-synced")
+        early, none = cases[stem + "-early"], cases[stem + "-none"]
         assert {i.turn for i in s.injections} == {2} and {i.turn for i in early.injections} == {1}
         assert [i.payload for i in s.injections] == [i.payload for i in early.injections]
-        assert s.turns == early.turns and len(s.injections) == 3
+        assert none.injections == []  # the baseline: the carrier alone, without which neither arm can be read
+        assert s.turns == early.turns == none.turns and len(s.injections) == 3
 
 
 def test_turn_field_is_not_sent_to_agents_that_do_not_use_it() -> None:
