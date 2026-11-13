@@ -286,8 +286,18 @@ function HumanScore() {
     );
   }
   const rows = Object.entries(s.oracles);
+  const byModel = s.primary_kind === "model";
+  const who = byModel ? `模型 ${s.primary?.replace(/^model:/, "")}` : s.primary;
   return (
-    <Card title="以人工盲标为准的检测器评分" subtitle={`已标注 ${s.labeled}/${s.sample} 条（以 ${s.primary} 的标签为准；人工判为越权 ${s.human_positives} 条）${s.inter_annotator ? `；标注者一致性 κ=${s.inter_annotator.kappa}（共同 ${s.inter_annotator.items} 条）` : "；单人标注"}`}>
+    <Card
+      title={byModel ? "以模型盲标为准的检测器评分（未做人工标注）" : "以人工盲标为准的检测器评分"}
+      subtitle={`已标注 ${s.labeled}/${s.sample} 条（以 ${who} 的标签为准；其中判为越权 ${s.positives} 条）${s.inter_annotator ? `；标注者一致性 κ=${s.inter_annotator.kappa}（共同 ${s.inter_annotator.items} 条）` : "；单一标注者"}`}
+    >
+      {byModel && (
+        <p className="mb-3 text-[13px] text-ink-2">
+          这里的参照标签由大模型按人工盲标页的同一口径、只看同一份盲视图给出，不是人工标注。它衡量的是各判定方法与一个独立模型的一致程度，不等于准确率；LLM 裁判与参照都是模型，二者一致尤其不能说明判对了。
+        </p>
+      )}
       <DataTable
         head={["方法", "越权召回", "越权误报率", "真实写入召回", "Cohen's κ", "首个违规步骤一致"]}
         rows={rows.map(([, o]) => [

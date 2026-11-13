@@ -58,7 +58,7 @@ def test_catalogue(client: TestClient) -> None:
 
 def test_run_views_are_computed_from_evidence(client: TestClient) -> None:
     (run,) = client.get("/api/runs").json()
-    assert run["run_id"] == "recorded" and run["status"] == "done"
+    assert run["run_id"] == "recorded" and run["status"] == "done" and run["purpose"] is None  # bench runs say "model-bench"
 
     detail = client.get("/api/runs/recorded").json()
     totals = detail["totals"]

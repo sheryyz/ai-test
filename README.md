@@ -130,7 +130,8 @@ uv run consenttrace kb-check --target travel --via http [--llm]
 
 # 人工盲标：冻结一份分层样本，在控制台「人工盲标」页标注；再用人工标签给各判定方法评分
 uv run consenttrace annotate sample        # 已冻结在 benchmarks/labels/sample.jsonl，不要重抽
-uv run consenttrace annotate score
+uv run consenttrace annotate model --profile qwen3.8-max   # 模型按同一口径、只看同一份盲视图标注，记为 model:qwen3.8-max
+uv run consenttrace annotate score         # 有人工标签时以人工为准；只有模型标签时明确标注“参照是模型，不是人工”
 
 # 离线静态报告：单个 HTML，内嵌所选运行的全部证据与前端，双击即可打开
 uv run consenttrace report --run <run_id> [--run <run_id> ...]

@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 374" width="760" height="374"><rect width="100%" height="100%" fill="#ffffff"/>
+<text x="180.0" y="63.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">A 只看输出</text>
+<text x="180.0" y="93.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">B 输出 + 轨迹</text>
+<text x="180.0" y="123.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">消融：去掉授权账本</text>
+<text x="180.0" y="153.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">消融：去掉状态差分</text>
+<text x="180.0" y="183.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">D2 DeepEval G-Eval</text>
+<text x="180.0" y="213.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">D1 DeepEval 工具正确性</text>
+<text x="180.0" y="243.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">C1 LLM 裁判（只看对话）</text>
+<text x="180.0" y="273.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">C2 LLM 裁判（对话+轨迹）</text>
+<text x="180.0" y="303.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="end" font-weight="600" dominant-baseline="middle">ConsentTrace</text>
+<text x="190.0" y="22.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="600" dominant-baseline="middle">越权召回率（越高越好，N=26）</text>
+<line x1="190.0" y1="44.0" x2="190.0" y2="318.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="190.0" y="330.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">0%</text>
+<line x1="253.0" y1="44.0" x2="253.0" y2="318.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="253.0" y="330.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">50%</text>
+<line x1="316.0" y1="44.0" x2="316.0" y2="318.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="316.0" y="330.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">100%</text>
+<rect x="190.0" y="54.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<path d="M190.0,54.0 h44.5 a4,4 0 0 1 4,4 v10.0 a4,4 0 0 1 -4,4 h-44.5 z" fill="#2a78d6"/>
+<line x1="218.3" y1="63.0" x2="262.4" y2="63.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="322.0" y="63.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">10/26</text>
+<rect x="190.0" y="84.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<path d="M190.0,84.0 h49.3 a4,4 0 0 1 4,4 v10.0 a4,4 0 0 1 -4,4 h-49.3 z" fill="#2a78d6"/>
+<line x1="222.2" y1="93.0" x2="266.9" y2="93.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="322.0" y="93.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">11/26</text>
+<rect x="190.0" y="114.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<path d="M190.0,114.0 h54.2 a4,4 0 0 1 4,4 v10.0 a4,4 0 0 1 -4,4 h-54.2 z" fill="#2a78d6"/>
+<line x1="226.2" y1="123.0" x2="271.3" y2="123.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="322.0" y="123.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">12/26</text>
+<rect x="190.0" y="144.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<path d="M190.0,144.0 h117.2 a4,4 0 0 1 4,4 v10.0 a4,4 0 0 1 -4,4 h-117.2 z" fill="#2a78d6"/>
+<line x1="292.2" y1="153.0" x2="315.1" y2="153.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="322.0" y="153.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">25/26</text>
+<rect x="190.0" y="174.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<path d="M190.0,174.0 h73.5 a4,4 0 0 1 4,4 v10.0 a4,4 0 0 1 -4,4 h-73.5 z" fill="#2a78d6"/>
+<line x1="243.6" y1="183.0" x2="287.7" y2="183.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="322.0" y="183.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">16/26</text>
+<rect x="190.0" y="204.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<path d="M190.0,204.0 h88.1 a4,4 0 0 1 4,4 v10.0 a4,4 0 0 1 -4,4 h-88.1 z" fill="#2a78d6"/>
+<line x1="257.9" y1="213.0" x2="298.7" y2="213.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="322.0" y="213.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">19/26</text>
+<rect x="190.0" y="234.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<path d="M190.0,234.0 h68.7 a4,4 0 0 1 4,4 v10.0 a4,4 0 0 1 -4,4 h-68.7 z" fill="#2a78d6"/>
+<line x1="239.1" y1="243.0" x2="283.8" y2="243.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="322.0" y="243.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">15/26</text>
+<rect x="190.0" y="264.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<path d="M190.0,264.0 h107.5 a4,4 0 0 1 4,4 v10.0 a4,4 0 0 1 -4,4 h-107.5 z" fill="#2a78d6"/>
+<line x1="279.5" y1="273.0" x2="311.0" y2="273.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="322.0" y="273.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">23/26</text>
+<rect x="190.0" y="294.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<path d="M190.0,294.0 h122.0 a4,4 0 0 1 4,4 v10.0 a4,4 0 0 1 -4,4 h-122.0 z" fill="#2a78d6"/>
+<line x1="299.8" y1="303.0" x2="316.0" y2="303.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="322.0" y="303.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">26/26</text>
+<text x="382.0" y="22.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="600" dominant-baseline="middle">误报率（越低越好，N=14）</text>
+<line x1="382.0" y1="44.0" x2="382.0" y2="318.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="382.0" y="330.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">0%</text>
+<line x1="445.0" y1="44.0" x2="445.0" y2="318.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="445.0" y="330.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">50%</text>
+<line x1="508.0" y1="44.0" x2="508.0" y2="318.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="508.0" y="330.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">100%</text>
+<rect x="382.0" y="54.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<line x1="382.0" y1="63.0" x2="409.1" y2="63.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="514.0" y="63.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">0/14</text>
+<rect x="382.0" y="84.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<line x1="382.0" y1="93.0" x2="409.1" y2="93.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="514.0" y="93.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">0/14</text>
+<rect x="382.0" y="114.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<line x1="382.0" y1="123.0" x2="409.1" y2="123.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="514.0" y="123.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">0/14</text>
+<rect x="382.0" y="144.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<line x1="382.0" y1="153.0" x2="409.1" y2="153.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="514.0" y="153.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">0/14</text>
+<rect x="382.0" y="174.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<path d="M382.0,174.0 h32.0 a4,4 0 0 1 4,4 v10.0 a4,4 0 0 1 -4,4 h-32.0 z" fill="#eb6834"/>
+<line x1="396.8" y1="183.0" x2="450.9" y2="183.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="514.0" y="183.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">4/14</text>
+<rect x="382.0" y="204.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<path d="M382.0,204.0 h14.0 a4,4 0 0 1 4,4 v10.0 a4,4 0 0 1 -4,4 h-14.0 z" fill="#eb6834"/>
+<line x1="387.1" y1="213.0" x2="432.3" y2="213.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="514.0" y="213.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">2/14</text>
+<rect x="382.0" y="234.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<line x1="382.0" y1="243.0" x2="409.1" y2="243.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="514.0" y="243.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">0/14</text>
+<rect x="382.0" y="264.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<line x1="382.0" y1="273.0" x2="409.1" y2="273.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="514.0" y="273.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">0/14</text>
+<rect x="382.0" y="294.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<line x1="382.0" y1="303.0" x2="409.1" y2="303.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="514.0" y="303.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">0/14</text>
+<text x="574.0" y="22.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="start" font-weight="600" dominant-baseline="middle">首个违规步骤定位（N=25）</text>
+<line x1="574.0" y1="44.0" x2="574.0" y2="318.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="574.0" y="330.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">0%</text>
+<line x1="637.0" y1="44.0" x2="637.0" y2="318.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="637.0" y="330.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">50%</text>
+<line x1="700.0" y1="44.0" x2="700.0" y2="318.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="700.0" y="330.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">100%</text>
+<rect x="574.0" y="54.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<line x1="574.0" y1="63.0" x2="590.8" y2="63.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="706.0" y="63.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">0/25</text>
+<rect x="574.0" y="84.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<path d="M574.0,84.0 h51.4 a4,4 0 0 1 4,4 v10.0 a4,4 0 0 1 -4,4 h-51.4 z" fill="#1baf7a"/>
+<line x1="607.6" y1="93.0" x2="653.3" y2="93.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="706.0" y="93.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">11/25</text>
+<rect x="574.0" y="114.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<path d="M574.0,114.0 h51.4 a4,4 0 0 1 4,4 v10.0 a4,4 0 0 1 -4,4 h-51.4 z" fill="#1baf7a"/>
+<line x1="607.6" y1="123.0" x2="653.3" y2="123.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="706.0" y="123.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">11/25</text>
+<rect x="574.0" y="144.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<path d="M574.0,144.0 h122.0 a4,4 0 0 1 4,4 v10.0 a4,4 0 0 1 -4,4 h-122.0 z" fill="#1baf7a"/>
+<line x1="683.2" y1="153.0" x2="700.0" y2="153.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="706.0" y="153.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">25/25</text>
+<rect x="574.0" y="174.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<line x1="574.0" y1="183.0" x2="590.8" y2="183.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="706.0" y="183.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">0/25</text>
+<rect x="574.0" y="204.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<path d="M574.0,204.0 h66.6 a4,4 0 0 1 4,4 v10.0 a4,4 0 0 1 -4,4 h-66.6 z" fill="#1baf7a"/>
+<line x1="620.7" y1="213.0" x2="666.4" y2="213.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="706.0" y="213.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">14/25</text>
+<rect x="574.0" y="234.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<line x1="574.0" y1="243.0" x2="590.8" y2="243.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="706.0" y="243.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">0/25</text>
+<rect x="574.0" y="264.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<path d="M574.0,264.0 h111.9 a4,4 0 0 1 4,4 v10.0 a4,4 0 0 1 -4,4 h-111.9 z" fill="#1baf7a"/>
+<line x1="668.5" y1="273.0" x2="697.2" y2="273.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="706.0" y="273.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">23/25</text>
+<rect x="574.0" y="294.0" width="126.0" height="18.0" rx="4" fill="#f0efec"/>
+<path d="M574.0,294.0 h122.0 a4,4 0 0 1 4,4 v10.0 a4,4 0 0 1 -4,4 h-122.0 z" fill="#1baf7a"/>
+<line x1="683.2" y1="303.0" x2="700.0" y2="303.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="706.0" y="303.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">25/25</text>
+<text x="190.0" y="346.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#8a8984" text-anchor="start" font-weight="400" dominant-baseline="middle">黑线为 95% Wilson 置信区间；同一批 40 条带标注执行（26 条越权、14 条正确行为），只换判定方法。</text>
+</svg>

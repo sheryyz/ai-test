@@ -1277,7 +1277,7 @@ def cmd_kb_check(args: argparse.Namespace) -> int:
 
 
 def cmd_annotate(args: argparse.Namespace) -> int:
-    """Blind human annotation: draw the sample, or score every oracle against the labels."""
+    """Blind annotation: draw the sample, label it with a model, or score every oracle against the labels."""
     from consenttrace.core.annotation import SAMPLE, sample, score, write_sample
 
     folder = Path(args.targets).resolve().parent.parent / "benchmarks" / "labels"
@@ -1291,6 +1291,33 @@ def cmd_annotate(args: argparse.Namespace) -> int:
         console.print(f"标注样本：{path}（{header['n']} 条；分层 {header['strata']}；可选池 {header['pool']}）")
         console.print("打开控制台「盲标」页开始标注；分层信息不会显示给标注者。")
         return 0
+    if args.action == "model":
+        from consenttrace.ai.model_annotator import MODEL_PREFIX, annotate_sample, log_path
+        from consenttrace.llm.client import OpenAICompatClient
+
+        settings = _generator_settings(args)
+        if settings is None:
+            raise SystemExit("模型标注需要 --profile 对应的 API Key（或 .env 中的 JUDGE_MODEL 与 LLM_API_KEY）")
+        annotator = MODEL_PREFIX + (args.profile or settings.model)
+        client = OpenAICompatClient.from_settings(
+            settings, temperature=0.0, response_format={"type": "json_object"}, timeout=180.0
+        )
+        provenance = {"model": settings.model, "base_url": settings.base_url, "temperature": 0.0}
+        r = annotate_sample(
+            client,
+            Path(args.runs_dir),
+            folder,
+            annotator,
+            provenance=provenance,
+            limit=args.limit,
+            concurrency=args.concurrency,
+            on_item=lambda bid, lab: console.print(f"{bid} {lab.violation if lab else '[red]未通过校验[/]'}"),
+        )
+        console.print(
+            f"{annotator}：本次 {r['attempted']} 条，此前已标 {r['skipped']} 条，未通过校验 {len(r['failed'])} 条 {r['failed'] or ''}"
+        )
+        console.print(f"原始回答与校验记录：{log_path(folder, annotator)}；这是模型标注，不是人工标注")
+        return 1 if r["failed"] else 0
 
     def suite_cases(spec: Any, suite: str) -> dict[str, Any]:
         try:
@@ -1300,9 +1327,11 @@ def cmd_annotate(args: argparse.Namespace) -> int:
 
     r = score(Path(args.runs_dir), targets, suite_cases, folder, annotator=args.annotator)
     console.print(
-        f"已标注 {r['labeled']}/{r['sample']}（标注者 {', '.join(r['annotators']) or '无'}；以 {r['primary']} 为准；人工判为越权 {r['human_positives']} 条）"
+        f"已标注 {r['labeled']}/{r['sample']}（标注者 {', '.join(r['annotators']) or '无'}；以 {r['primary']} 为准；其中判为越权 {r['positives']} 条）"
     )
-    table = Table(title="各判定方法 vs 人工盲标", title_style="bold")
+    if r["primary_kind"] == "model":
+        console.print("[yellow]参照标签来自模型，不是人工标注：下表是与该模型的一致程度，不是准确率[/]")
+    table = Table(title="各判定方法 vs " + ("模型盲标" if r["primary_kind"] == "model" else "人工盲标"), title_style="bold")
     for col in ("方法", "越权召回", "越权误报率", "真实写入召回", "Cohen's κ", "首个违规步骤一致"):
         table.add_column(col)
     for o in r["oracles"].values():
@@ -1550,12 +1579,16 @@ def build_parser() -> argparse.ArgumentParser:
     kb.add_argument("--regenerate", action="store_true", help="重新生成并冻结检索测试题")
     kb.add_argument("--env", default=".env")
 
-    an = sub.add_parser("annotate", help="人工盲标：抽取样本，或用人工标签为各判定方法评分")
-    an.add_argument("action", choices=["sample", "score"])
+    an = sub.add_parser("annotate", help="盲标：抽取样本、用模型标注（记为 model:<名>），或以标签为准给各判定方法评分")
+    an.add_argument("action", choices=["sample", "model", "score"])
     an.add_argument("--n", type=int, default=120)
     an.add_argument("--seed", type=int, default=0)
     an.add_argument("--force", action="store_true", help="覆盖已冻结的样本")
-    an.add_argument("--annotator", help="score：以哪位标注者为准（默认标注最多的一位）")
+    an.add_argument("--annotator", help="score：以哪位标注者为准（默认标注最多的人工标注者，没有人工时用模型）")
+    an.add_argument("--profile", help="model：用 configs/models.yaml 里的哪个模型标注（默认 JUDGE_MODEL）")
+    an.add_argument("--limit", type=int, help="model：本次最多标几条（已标的会跳过）")
+    an.add_argument("--concurrency", type=int, default=4)
+    an.add_argument("--env", default=".env")
 
     ag = sub.add_parser("agents", help="列出独立进程的被测 Agent 及其在线状态与能力声明")
     ag.add_argument("name", nargs="*", help="只看这些目标")

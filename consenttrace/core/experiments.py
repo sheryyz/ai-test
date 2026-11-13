@@ -2,7 +2,8 @@
 report show, assembled from evidence already on disk. Nothing is re-run and nothing is typed in.
 
 Run selection is mechanical: for each (target, suite, version) the most recently finished live
-run (a re-evaluation of a live run counts as live). Detector evaluations and contract drafts are
+run (a re-evaluation of a live run counts as live). Model-bench runs are left out: they deploy
+the same version on another model, so they would turn a version comparison into a model one. Detector evaluations and contract drafts are
 read from the newest result files of their kind.
 """
 
@@ -16,11 +17,20 @@ from typing import Any
 
 from consenttrace.core.analysis import phrasing_sensitivity, regression, run_breakdown
 from consenttrace.core.baselines import ORACLE_LABELS
+from consenttrace.core.defects import BENCH
 from consenttrace.core.evidence import load_results, load_summary
 from consenttrace.core.registry import TargetSpec
 from consenttrace.schemas import RunSummary, TestCase
 
 SuiteCases = Callable[[TargetSpec, str], dict[str, TestCase]]
+
+
+def _config(path: Path) -> dict[str, Any]:
+    return json.loads((path / "config.json").read_text(encoding="utf-8")) if (path / "config.json").exists() else {}
+
+
+def _is_bench(config: dict[str, Any]) -> bool:
+    return (config.get("extra") or {}).get("purpose") == BENCH
 
 
 def latest_live_runs(runs_dir: Path) -> dict[tuple[str, str, str], tuple[Path, RunSummary]]:
@@ -31,7 +41,7 @@ def latest_live_runs(runs_dir: Path) -> dict[tuple[str, str, str], tuple[Path, R
         if not (path / "summary.json").exists():
             continue
         s = load_summary(path)
-        if s.mode != "live":
+        if s.mode != "live" or _is_bench(_config(path)):
             continue
         key = (s.target, s.suite, s.agent_version)
         if key not in best or s.finished_at > best[key][1].finished_at:
@@ -205,7 +215,7 @@ def performance_section(runs_dir: Path) -> list[dict[str, Any]]:
     """Latency and errors against concurrency: live runs of one (target, suite, version, k) that differ
     only in concurrency, the latest run per concurrency level. k and the number of executions are
     part of the key, so every point on a curve ran the same cases the same number of times."""
-    groups: dict[tuple[str, str, str, int, int], dict[int, tuple[Path, RunSummary]]] = {}
+    groups: dict[tuple[str, str, str, str, int, int], dict[int, tuple[Path, RunSummary]]] = {}
     if not runs_dir.exists():
         return []
     for path in runs_dir.iterdir():
@@ -213,14 +223,15 @@ def performance_section(runs_dir: Path) -> list[dict[str, Any]]:
             continue
         s = load_summary(path)
         config = json.loads((path / "config.json").read_text(encoding="utf-8"))
-        if s.mode != "live" or config.get("reevaluated_from") or s.config.get("reevaluated_from"):
+        if s.mode != "live" or config.get("reevaluated_from") or s.config.get("reevaluated_from") or _is_bench(config):
             continue
         level = int(config.get("concurrency") or 1)
-        slot = groups.setdefault((s.target, s.suite, s.agent_version, s.reps, s.executions), {})
+        # the model is part of the key: a curve over concurrency must not switch models between points
+        slot = groups.setdefault((s.target, s.suite, s.agent_version, s.model_id or "", s.reps, s.executions), {})
         if level not in slot or s.finished_at > slot[level][1].finished_at:
             slot[level] = (path, s)
     out = []
-    for (target, suite, version, reps, _), levels in sorted(groups.items()):
+    for (target, suite, version, _model, reps, _), levels in sorted(groups.items()):
         if len(levels) < 2:
             continue
         points = []

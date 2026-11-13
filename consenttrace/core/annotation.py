@@ -1,4 +1,4 @@
-"""Blind human annotation (PRD §10.5): the independent ground truth for scoring every oracle.
+"""Blind annotation (PRD §10.5): the independent reference for scoring every oracle.
 
 `sample` draws a fixed-seed, stratified set of stored executions and gives each a blind id.
 The annotator sees only what a careful human reviewer would: the user's words, the agent's
@@ -9,6 +9,8 @@ injection markers, verdicts and rule hits are all withheld, and so is why an ite
 `score` then judges the same executions with every oracle (ConsentTrace, baselines A/B, the
 ablations and, if cached or requested, the LLM judge) and compares each with the human labels:
 recall, false-positive rate, first-bad-step agreement and Cohen's kappa, all with their N.
+Annotators named `model:<id>` are models (consenttrace.ai.model_annotator); the score says
+which kind of annotator it was measured against, and prefers a human whenever one labeled.
 """
 
 from __future__ import annotations
@@ -34,6 +36,7 @@ from consenttrace.schemas import EventKind, Outcome, TestCase
 SuiteCases = Callable[[TargetSpec, str], dict[str, TestCase]]
 SAMPLE = "sample.jsonl"
 LABELS = "annotations.jsonl"
+MODEL_PREFIX = "model:"  # annotators named model:<id> are models, never counted as human labels
 
 
 class Label(BaseModel):
@@ -48,6 +51,14 @@ class Label(BaseModel):
 
 def _case_of(case_id: str) -> str:
     return case_id.split("--", 1)[1] if "--" in case_id else case_id
+
+
+def _declared(spec: TargetSpec) -> Any:
+    """What the target's adapter declares, for runs recorded before capabilities were stored per execution."""
+    try:
+        return spec.adapter_class()(lambda: None).capabilities()
+    except Exception:
+        return None
 
 
 def _all_cases(spec: TargetSpec, suite_cases: SuiteCases) -> dict[str, TestCase]:
@@ -233,9 +244,8 @@ def score(
     labels = latest_labels(raw)
     annotators = sorted({a for _, a in labels})
     counts = Counter(who for _, who in labels)
-    primary = annotator or (
-        max(annotators, key=lambda a: (counts[a], a)) if annotators else None
-    )  # default: whoever labeled most
+    # default: the human who labeled most; a model annotator is the reference only when no human labeled
+    primary = annotator or (max(annotators, key=lambda a: (not a.startswith(MODEL_PREFIX), counts[a], a)) if annotators else None)
     by_item = {i["blind_id"]: i for i in items}
     truth = {bid: lab for (bid, a), lab in labels.items() if a == primary and bid in by_item}
 
@@ -249,7 +259,9 @@ def score(
             cases = _all_cases(spec, suite_cases)
             found = [
                 ex
-                for cid, rep, ex in executions(runs_dir / item["run_id"], cases, case_of=_case_of)
+                for cid, rep, ex in executions(
+                    runs_dir / item["run_id"], cases, case_of=_case_of, fallback_capabilities=_declared(spec)
+                )
                 if cid == item["case_id"] and rep == item["rep"]
             ]
             contract = load_contract(spec.contract)
@@ -299,7 +311,8 @@ def score(
         "labeled": len(truth),
         "annotators": annotators,
         "primary": primary,
-        "human_positives": sum(1 for lab in truth.values() if lab["violation"] != "none"),
+        "primary_kind": None if primary is None else "model" if primary.startswith(MODEL_PREFIX) else "human",
+        "positives": sum(1 for lab in truth.values() if lab["violation"] != "none"),
         "oracles": {
             name: {
                 "label": ORACLE_LABELS.get(name, name),

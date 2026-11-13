@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 396" width="760" height="396"><rect width="100%" height="100%" fill="#ffffff"/>
+<path d="M147.0,16.5 L152.5,22.0 L147.0,27.5 L141.5,22.0 z" fill="#8a8984" stroke="#ffffff" stroke-width="2"/>
+<text x="161.0" y="22.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">不注入（基线）</text>
+<circle cx="261.5" cy="22.0" r="4.5" fill="#ffffff" stroke="#2a78d6" stroke-width="2"/>
+<text x="275.5" y="22.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">第一轮注入</text>
+<circle cx="353.0" cy="22.0" r="5" fill="#eb6834" stroke="#ffffff" stroke-width="0"/>
+<text x="367.0" y="22.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">授权刚失效的那一轮注入</text>
+<line x1="140.0" y1="54.0" x2="140.0" y2="328.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="140.0" y="340.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">0%</text>
+<line x1="245.0" y1="54.0" x2="245.0" y2="328.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="245.0" y="340.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">25%</text>
+<line x1="350.0" y1="54.0" x2="350.0" y2="328.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="350.0" y="340.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">50%</text>
+<line x1="455.0" y1="54.0" x2="455.0" y2="328.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="455.0" y="340.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">75%</text>
+<line x1="560.0" y1="54.0" x2="560.0" y2="328.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="560.0" y="340.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">100%</text>
+<text x="124.0" y="76.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="12" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">deepseek-flash</text>
+<line x1="202.6" y1="65.0" x2="346.5" y2="65.0" stroke="#8a8984" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M262.5,59.5 L268.0,65.0 L262.5,70.5 L257.0,65.0 z" fill="#8a8984" stroke="#ffffff" stroke-width="2"/>
+<line x1="178.8" y1="76.0" x2="310.0" y2="76.0" stroke="#2a78d6" stroke-width="1.6" stroke-linecap="round"/>
+<circle cx="227.5" cy="76.0" r="4.5" fill="#ffffff" stroke="#2a78d6" stroke-width="2"/>
+<line x1="149.7" y1="87.0" x2="248.6" y2="87.0" stroke="#eb6834" stroke-width="1.6" stroke-linecap="round"/>
+<circle cx="175.0" cy="87.0" r="5" fill="#eb6834" stroke="#ffffff" stroke-width="2"/>
+<text x="576.0" y="69.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10.5" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">基线 7/24 · 第一轮 5/24</text>
+<text x="576.0" y="85.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10.5" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">失效时 2/24</text>
+<text x="124.0" y="122.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="12" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">deepseek-v4-pro</text>
+<line x1="475.0" y1="111.0" x2="556.9" y2="111.0" stroke="#8a8984" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M542.5,105.5 L548.0,111.0 L542.5,116.5 L537.0,111.0 z" fill="#8a8984" stroke="#ffffff" stroke-width="2"/>
+<line x1="429.8" y1="122.0" x2="541.8" y2="122.0" stroke="#2a78d6" stroke-width="1.6" stroke-linecap="round"/>
+<circle cx="507.5" cy="122.0" r="4.5" fill="#ffffff" stroke="#2a78d6" stroke-width="2"/>
+<line x1="451.4" y1="133.0" x2="550.3" y2="133.0" stroke="#eb6834" stroke-width="1.6" stroke-linecap="round"/>
+<circle cx="525.0" cy="133.0" r="5" fill="#eb6834" stroke="#ffffff" stroke-width="2"/>
+<text x="576.0" y="115.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10.5" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">基线 23/24 · 第一轮 21/24</text>
+<text x="576.0" y="131.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10.5" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">失效时 22/24</text>
+<text x="124.0" y="168.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="12" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">qwen-flash</text>
+<line x1="140.0" y1="157.0" x2="198.0" y2="157.0" stroke="#8a8984" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M140.0,151.5 L145.5,157.0 L140.0,162.5 L134.5,157.0 z" fill="#8a8984" stroke="#ffffff" stroke-width="2"/>
+<line x1="226.7" y1="179.0" x2="560.0" y2="179.0" stroke="#eb6834" stroke-width="1.6" stroke-linecap="round"/>
+<circle cx="560.0" cy="179.0" r="5" fill="#eb6834" stroke="#ffffff" stroke-width="2"/>
+<text x="576.0" y="161.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10.5" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">基线 0/24 · 第一轮 —</text>
+<text x="576.0" y="177.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10.5" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">失效时 1/1</text>
+<text x="124.0" y="214.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="12" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">qwen-plus</text>
+<line x1="390.0" y1="203.0" x2="521.2" y2="203.0" stroke="#8a8984" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M472.5,197.5 L478.0,203.0 L472.5,208.5 L467.0,203.0 z" fill="#8a8984" stroke="#ffffff" stroke-width="2"/>
+<line x1="319.4" y1="214.0" x2="471.1" y2="214.0" stroke="#2a78d6" stroke-width="1.6" stroke-linecap="round"/>
+<circle cx="402.5" cy="214.0" r="4.5" fill="#ffffff" stroke="#2a78d6" stroke-width="2"/>
+<line x1="451.4" y1="225.0" x2="550.3" y2="225.0" stroke="#eb6834" stroke-width="1.6" stroke-linecap="round"/>
+<circle cx="525.0" cy="225.0" r="5" fill="#eb6834" stroke="#ffffff" stroke-width="2"/>
+<text x="576.0" y="207.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10.5" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">基线 19/24 · 第一轮 15/24</text>
+<text x="576.0" y="223.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10.5" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">失效时 22/24</text>
+<text x="124.0" y="260.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="12" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">glm-4.5-air</text>
+<line x1="319.4" y1="249.0" x2="471.1" y2="249.0" stroke="#8a8984" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M402.5,243.5 L408.0,249.0 L402.5,254.5 L397.0,249.0 z" fill="#8a8984" stroke="#ffffff" stroke-width="2"/>
+<line x1="306.6" y1="260.0" x2="514.7" y2="260.0" stroke="#2a78d6" stroke-width="1.6" stroke-linecap="round"/>
+<circle cx="434.0" cy="260.0" r="4.5" fill="#ffffff" stroke="#2a78d6" stroke-width="2"/>
+<line x1="464.8" y1="271.0" x2="556.4" y2="271.0" stroke="#eb6834" stroke-width="1.6" stroke-linecap="round"/>
+<circle cx="540.0" cy="271.0" r="5" fill="#eb6834" stroke="#ffffff" stroke-width="2"/>
+<text x="576.0" y="253.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10.5" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">基线 15/24 · 第一轮 7/10</text>
+<text x="576.0" y="269.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10.5" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">失效时 20/21</text>
+<text x="124.0" y="306.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="12" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">glm-5.3-flash</text>
+<line x1="502.0" y1="295.0" x2="560.0" y2="295.0" stroke="#8a8984" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M560.0,289.5 L565.5,295.0 L560.0,300.5 L554.5,295.0 z" fill="#8a8984" stroke="#ffffff" stroke-width="2"/>
+<line x1="502.0" y1="306.0" x2="560.0" y2="306.0" stroke="#2a78d6" stroke-width="1.6" stroke-linecap="round"/>
+<circle cx="560.0" cy="306.0" r="4.5" fill="#ffffff" stroke="#2a78d6" stroke-width="2"/>
+<line x1="475.0" y1="317.0" x2="556.9" y2="317.0" stroke="#eb6834" stroke-width="1.6" stroke-linecap="round"/>
+<circle cx="542.5" cy="317.0" r="5" fill="#eb6834" stroke="#ffffff" stroke-width="2"/>
+<text x="576.0" y="299.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10.5" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">基线 24/24 · 第一轮 24/24</text>
+<text x="576.0" y="315.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10.5" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">失效时 23/24</text>
+<text x="140.0" y="362.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#8a8984" text-anchor="start" font-weight="400" dominant-baseline="middle">纵向三组同一场景、同一段注入文本；注入组只统计注入真正到达 Agent 的执行。线段为 95% Wilson 区间：</text>
+<text x="140.0" y="379.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#8a8984" text-anchor="start" font-weight="400" dominant-baseline="middle">每组 N ≥ 10 的五个模型，“失效时注入”与基线区间均重叠；qwen-flash 注入只到达 1 次，不下结论。</text>
+</svg>

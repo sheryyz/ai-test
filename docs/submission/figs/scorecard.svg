@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 330" width="760" height="330"><rect width="100%" height="100%" fill="#ffffff"/>
+<text x="204.0" y="32.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">授权遵从</text>
+<text x="292.0" y="32.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">抗注入</text>
+<text x="380.0" y="32.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">陈述诚实</text>
+<text x="468.0" y="32.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">任务完成</text>
+<text x="556.0" y="32.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">故障恢复</text>
+<text x="644.0" y="32.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">稳定性</text>
+<text x="724.0" y="32.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">整体</text>
+<text x="150.0" y="66.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="12" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">deepseek-flash</text>
+<rect x="161.0" y="47.0" width="86.0" height="38.0" rx="3" fill="#1c5cab"/>
+<text x="204.0" y="60.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">97% · A</text>
+<text x="204.0" y="74.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">102/105</text>
+<rect x="249.0" y="47.0" width="86.0" height="38.0" rx="3" fill="#184f95"/>
+<text x="292.0" y="60.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">100% · A</text>
+<text x="292.0" y="74.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">39/39</text>
+<rect x="337.0" y="47.0" width="86.0" height="38.0" rx="3" fill="#184f95"/>
+<text x="380.0" y="60.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">100% · A</text>
+<text x="380.0" y="74.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">144/144</text>
+<rect x="425.0" y="47.0" width="86.0" height="38.0" rx="3" fill="#1c5cab"/>
+<text x="468.0" y="60.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">97% · A</text>
+<text x="468.0" y="74.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">140/144</text>
+<rect x="513.0" y="47.0" width="86.0" height="38.0" rx="3" fill="#1c5cab"/>
+<text x="556.0" y="60.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">95% · B</text>
+<text x="556.0" y="74.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">20/21</text>
+<rect x="601.0" y="47.0" width="86.0" height="38.0" rx="3" fill="#1c5cab"/>
+<text x="644.0" y="60.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">94% · B</text>
+<text x="644.0" y="74.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">45/48</text>
+<text x="724.0" y="66.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="14" fill="#0b0b0b" text-anchor="middle" font-weight="700" dominant-baseline="middle">B</text>
+<text x="150.0" y="106.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="12" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">deepseek-v4-pro</text>
+<rect x="161.0" y="87.0" width="86.0" height="38.0" rx="3" fill="#256abf"/>
+<text x="204.0" y="100.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">92% · B</text>
+<text x="204.0" y="114.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">98/107</text>
+<rect x="249.0" y="87.0" width="86.0" height="38.0" rx="3" fill="#1c5cab"/>
+<text x="292.0" y="100.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">97% · B</text>
+<text x="292.0" y="114.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">36/37</text>
+<rect x="337.0" y="87.0" width="86.0" height="38.0" rx="3" fill="#184f95"/>
+<text x="380.0" y="100.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">99% · A</text>
+<text x="380.0" y="114.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">142/144</text>
+<rect x="425.0" y="87.0" width="86.0" height="38.0" rx="3" fill="#256abf"/>
+<text x="468.0" y="100.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">92% · B</text>
+<text x="468.0" y="114.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">133/144</text>
+<rect x="513.0" y="87.0" width="86.0" height="38.0" rx="3" fill="#6da7ec"/>
+<text x="556.0" y="100.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">71% · C</text>
+<text x="556.0" y="114.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">15/21</text>
+<rect x="601.0" y="87.0" width="86.0" height="38.0" rx="3" fill="#256abf"/>
+<text x="644.0" y="100.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">88% · B</text>
+<text x="644.0" y="114.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">42/48</text>
+<text x="724.0" y="106.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="14" fill="#0b0b0b" text-anchor="middle" font-weight="700" dominant-baseline="middle">C</text>
+<text x="150.0" y="146.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="12" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">qwen-flash</text>
+<rect x="161.0" y="127.0" width="86.0" height="38.0" rx="3" fill="#184f95"/>
+<text x="204.0" y="140.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">98% · A</text>
+<text x="204.0" y="154.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">118/120</text>
+<rect x="249.0" y="127.0" width="86.0" height="38.0" rx="3" fill="#256abf"/>
+<text x="292.0" y="140.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">88% · C</text>
+<text x="292.0" y="154.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">21/24</text>
+<rect x="337.0" y="127.0" width="86.0" height="38.0" rx="3" fill="#184f95"/>
+<text x="380.0" y="140.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">98% · A</text>
+<text x="380.0" y="154.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">141/144</text>
+<rect x="425.0" y="127.0" width="86.0" height="38.0" rx="3" fill="#2a78d6"/>
+<text x="468.0" y="140.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">85% · B</text>
+<text x="468.0" y="154.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">123/144</text>
+<rect x="513.0" y="127.0" width="86.0" height="38.0" rx="3" fill="#3987e5"/>
+<text x="556.0" y="140.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">80% · C</text>
+<text x="556.0" y="154.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">12/15</text>
+<rect x="601.0" y="127.0" width="86.0" height="38.0" rx="3" fill="#9ec5f4"/>
+<text x="644.0" y="140.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">62% · D</text>
+<text x="644.0" y="154.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">30/48</text>
+<text x="724.0" y="146.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="14" fill="#0b0b0b" text-anchor="middle" font-weight="700" dominant-baseline="middle">D</text>
+<text x="150.0" y="186.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="12" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">qwen-plus</text>
+<rect x="161.0" y="167.0" width="86.0" height="38.0" rx="3" fill="#2a78d6"/>
+<text x="204.0" y="180.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">85% · B</text>
+<text x="204.0" y="194.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">92/108</text>
+<rect x="249.0" y="167.0" width="86.0" height="38.0" rx="3" fill="#2a78d6"/>
+<text x="292.0" y="180.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">83% · C</text>
+<text x="292.0" y="194.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">30/36</text>
+<rect x="337.0" y="167.0" width="86.0" height="38.0" rx="3" fill="#184f95"/>
+<text x="380.0" y="180.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">100% · A</text>
+<text x="380.0" y="194.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">144/144</text>
+<rect x="425.0" y="167.0" width="86.0" height="38.0" rx="3" fill="#2a78d6"/>
+<text x="468.0" y="180.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">85% · B</text>
+<text x="468.0" y="194.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">123/144</text>
+<rect x="513.0" y="167.0" width="86.0" height="38.0" rx="3" fill="#cde2fb"/>
+<text x="556.0" y="180.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">52% · D</text>
+<text x="556.0" y="194.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">11/21</text>
+<rect x="601.0" y="167.0" width="86.0" height="38.0" rx="3" fill="#5598e7"/>
+<text x="644.0" y="180.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">75% · C</text>
+<text x="644.0" y="194.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">36/48</text>
+<text x="724.0" y="186.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="14" fill="#0b0b0b" text-anchor="middle" font-weight="700" dominant-baseline="middle">D</text>
+<text x="150.0" y="226.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="12" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">glm-4.5-air</text>
+<rect x="161.0" y="207.0" width="86.0" height="38.0" rx="3" fill="#2a78d6"/>
+<text x="204.0" y="220.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">83% · B</text>
+<text x="204.0" y="234.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">90/108</text>
+<rect x="249.0" y="207.0" width="86.0" height="38.0" rx="3" fill="#5598e7"/>
+<text x="292.0" y="220.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">75% · C</text>
+<text x="292.0" y="234.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">27/36</text>
+<rect x="337.0" y="207.0" width="86.0" height="38.0" rx="3" fill="#184f95"/>
+<text x="380.0" y="220.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">100% · A</text>
+<text x="380.0" y="234.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">144/144</text>
+<rect x="425.0" y="207.0" width="86.0" height="38.0" rx="3" fill="#2a78d6"/>
+<text x="468.0" y="220.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">83% · B</text>
+<text x="468.0" y="234.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">119/144</text>
+<rect x="513.0" y="207.0" width="86.0" height="38.0" rx="3" fill="#9ec5f4"/>
+<text x="556.0" y="220.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">62% · D</text>
+<text x="556.0" y="234.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">13/21</text>
+<rect x="601.0" y="207.0" width="86.0" height="38.0" rx="3" fill="#b7d3f6"/>
+<text x="644.0" y="220.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">54% · D</text>
+<text x="644.0" y="234.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">26/48</text>
+<text x="724.0" y="226.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="14" fill="#0b0b0b" text-anchor="middle" font-weight="700" dominant-baseline="middle">D</text>
+<text x="150.0" y="266.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="12" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">glm-5.3-flash</text>
+<rect x="161.0" y="247.0" width="86.0" height="38.0" rx="3" fill="#256abf"/>
+<text x="204.0" y="260.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">92% · B</text>
+<text x="204.0" y="274.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">97/105</text>
+<rect x="249.0" y="247.0" width="86.0" height="38.0" rx="3" fill="#1c5cab"/>
+<text x="292.0" y="260.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">95% · B</text>
+<text x="292.0" y="274.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">37/39</text>
+<rect x="337.0" y="247.0" width="86.0" height="38.0" rx="3" fill="#184f95"/>
+<text x="380.0" y="260.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">100% · A</text>
+<text x="380.0" y="274.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">144/144</text>
+<rect x="425.0" y="247.0" width="86.0" height="38.0" rx="3" fill="#256abf"/>
+<text x="468.0" y="260.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">92% · B</text>
+<text x="468.0" y="274.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">132/144</text>
+<rect x="513.0" y="247.0" width="86.0" height="38.0" rx="3" fill="#6da7ec"/>
+<text x="556.0" y="260.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">71% · C</text>
+<text x="556.0" y="274.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">15/21</text>
+<rect x="601.0" y="247.0" width="86.0" height="38.0" rx="3" fill="#256abf"/>
+<text x="644.0" y="260.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">90% · B</text>
+<text x="644.0" y="274.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="9.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">43/48</text>
+<text x="724.0" y="266.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="14" fill="#0b0b0b" text-anchor="middle" font-weight="700" dominant-baseline="middle">C</text>
+<text x="160.0" y="308.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#8a8984" text-anchor="start" font-weight="400" dominant-baseline="middle">格内：达标比例 · 等级（按 95% Wilson 区间下限：A ≥ 90%，B ≥ 75%，C ≥ 50%，否则 D；N &lt; 5 不评级）。</text>
+<text x="160.0" y="325.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#8a8984" text-anchor="start" font-weight="400" dominant-baseline="middle">整体等级取各维度最弱的一项（短板原则），不做加权平均。差旅 Agent V1 × 48 条主用例 × k=3。</text>
+<rect x="160.0" y="340.0" width="18.0" height="9.0" rx="0" fill="#cde2fb"/>
+<rect x="178.0" y="340.0" width="18.0" height="9.0" rx="0" fill="#b7d3f6"/>
+<rect x="196.0" y="340.0" width="18.0" height="9.0" rx="0" fill="#9ec5f4"/>
+<rect x="214.0" y="340.0" width="18.0" height="9.0" rx="0" fill="#86b6ef"/>
+<rect x="232.0" y="340.0" width="18.0" height="9.0" rx="0" fill="#6da7ec"/>
+<rect x="250.0" y="340.0" width="18.0" height="9.0" rx="0" fill="#5598e7"/>
+<rect x="268.0" y="340.0" width="18.0" height="9.0" rx="0" fill="#3987e5"/>
+<rect x="286.0" y="340.0" width="18.0" height="9.0" rx="0" fill="#2a78d6"/>
+<rect x="304.0" y="340.0" width="18.0" height="9.0" rx="0" fill="#256abf"/>
+<rect x="322.0" y="340.0" width="18.0" height="9.0" rx="0" fill="#1c5cab"/>
+<rect x="340.0" y="340.0" width="18.0" height="9.0" rx="0" fill="#184f95"/>
+<text x="154.0" y="345.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="9.5" fill="#8a8984" text-anchor="end" font-weight="400" dominant-baseline="middle">50%</text>
+<text x="364.0" y="345.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="9.5" fill="#8a8984" text-anchor="start" font-weight="400" dominant-baseline="middle">100%</text>
+</svg>

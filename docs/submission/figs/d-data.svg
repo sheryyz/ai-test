@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 330" width="760" height="330"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#9b9a95"/></marker></defs><rect width="100%" height="100%" fill="#ffffff"/>
+<text x="79.0" y="14.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#52514e" text-anchor="middle" font-weight="600" dominant-baseline="middle">来源</text>
+<text x="355.0" y="14.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#52514e" text-anchor="middle" font-weight="600" dominant-baseline="middle">测试套件（冻结）</text>
+<text x="656.0" y="14.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#52514e" text-anchor="middle" font-weight="600" dominant-baseline="middle">被测对象</text>
+<rect x="14" y="50" width="130" height="56" rx="8" fill="#e8f1fc" stroke="#9ec5f4" stroke-width="1.2"/>
+<text x="79.0" y="69.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">人工编写</text>
+<text x="79.0" y="85.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">开发方逐条撰写</text>
+<rect x="14" y="150" width="130" height="56" rx="8" fill="#eeecf8" stroke="#b4ace3" stroke-width="1.2"/>
+<text x="79.0" y="169.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">AI 生成 + 校验</text>
+<text x="79.0" y="185.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">deepseek-v4-pro 等</text>
+<rect x="14" y="250" width="130" height="56" rx="8" fill="#fdeee7" stroke="#f5b597" stroke-width="1.2"/>
+<text x="79.0" y="269.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">植入缺陷语料</text>
+<text x="79.0" y="285.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">M1–M8 · 标签先写定</text>
+<rect x="170" y="34" width="370" height="24" rx="5" fill="#e8f1fc" stroke="#9ec5f4" stroke-width="1.2"/>
+<text x="355.0" y="46.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">差旅主用例 48（8 类 × 6）· 冒烟 9</text>
+<path d="M 144 78 C 157 78, 157 46, 168 46" fill="none" stroke="#d6d5d0" stroke-width="1.4"/>
+<rect x="170" y="62" width="370" height="24" rx="5" fill="#e8f1fc" stroke="#9ec5f4" stroke-width="1.2"/>
+<text x="355.0" y="74.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">审批 12 · τ-bench 核心 10（英文）</text>
+<path d="M 144 78 C 157 78, 157 74, 168 74" fill="none" stroke="#d6d5d0" stroke-width="1.4"/>
+<rect x="170" y="104" width="370" height="24" rx="5" fill="#eeecf8" stroke="#b4ace3" stroke-width="1.2"/>
+<text x="355.0" y="116.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">措辞变体 144</text>
+<path d="M 144 178 C 157 178, 157 116, 168 116" fill="none" stroke="#d6d5d0" stroke-width="1.4"/>
+<rect x="170" y="132" width="370" height="24" rx="5" fill="#eeecf8" stroke="#b4ace3" stroke-width="1.2"/>
+<text x="355.0" y="144.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">注入攻击 33 + 演化 33 · 时序注入 24</text>
+<path d="M 144 178 C 157 178, 157 144, 168 144" fill="none" stroke="#d6d5d0" stroke-width="1.4"/>
+<rect x="170" y="160" width="370" height="24" rx="5" fill="#eeecf8" stroke="#b4ace3" stroke-width="1.2"/>
+<text x="355.0" y="172.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">越狱 24 + 24 · 边界 12 + 12</text>
+<path d="M 144 178 C 157 178, 157 172, 168 172" fill="none" stroke="#d6d5d0" stroke-width="1.4"/>
+<rect x="170" y="188" width="370" height="24" rx="5" fill="#eeecf8" stroke="#b4ace3" stroke-width="1.2"/>
+<text x="355.0" y="200.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">留出集 holdout 12</text>
+<path d="M 144 178 C 157 178, 157 200, 168 200" fill="none" stroke="#d6d5d0" stroke-width="1.4"/>
+<rect x="170" y="240" width="370" height="24" rx="5" fill="#fdeee7" stroke="#f5b597" stroke-width="1.2"/>
+<text x="355.0" y="252.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">缺陷语料 40（26 越权 / 14 正确）</text>
+<path d="M 144 278 C 157 278, 157 252, 168 252" fill="none" stroke="#d6d5d0" stroke-width="1.4"/>
+<rect x="170" y="268" width="370" height="24" rx="5" fill="#eeecf8" stroke="#b4ace3" stroke-width="1.2"/>
+<text x="355.0" y="280.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">知识库检索题 24</text>
+<path d="M 144 178 C 157 178, 157 280, 168 280" fill="none" stroke="#d6d5d0" stroke-width="1.4"/>
+<rect x="566" y="50" width="180" height="40" rx="8" fill="#ffffff" stroke="#d6d5d0" stroke-width="1.2"/>
+<text x="656.0" y="70.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">差旅 Agent V1 / V2 / V2.1</text>
+<rect x="566" y="110" width="180" height="40" rx="8" fill="#ffffff" stroke="#d6d5d0" stroke-width="1.2"/>
+<text x="656.0" y="130.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">审批 Agent v1</text>
+<rect x="566" y="170" width="180" height="40" rx="8" fill="#ffffff" stroke="#d6d5d0" stroke-width="1.2"/>
+<text x="656.0" y="190.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">τ-bench 航空 Agent</text>
+<rect x="566" y="230" width="180" height="40" rx="8" fill="#ffffff" stroke="#d6d5d0" stroke-width="1.2"/>
+<text x="656.0" y="250.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">6 个大模型横评</text>
+<path d="M 546 34 L 552 34 L 552 292 L 546 292" fill="none" stroke="#d6d5d0" stroke-width="1.2"/>
+<line x1="552" y1="163" x2="564" y2="163" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
+<text x="380.0" y="316.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">所有套件落盘冻结（含生成模型、提示词版本、校验与复核记录）；同一套件可在任一版本 / 模型上重复运行。</text>
+</svg>

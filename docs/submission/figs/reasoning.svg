@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 324" width="760" height="324"><rect width="100%" height="100%" fill="#ffffff"/>
+<rect x="20.0" y="15.0" width="14.0" height="10.0" rx="2" fill="#eb6834"/>
+<text x="41.0" y="20.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">被话术或注入带偏</text>
+<rect x="146.0" y="15.0" width="14.0" height="10.0" rx="2" fill="#2a78d6"/>
+<text x="167.0" y="20.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">误以为用户已确认</text>
+<rect x="272.0" y="15.0" width="14.0" height="10.0" rx="2" fill="#4a3aa7"/>
+<text x="293.0" y="20.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">明知需确认仍执行</text>
+<rect x="398.0" y="15.0" width="14.0" height="10.0" rx="2" fill="#1baf7a"/>
+<text x="419.0" y="20.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">把请求当成授权</text>
+<rect x="512.5" y="15.0" width="14.0" height="10.0" rx="2" fill="#c3c2b7"/>
+<text x="533.5" y="20.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">未归类</text>
+<text x="210.0" y="62.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">glm-4.5-air · 差旅越狱</text>
+<rect x="220.0" y="52.0" width="397.5" height="20.0" rx="2" fill="#eb6834"/>
+<text x="418.8" y="62.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">34</text>
+<rect x="619.5" y="52.0" width="9.8" height="20.0" rx="2" fill="#2a78d6"/>
+<rect x="631.2" y="52.0" width="9.8" height="20.0" rx="2" fill="#4a3aa7"/>
+<rect x="643.0" y="52.0" width="45.0" height="20.0" rx="2" fill="#c3c2b7"/>
+<text x="665.5" y="62.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#0b0b0b" text-anchor="middle" font-weight="400" dominant-baseline="middle">4</text>
+<text x="698.0" y="62.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">共 40</text>
+<text x="210.0" y="94.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">glm-4.5-air · 差旅主用例</text>
+<rect x="220.0" y="84.0" width="71.4" height="20.0" rx="2" fill="#eb6834"/>
+<text x="255.7" y="94.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">5</text>
+<rect x="293.4" y="84.0" width="71.4" height="20.0" rx="2" fill="#2a78d6"/>
+<text x="329.2" y="94.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">5</text>
+<rect x="366.9" y="84.0" width="27.4" height="20.0" rx="2" fill="#4a3aa7"/>
+<text x="380.6" y="94.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">2</text>
+<rect x="396.2" y="84.0" width="144.9" height="20.0" rx="2" fill="#1baf7a"/>
+<text x="468.7" y="94.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">10</text>
+<rect x="543.1" y="84.0" width="144.9" height="20.0" rx="2" fill="#c3c2b7"/>
+<text x="615.6" y="94.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#0b0b0b" text-anchor="middle" font-weight="400" dominant-baseline="middle">10</text>
+<text x="698.0" y="94.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">共 32</text>
+<text x="210.0" y="126.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">glm-4.5-air · 时序注入</text>
+<rect x="220.0" y="116.0" width="42.3" height="20.0" rx="2" fill="#eb6834"/>
+<text x="241.2" y="126.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">5</text>
+<rect x="264.3" y="116.0" width="414.8" height="20.0" rx="2" fill="#2a78d6"/>
+<text x="471.7" y="126.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">47</text>
+<rect x="681.1" y="116.0" width="6.9" height="20.0" rx="2" fill="#c3c2b7"/>
+<text x="698.0" y="126.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">共 53</text>
+<text x="210.0" y="158.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">glm-5.3-flash · 时序注入</text>
+<rect x="220.0" y="148.0" width="11.2" height="20.0" rx="2" fill="#eb6834"/>
+<rect x="233.2" y="148.0" width="156.9" height="20.0" rx="2" fill="#2a78d6"/>
+<text x="311.7" y="158.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">24</text>
+<rect x="392.1" y="148.0" width="130.4" height="20.0" rx="2" fill="#4a3aa7"/>
+<text x="457.3" y="158.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">20</text>
+<rect x="524.5" y="148.0" width="77.4" height="20.0" rx="2" fill="#1baf7a"/>
+<text x="563.2" y="158.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">12</text>
+<rect x="603.9" y="148.0" width="84.1" height="20.0" rx="2" fill="#c3c2b7"/>
+<text x="646.0" y="158.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#0b0b0b" text-anchor="middle" font-weight="400" dominant-baseline="middle">13</text>
+<text x="698.0" y="158.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">共 71</text>
+<text x="210.0" y="190.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">deepseek-v4-pro · 时序注入</text>
+<rect x="220.0" y="180.0" width="55.0" height="20.0" rx="2" fill="#eb6834"/>
+<text x="247.5" y="190.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">8</text>
+<rect x="277.0" y="180.0" width="97.7" height="20.0" rx="2" fill="#2a78d6"/>
+<text x="325.8" y="190.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">14</text>
+<rect x="376.7" y="180.0" width="62.1" height="20.0" rx="2" fill="#4a3aa7"/>
+<text x="407.7" y="190.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">9</text>
+<rect x="440.8" y="180.0" width="12.2" height="20.0" rx="2" fill="#1baf7a"/>
+<rect x="455.0" y="180.0" width="233.0" height="20.0" rx="2" fill="#c3c2b7"/>
+<text x="571.5" y="190.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#0b0b0b" text-anchor="middle" font-weight="400" dominant-baseline="middle">33</text>
+<text x="698.0" y="190.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">共 66</text>
+<text x="210.0" y="222.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">deepseek-v4-pro · 差旅主用例</text>
+<rect x="220.0" y="212.0" width="139.0" height="20.0" rx="2" fill="#2a78d6"/>
+<text x="289.5" y="222.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">3</text>
+<rect x="361.0" y="212.0" width="186.0" height="20.0" rx="2" fill="#4a3aa7"/>
+<text x="454.0" y="222.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">4</text>
+<rect x="549.0" y="212.0" width="139.0" height="20.0" rx="2" fill="#c3c2b7"/>
+<text x="618.5" y="222.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#0b0b0b" text-anchor="middle" font-weight="400" dominant-baseline="middle">3</text>
+<text x="698.0" y="222.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">共 10</text>
+<text x="210.0" y="254.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">glm-5.3-flash · 差旅主用例</text>
+<rect x="220.0" y="244.0" width="45.0" height="20.0" rx="2" fill="#eb6834"/>
+<text x="242.5" y="254.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">1</text>
+<rect x="267.0" y="244.0" width="186.0" height="20.0" rx="2" fill="#2a78d6"/>
+<text x="360.0" y="254.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">4</text>
+<rect x="455.0" y="244.0" width="92.0" height="20.0" rx="2" fill="#4a3aa7"/>
+<text x="501.0" y="254.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="400" dominant-baseline="middle">2</text>
+<rect x="549.0" y="244.0" width="139.0" height="20.0" rx="2" fill="#c3c2b7"/>
+<text x="618.5" y="254.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#0b0b0b" text-anchor="middle" font-weight="400" dominant-baseline="middle">3</text>
+<text x="698.0" y="254.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">共 10</text>
+<text x="220.0" y="286.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#8a8984" text-anchor="start" font-weight="400" dominant-baseline="middle">每次越权调用，按同一轮调用之前的可见推理文本归因；只是诊断信号，不参与判定。</text>
+</svg>

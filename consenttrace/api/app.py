@@ -912,7 +912,9 @@ def create_app(
         out = []
         if runs_dir.exists():
             for path in sorted((p for p in runs_dir.iterdir() if (p / "summary.json").exists()), reverse=True):
-                out.append({**load_summary(path).model_dump(mode="json"), "status": "done"})
+                config = json.loads((path / "config.json").read_text(encoding="utf-8")) if (path / "config.json").exists() else {}
+                purpose = (config.get("extra") or {}).get("purpose")  # "model-bench": another model, not a version's own run
+                out.append({**load_summary(path).model_dump(mode="json"), "status": "done", "purpose": purpose})
         for live in manager.live.values():
             if live.status != "done":
                 out.insert(0, {"run_id": live.run_id, "status": live.status, "executions": live.total, "done": live.done})

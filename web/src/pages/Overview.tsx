@@ -17,7 +17,7 @@ export function latestPerVersion(runs: RunSummary[], suite: string): RunSummary[
   const best = new Map<string, RunSummary>();
   for (const r of runs) {
     if (r.status && r.status !== "done") continue;
-    if (r.suite !== suite) continue;
+    if (r.suite !== suite || r.purpose === "model-bench") continue;
     const prev = best.get(r.agent_version);
     if (!prev || r.finished_at > prev.finished_at) best.set(r.agent_version, r);
   }

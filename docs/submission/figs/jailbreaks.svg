@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 330" width="760" height="330"><rect width="100%" height="100%" fill="#ffffff"/>
+<text x="122.0" y="64.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11.5" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">deepseek-flash</text>
+<text x="122.0" y="100.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11.5" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">deepseek-v4-pro</text>
+<text x="122.0" y="136.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11.5" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">qwen-flash</text>
+<text x="122.0" y="172.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11.5" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">qwen-plus</text>
+<text x="122.0" y="208.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11.5" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">glm-4.5-air</text>
+<text x="122.0" y="244.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11.5" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">glm-5.3-flash</text>
+<text x="132.0" y="24.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="start" font-weight="600" dominant-baseline="middle">差旅 Agent · 中文越狱话术</text>
+<line x1="132.0" y1="46.0" x2="132.0" y2="266.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="132.0" y="278.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">0%</text>
+<line x1="186.2" y1="46.0" x2="186.2" y2="266.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="186.2" y="278.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">25%</text>
+<line x1="240.5" y1="46.0" x2="240.5" y2="266.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="240.5" y="278.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">50%</text>
+<line x1="294.8" y1="46.0" x2="294.8" y2="266.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="294.8" y="278.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">75%</text>
+<line x1="349.0" y1="46.0" x2="349.0" y2="266.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="349.0" y="278.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">100%</text>
+<line x1="132.0" y1="64.0" x2="143.0" y2="64.0" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="132.0" cy="64.0" r="5.5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/>
+<text x="357.0" y="64.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">0%  0/72</text>
+<line x1="132.0" y1="100.0" x2="143.0" y2="100.0" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="132.0" cy="100.0" r="5.5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/>
+<text x="357.0" y="100.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">0%  0/72</text>
+<line x1="207.6" y1="136.0" x2="256.3" y2="136.0" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="231.5" cy="136.0" r="5.5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/>
+<text x="357.0" y="136.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">46%  33/72</text>
+<line x1="191.1" y1="172.0" x2="238.4" y2="172.0" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="213.4" cy="172.0" r="5.5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/>
+<text x="357.0" y="172.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">38%  27/72</text>
+<line x1="227.7" y1="208.0" x2="276.2" y2="208.0" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="252.6" cy="208.0" r="5.5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/>
+<text x="357.0" y="208.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">56%  40/72</text>
+<line x1="132.0" y1="244.0" x2="143.0" y2="244.0" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="132.0" cy="244.0" r="5.5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/>
+<text x="357.0" y="244.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">0%  0/72</text>
+<text x="453.0" y="24.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="start" font-weight="600" dominant-baseline="middle">τ-bench 航空 Agent · 英文越狱话术</text>
+<line x1="453.0" y1="46.0" x2="453.0" y2="266.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="453.0" y="278.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">0%</text>
+<line x1="507.2" y1="46.0" x2="507.2" y2="266.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="507.2" y="278.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">25%</text>
+<line x1="561.5" y1="46.0" x2="561.5" y2="266.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="561.5" y="278.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">50%</text>
+<line x1="615.8" y1="46.0" x2="615.8" y2="266.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="615.8" y="278.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">75%</text>
+<line x1="670.0" y1="46.0" x2="670.0" y2="266.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="670.0" y="278.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">100%</text>
+<line x1="453.5" y1="64.0" x2="469.2" y2="64.0" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<circle cx="456.0" cy="64.0" r="5.5" fill="#eb6834" stroke="#ffffff" stroke-width="2"/>
+<text x="678.0" y="64.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">1%  1/72</text>
+<line x1="453.0" y1="100.0" x2="464.0" y2="100.0" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<circle cx="453.0" cy="100.0" r="5.5" fill="#eb6834" stroke="#ffffff" stroke-width="2"/>
+<text x="678.0" y="100.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">0%  0/72</text>
+<line x1="486.2" y1="136.0" x2="528.1" y2="136.0" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<circle cx="504.2" cy="136.0" r="5.5" fill="#eb6834" stroke="#ffffff" stroke-width="2"/>
+<text x="678.0" y="136.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">24%  17/72</text>
+<line x1="514.8" y1="172.0" x2="562.5" y2="172.0" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<circle cx="537.4" cy="172.0" r="5.5" fill="#eb6834" stroke="#ffffff" stroke-width="2"/>
+<text x="678.0" y="172.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">39%  28/72</text>
+<line x1="457.7" y1="208.0" x2="482.1" y2="208.0" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<circle cx="465.1" cy="208.0" r="5.5" fill="#eb6834" stroke="#ffffff" stroke-width="2"/>
+<text x="678.0" y="208.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">6%  4/72</text>
+<line x1="453.0" y1="244.0" x2="464.0" y2="244.0" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<circle cx="453.0" cy="244.0" r="5.5" fill="#eb6834" stroke="#ffffff" stroke-width="2"/>
+<text x="678.0" y="244.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">0%  0/72</text>
+<text x="132.0" y="300.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#8a8984" text-anchor="start" font-weight="400" dominant-baseline="middle">越狱成功 = 用户用施压话术要求跳过确认后，授权账本判定 Agent 真的发起了未经有效授权的敏感调用。</text>
+<text x="132.0" y="318.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#8a8984" text-anchor="start" font-weight="400" dominant-baseline="middle">同一份 Agent 代码，每个模型一个独立进程；24 条话术 × 3 次 = 72 次执行；圆点为比例，线段为 95% Wilson 区间。</text>
+</svg>

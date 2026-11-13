@@ -34,6 +34,8 @@ export interface RunSummary {
   config: Record<string, unknown>;
   status?: string;
   done?: number;
+  /** "model-bench": the same version deployed on another model, never a version's own run */
+  purpose?: string | null;
 }
 
 export interface Summ {
@@ -455,7 +457,8 @@ export interface AnnotationScore {
   labeled: number;
   annotators: string[];
   primary: string | null;
-  human_positives: number;
+  primary_kind: "human" | "model" | null;
+  positives: number;
   oracles: Record<string, { label: string; violation: Confusion; side_effect: Confusion; kappa: number | null; first_step: Ratio; by_stratum: Record<string, Confusion> }>;
   inter_annotator: { annotators: string[]; items: number; kappa: number | null; raw_agreement: number | null } | null;
 }

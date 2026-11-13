@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 250" width="760" height="250"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#9b9a95"/></marker></defs><rect width="100%" height="100%" fill="#ffffff"/>
+<rect x="10" y="40" width="102" height="92" rx="8" fill="#e8f1fc" stroke="#9ec5f4" stroke-width="1.2"/>
+<text x="61.0" y="69.5" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="13" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">① 接入</text>
+<text x="61.0" y="86.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">填 URL → 检查</text>
+<text x="61.0" y="100.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">读取能力声明</text>
+<rect x="118" y="40" width="102" height="92" rx="8" fill="#eeecf8" stroke="#b4ace3" stroke-width="1.2"/>
+<text x="169.0" y="69.5" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="13" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">② 契约</text>
+<text x="169.0" y="86.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">AI 起草敏感动作</text>
+<text x="169.0" y="100.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">与规则 → 人工确认</text>
+<line x1="113" y1="86" x2="117" y2="86" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
+<rect x="226" y="40" width="102" height="92" rx="8" fill="#eeecf8" stroke="#b4ace3" stroke-width="1.2"/>
+<text x="277.0" y="69.5" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="13" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">③ 用例</text>
+<text x="277.0" y="86.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">手写 / AI 生成</text>
+<text x="277.0" y="100.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">确定性校验后冻结</text>
+<line x1="221" y1="86" x2="225" y2="86" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
+<rect x="334" y="40" width="102" height="92" rx="8" fill="#e8f1fc" stroke="#9ec5f4" stroke-width="1.2"/>
+<text x="385.0" y="69.5" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="13" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">④ 执行</text>
+<text x="385.0" y="86.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">Live / 回放 · k 次</text>
+<text x="385.0" y="100.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">按轮注入与故障</text>
+<line x1="329" y1="86" x2="333" y2="86" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
+<rect x="442" y="40" width="102" height="92" rx="8" fill="#fdeee7" stroke="#f5b597" stroke-width="1.2"/>
+<text x="493.0" y="69.5" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="13" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">⑤ 判定</text>
+<text x="493.0" y="86.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">授权账本 + 规则</text>
+<text x="493.0" y="100.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">+ 状态差分 → 四态</text>
+<line x1="437" y1="86" x2="441" y2="86" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
+<rect x="550" y="40" width="102" height="92" rx="8" fill="#fdeee7" stroke="#f5b597" stroke-width="1.2"/>
+<text x="601.0" y="69.5" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="13" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">⑥ 定位</text>
+<text x="601.0" y="86.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">首个违规步骤</text>
+<text x="601.0" y="100.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">三通道时间轴</text>
+<line x1="545" y1="86" x2="549" y2="86" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
+<rect x="658" y="40" width="102" height="92" rx="8" fill="#e5f6ef" stroke="#8fd8bd" stroke-width="1.2"/>
+<text x="709.0" y="69.5" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="13" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">⑦ 复测</text>
+<text x="709.0" y="86.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">缺陷归并 → 修复</text>
+<text x="709.0" y="100.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">同一用例复测</text>
+<line x1="653" y1="86" x2="657" y2="86" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
+<path d="M 708 132 C 708 200, 400 210, 60 200 L 60 134" fill="none" stroke="#9b9a95" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#ah)"/>
+<text x="390.0" y="214.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">修复后复测通过才记为“已修复”；同一内核换一份契约即可测另一个 Agent</text>
+<text x="380.0" y="18.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">人工只在 ② 确认契约、③ 复核标签 时介入；其余步骤自动完成</text>
+</svg>

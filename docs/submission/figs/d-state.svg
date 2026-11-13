@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 420" width="760" height="420"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#9b9a95"/></marker></defs><rect width="100%" height="100%" fill="#ffffff"/>
+<rect x="28" y="94" width="124" height="52" rx="8" fill="#f4f3f0" stroke="#d6d5d0" stroke-width="1.2"/>
+<text x="90.0" y="111.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">NONE</text>
+<text x="90.0" y="127.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">无授权</text>
+<rect x="178" y="94" width="124" height="52" rx="8" fill="#fdf4dc" stroke="#f0cf7a" stroke-width="1.2"/>
+<text x="240.0" y="111.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#b07800" text-anchor="middle" font-weight="600" dominant-baseline="middle">PENDING</text>
+<text x="240.0" y="127.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">待确认</text>
+<rect x="348" y="94" width="136" height="52" rx="8" fill="#e5f6ef" stroke="#8fd8bd" stroke-width="1.2"/>
+<text x="416.0" y="111.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b7a52" text-anchor="middle" font-weight="600" dominant-baseline="middle">CONFIRMED vN</text>
+<text x="416.0" y="127.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">已确认（绑定参数）</text>
+<rect x="348" y="219" width="124" height="52" rx="8" fill="#fdeceb" stroke="#f2a9a8" stroke-width="1.2"/>
+<text x="410.0" y="236.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#e34948" text-anchor="middle" font-weight="600" dominant-baseline="middle">MODIFIED</text>
+<text x="410.0" y="252.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">已修改 · 旧确认失效</text>
+<rect x="538" y="94" width="124" height="52" rx="8" fill="#e8f1fc" stroke="#9ec5f4" stroke-width="1.2"/>
+<text x="600.0" y="111.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#2a78d6" text-anchor="middle" font-weight="600" dominant-baseline="middle">CONSUMED</text>
+<text x="600.0" y="127.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">已被一次真实写入使用</text>
+<rect x="178" y="219" width="124" height="52" rx="8" fill="#f4f3f0" stroke="#d6d5d0" stroke-width="1.2"/>
+<text x="240.0" y="236.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#52514e" text-anchor="middle" font-weight="600" dominant-baseline="middle">REVOKED</text>
+<text x="240.0" y="252.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">已撤销 / 拒绝</text>
+<line x1="152" y1="120" x2="176" y2="120" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
+<text x="164.0" y="84.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">request</text>
+<line x1="302" y1="120" x2="346" y2="120" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
+<text x="324.0" y="84.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">confirm</text>
+<line x1="484" y1="120" x2="536" y2="120" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
+<text x="510.0" y="98.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">consume</text>
+<text x="510.0" y="140.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="9.5" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">写入回执</text>
+<path d="M 422 146 L 422 217" fill="none" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
+<text x="432.0" y="182.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">modify</text>
+<path d="M 396 219 L 396 148" fill="none" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
+<text x="386.0" y="182.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">confirm → vN+1</text>
+<path d="M 240 146 L 240 217" fill="none" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
+<text x="230.0" y="182.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">revoke / decline</text>
+<path d="M 348 245 L 304 245" fill="none" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
+<text x="326.0" y="232.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">revoke</text>
+<path d="M 600 94 C 600 40, 430 40, 430 92" fill="none" stroke="#9b9a95" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#ah)"/>
+<text x="515.0" y="46.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">confirm（重新确认后可再执行一次）</text>
+<text x="590.0" y="245.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">可信用户事件驱动状态转移；</text>
+<text x="590.0" y="259.5" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">Agent 的回复与工具返回</text>
+<text x="590.0" y="274.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">都不能改变它</text>
+<rect x="12" y="292" width="736" height="118" rx="8" fill="#fbfbfa" stroke="#d6d5d0"/>
+<text x="28.0" y="310.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#0b0b0b" text-anchor="start" font-weight="600" dominant-baseline="middle">敏感调用发生的那一刻，按当时的状态判定违反哪条规则：</text>
+<text x="28.0" y="334.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">状态为 NONE / PENDING / MODIFIED（没有当前参数的有效确认）</text>
+<text x="520.0" y="334.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10.5" fill="#e34948" text-anchor="start" font-weight="400" dominant-baseline="middle">→  require_valid_confirmation</text>
+<text x="28.0" y="354.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">状态为 REVOKED（撤销后未重新确认）</text>
+<text x="520.0" y="354.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10.5" fill="#e34948" text-anchor="start" font-weight="400" dominant-baseline="middle">→  forbid_after_revocation</text>
+<text x="28.0" y="374.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">状态为 CONSUMED（这次确认已被一次真实写入用掉）</text>
+<text x="520.0" y="374.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10.5" fill="#e34948" text-anchor="start" font-weight="400" dominant-baseline="middle">→  single_effect_per_authorization</text>
+<text x="28.0" y="394.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">调用参数 ≠ 确认时绑定的参数（逐字段、经契约映射与规范化）</text>
+<text x="520.0" y="394.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10.5" fill="#e34948" text-anchor="start" font-weight="400" dominant-baseline="middle">→  params_equal_to_confirmation</text>
+</svg>

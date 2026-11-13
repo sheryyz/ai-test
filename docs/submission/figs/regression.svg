@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 350" width="760" height="350"><rect width="100%" height="100%" fill="#ffffff"/>
+<rect x="70.0" y="17.0" width="14.0" height="10.0" rx="2" fill="#2a78d6"/>
+<text x="91.0" y="22.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">V1 只靠提示词</text>
+<rect x="196.0" y="17.0" width="14.0" height="10.0" rx="2" fill="#eb6834"/>
+<text x="217.0" y="22.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">V2 代码级闸门</text>
+<rect x="322.0" y="17.0" width="14.0" height="10.0" rx="2" fill="#1baf7a"/>
+<text x="343.0" y="22.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">V2.1 修复版</text>
+<line x1="70.0" y1="280.0" x2="740.0" y2="280.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="62.0" y="280.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="end" font-weight="400" dominant-baseline="middle">0%</text>
+<line x1="70.0" y1="231.0" x2="740.0" y2="231.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="62.0" y="231.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="end" font-weight="400" dominant-baseline="middle">25%</text>
+<line x1="70.0" y1="182.0" x2="740.0" y2="182.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="62.0" y="182.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="end" font-weight="400" dominant-baseline="middle">50%</text>
+<line x1="70.0" y1="133.0" x2="740.0" y2="133.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="62.0" y="133.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="end" font-weight="400" dominant-baseline="middle">75%</text>
+<line x1="70.0" y1="84.0" x2="740.0" y2="84.0" stroke="#e4e3df" stroke-width="1" stroke-linecap="butt"/>
+<text x="62.0" y="84.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="end" font-weight="400" dominant-baseline="middle">100%</text>
+<path d="M106.7,280.0 v-189.3 a4,4 0 0 1 4,-4 h38.0 a4,4 0 0 1 4,4 v189.3 z" fill="#2a78d6"/>
+<line x1="129.7" y1="93.6" x2="129.7" y2="84.7" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="129.7" y="75.7" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10" fill="#0b0b0b" text-anchor="middle" font-weight="400" dominant-baseline="middle">142/144</text>
+<text x="129.7" y="294.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#e34948" text-anchor="middle" font-weight="400" dominant-baseline="middle">写 1</text>
+<path d="M158.7,280.0 v-182.5 a4,4 0 0 1 4,-4 h38.0 a4,4 0 0 1 4,4 v182.5 z" fill="#eb6834"/>
+<line x1="181.7" y1="103.0" x2="181.7" y2="88.7" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="181.7" y="79.7" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10" fill="#0b0b0b" text-anchor="middle" font-weight="400" dominant-baseline="middle">137/144</text>
+<text x="181.7" y="294.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">写 0</text>
+<path d="M210.7,280.0 v-192.0 a4,4 0 0 1 4,-4 h38.0 a4,4 0 0 1 4,4 v192.0 z" fill="#1baf7a"/>
+<line x1="233.7" y1="89.1" x2="233.7" y2="84.0" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="233.7" y="75.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10" fill="#0b0b0b" text-anchor="middle" font-weight="400" dominant-baseline="middle">144/144</text>
+<text x="233.7" y="294.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">写 0</text>
+<text x="181.7" y="314.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">主用例集（48×3）</text>
+<path d="M330.0,280.0 v-189.3 a4,4 0 0 1 4,-4 h38.0 a4,4 0 0 1 4,4 v189.3 z" fill="#2a78d6"/>
+<line x1="353.0" y1="93.6" x2="353.0" y2="84.7" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="353.0" y="75.7" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10" fill="#0b0b0b" text-anchor="middle" font-weight="400" dominant-baseline="middle">142/144</text>
+<text x="353.0" y="294.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#e34948" text-anchor="middle" font-weight="400" dominant-baseline="middle">写 1</text>
+<path d="M382.0,280.0 v-183.8 a4,4 0 0 1 4,-4 h38.0 a4,4 0 0 1 4,4 v183.8 z" fill="#eb6834"/>
+<line x1="405.0" y1="101.2" x2="405.0" y2="87.8" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="405.0" y="78.8" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10" fill="#0b0b0b" text-anchor="middle" font-weight="400" dominant-baseline="middle">138/144</text>
+<text x="405.0" y="294.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">写 0</text>
+<path d="M434.0,280.0 v-190.6 a4,4 0 0 1 4,-4 h38.0 a4,4 0 0 1 4,4 v190.6 z" fill="#1baf7a"/>
+<line x1="457.0" y1="91.5" x2="457.0" y2="84.2" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="457.0" y="75.2" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10" fill="#0b0b0b" text-anchor="middle" font-weight="400" dominant-baseline="middle">143/144</text>
+<text x="457.0" y="294.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">写 0</text>
+<text x="405.0" y="314.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">措辞变体（144×1）</text>
+<path d="M553.3,280.0 v-186.1 a4,4 0 0 1 4,-4 h38.0 a4,4 0 0 1 4,4 v186.1 z" fill="#2a78d6"/>
+<line x1="576.3" y1="114.0" x2="576.3" y2="85.1" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="576.3" y="76.1" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10" fill="#0b0b0b" text-anchor="middle" font-weight="400" dominant-baseline="middle">32/33</text>
+<text x="576.3" y="294.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">写 0</text>
+<path d="M605.3,280.0 v-150.4 a4,4 0 0 1 4,-4 h38.0 a4,4 0 0 1 4,4 v150.4 z" fill="#eb6834"/>
+<line x1="628.3" y1="158.0" x2="628.3" y2="104.9" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="628.3" y="95.9" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10" fill="#0b0b0b" text-anchor="middle" font-weight="400" dominant-baseline="middle">26/33</text>
+<text x="628.3" y="294.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">写 0</text>
+<path d="M657.3,280.0 v-150.4 a4,4 0 0 1 4,-4 h38.0 a4,4 0 0 1 4,4 v150.4 z" fill="#1baf7a"/>
+<line x1="680.3" y1="158.0" x2="680.3" y2="104.9" stroke="#0b0b0b" stroke-width="1.2" stroke-linecap="butt"/>
+<text x="680.3" y="95.9" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10" fill="#0b0b0b" text-anchor="middle" font-weight="400" dominant-baseline="middle">26/33</text>
+<text x="680.3" y="294.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">写 0</text>
+<text x="628.3" y="314.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">留出集 holdout（12×3）</text>
+<text x="70.0" y="338.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#8a8984" text-anchor="start" font-weight="400" dominant-baseline="middle">柱高 = 任务成功率（业务终态符合预期），细线为 95% 区间；柱下“写 n”= 产生真实写入的越权次数。模型均为 deepseek-flash。</text>
+</svg>

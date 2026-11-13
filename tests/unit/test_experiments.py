@@ -101,3 +101,23 @@ def test_performance_groups_runs_that_differ_only_in_concurrency(tmp_path: Path)
     assert point["executions"] > 0 and point["errors"]["den"] == point["executions"] and point["rate_limited"] == 0
     assert point["latency_s"]["p50"] <= point["latency_s"]["p95"] <= point["latency_s"]["max"]
     assert _percentile(list(range(1, 28)), 0.95) == 26 and _percentile([], 0.5) is None
+
+
+def test_model_bench_runs_never_stand_in_for_a_version(tmp_path: Path) -> None:
+    """A bench run is the same version on another model: it must not replace the version's own run
+    in the version comparison, nor become a point on a concurrency curve."""
+    from consenttrace.core.experiments import performance_section
+
+    runs = tmp_path / "runs"
+    own = record_run(runs, "own")
+    as_live(own, finished="2026-11-01T00:00:00Z")
+    bench = record_run(runs, "bench-other-model")
+    as_live(bench, finished="2026-11-02T00:00:00Z")
+    for name, data in (
+        ("config.json", {"concurrency": 4, "extra": {"purpose": "model-bench"}}),
+        ("summary.json", {"model_id": "m2"}),
+    ):
+        path = bench / name
+        path.write_text(json.dumps({**json.loads(path.read_text(encoding="utf-8")), **data}), encoding="utf-8")
+    assert latest_live_runs(runs)[("travel", "smoke", "v1")][0].name == "own"
+    assert performance_section(runs) == []
