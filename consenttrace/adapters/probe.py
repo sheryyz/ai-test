@@ -20,6 +20,7 @@ from consenttrace.schemas import AdapterCapabilities, AgentDescription, EventKin
 
 Status = Literal["PASS", "FAIL", "SKIP"]
 PING = "ConsentTrace 接入检查：你好"
+MARKER = "[ConsentTrace probe marker: injected tool-result text]"
 PONG = "probe-ok"
 
 
@@ -77,6 +78,7 @@ def _run(report: ProbeReport, client: httpx.Client, version: str | None) -> None
         )
     )
 
+    desc: AgentDescription | None = None
     try:
         desc = AgentDescription.model_validate(call(client, "GET", "/describe", params={"version": version}))
         tables = ", ".join(desc.state_schema) or "未声明"
@@ -96,7 +98,7 @@ def _run(report: ProbeReport, client: httpx.Client, version: str | None) -> None
                 "knowledge",
                 "知识库",
                 "SKIP" if "HTTP 404" in str(exc) else "FAIL",
-                "没有检索知识库" if "HTTP 404" in str(exc) else str(exc),
+                "不适用：这个 Agent 没有检索知识库（可选能力），RAG 知识库体检对它不可用" if "HTTP 404" in str(exc) else str(exc),
             )
         )
 
@@ -150,9 +152,7 @@ def _run(report: ProbeReport, client: httpx.Client, version: str | None) -> None
                 call(client, "DELETE", f"/sessions/{sid}")
 
     if caps.inject_tool_response:
-        add(
-            ProbeCheck("inject", "工具返回注入", "SKIP", "已声明；是否命中注入点要在含注入的用例中观察，未命中的注入记为 SKIPPED")
-        )
+        add(_inject_check(client, version, desc))
     else:
         add(ProbeCheck("inject", "工具返回注入", "SKIP", "未声明：注入类用例将无法执行注入"))
     llm = info.get("llm") or {}
@@ -166,9 +166,74 @@ def _run(report: ProbeReport, client: httpx.Client, version: str | None) -> None
     )
 
 
-def _open(client: httpx.Client, version: str, case_id: str) -> str:
-    body = {"version": version, "run_id": "probe", "case_id": case_id, "llm": {"mode": "scripted", "script": [{"content": PONG}]}}
+def _open(
+    client: httpx.Client, version: str, case_id: str, *, script: list[dict] | None = None, injections: list[dict] | None = None
+) -> str:
+    body = {
+        "version": version,
+        "run_id": "probe",
+        "case_id": case_id,
+        "injections": injections or [],
+        "llm": {"mode": "scripted", "script": script or [{"content": PONG}]},
+    }
     return call(client, "POST", "/sessions", json=body)["session_id"]
+
+
+def _no_argument_tool(desc: AgentDescription | None) -> str | None:
+    """A tool the scripted session can call without inventing arguments; listing / reading tools first."""
+    if desc is None:
+        return None
+    names = [t["function"]["name"] for t in desc.tools if not (t["function"].get("parameters") or {}).get("required")]
+    names.sort(key=lambda n: (not n.startswith(("list", "get", "search", "show")), n))
+    return names[0] if names else None
+
+
+def _inject_check(client: httpx.Client, version: str, desc: AgentDescription | None) -> ProbeCheck:
+    """Script one tool call with an injection on it, in a throwaway session, and look for the marker."""
+    tool = _no_argument_tool(desc)
+    if tool is None:
+        return ProbeCheck(
+            "inject",
+            "工具返回注入",
+            "SKIP",
+            "已声明；但没有可以不带参数安全调用的工具，需在含注入的用例中验证（未命中的注入记为 SKIPPED）",
+        )
+    script = [
+        {"tool_calls": [{"id": "probe-call", "name": tool, "arguments": {}, "raw_arguments": "{}"}]},
+        {"content": PONG},
+    ]
+    injection = {
+        "injection_id": "PROBE-INJ",
+        "tool": tool,
+        "mode": "append_text",
+        "payload": MARKER,
+        "field": "consenttrace_probe",
+    }
+    sid = None
+    try:
+        sid = _open(client, version, "probe-inject", script=script, injections=[injection])
+        call(client, "POST", f"/sessions/{sid}/messages", json={"text": PING})
+        events = [TraceEvent.model_validate(e) for e in call(client, "GET", f"/sessions/{sid}/events", params={"since": 0}) or []]
+    except (AgentProtocolError, ValidationError) as exc:
+        return ProbeCheck("inject", "工具返回注入", "FAIL", f"带注入的会话失败：{exc}")
+    finally:
+        if sid is not None:
+            with contextlib.suppress(AgentProtocolError):
+                call(client, "DELETE", f"/sessions/{sid}")
+    fired = any(e.kind is EventKind.INJECTION and e.injection_id == "PROBE-INJ" for e in events)
+    seen = any(e.kind is EventKind.TOOL_RESULT and e.tool == tool and MARKER in str(e.result) for e in events)
+    if fired and seen:
+        return ProbeCheck(
+            "inject", "工具返回注入", "PASS", f"在隔离会话里调用 {tool}：注入事件已记录，Agent 看到的返回里出现了注入的标记文字"
+        )
+    if not any(e.kind is EventKind.TOOL_CALL_ATTEMPT and e.tool == tool for e in events):
+        return ProbeCheck("inject", "工具返回注入", "FAIL", f"脚本要求调用 {tool}，但轨迹里没有这次调用")
+    return ProbeCheck(
+        "inject",
+        "工具返回注入",
+        "FAIL",
+        f"声明了注入能力，但调用 {tool} 时{'没有记录注入事件' if not fired else 'Agent 看到的返回里没有注入内容'}",
+    )
 
 
 def _trace_check(declared: bool, events: list[TraceEvent]) -> ProbeCheck:

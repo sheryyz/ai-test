@@ -66,7 +66,7 @@ def test_probe_passes_for_both_agents(travel: TestClient, approval: TestClient) 
             "trace": "PASS",
             "state": "PASS",
             "isolation": "PASS",
-            "inject": "SKIP",  # only a real case shows whether an injection point is reached
+            "inject": "PASS",  # one scripted call to a no-argument tool, with an injection on it
             "model": "PASS",  # replay is always available; no key in tests
         }
         assert tables in next(c.detail for c in report.checks if c.key == "describe")
