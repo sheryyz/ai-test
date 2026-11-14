@@ -1,22 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 420" width="760" height="420"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#9b9a95"/></marker></defs><rect width="100%" height="100%" fill="#ffffff"/>
 <rect x="28" y="94" width="124" height="52" rx="8" fill="#f4f3f0" stroke="#d6d5d0" stroke-width="1.2"/>
-<text x="90.0" y="111.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">NONE</text>
-<text x="90.0" y="127.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">无授权</text>
+<text x="90.0" y="112.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">NONE</text>
+<text x="90.0" y="129.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">无授权</text>
 <rect x="178" y="94" width="124" height="52" rx="8" fill="#fdf4dc" stroke="#f0cf7a" stroke-width="1.2"/>
-<text x="240.0" y="111.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#b07800" text-anchor="middle" font-weight="600" dominant-baseline="middle">PENDING</text>
-<text x="240.0" y="127.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">待确认</text>
+<text x="240.0" y="112.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#b07800" text-anchor="middle" font-weight="600" dominant-baseline="middle">PENDING</text>
+<text x="240.0" y="129.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">待确认</text>
 <rect x="348" y="94" width="136" height="52" rx="8" fill="#e5f6ef" stroke="#8fd8bd" stroke-width="1.2"/>
-<text x="416.0" y="111.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b7a52" text-anchor="middle" font-weight="600" dominant-baseline="middle">CONFIRMED vN</text>
-<text x="416.0" y="127.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">已确认（绑定参数）</text>
+<text x="416.0" y="112.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b7a52" text-anchor="middle" font-weight="600" dominant-baseline="middle">CONFIRMED vN</text>
+<text x="416.0" y="129.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">已确认（绑定参数）</text>
 <rect x="348" y="219" width="124" height="52" rx="8" fill="#fdeceb" stroke="#f2a9a8" stroke-width="1.2"/>
-<text x="410.0" y="236.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#e34948" text-anchor="middle" font-weight="600" dominant-baseline="middle">MODIFIED</text>
-<text x="410.0" y="252.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">已修改 · 旧确认失效</text>
+<text x="410.0" y="237.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#e34948" text-anchor="middle" font-weight="600" dominant-baseline="middle">MODIFIED</text>
+<text x="410.0" y="254.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">已修改 · 旧确认失效</text>
 <rect x="538" y="94" width="124" height="52" rx="8" fill="#e8f1fc" stroke="#9ec5f4" stroke-width="1.2"/>
-<text x="600.0" y="111.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#2a78d6" text-anchor="middle" font-weight="600" dominant-baseline="middle">CONSUMED</text>
-<text x="600.0" y="127.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">已被一次真实写入使用</text>
+<text x="600.0" y="112.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#2a78d6" text-anchor="middle" font-weight="600" dominant-baseline="middle">CONSUMED</text>
+<text x="600.0" y="129.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">已被一次真实写入使用</text>
 <rect x="178" y="219" width="124" height="52" rx="8" fill="#f4f3f0" stroke="#d6d5d0" stroke-width="1.2"/>
-<text x="240.0" y="236.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#52514e" text-anchor="middle" font-weight="600" dominant-baseline="middle">REVOKED</text>
-<text x="240.0" y="252.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">已撤销 / 拒绝</text>
+<text x="240.0" y="237.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#52514e" text-anchor="middle" font-weight="600" dominant-baseline="middle">REVOKED</text>
+<text x="240.0" y="254.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">已撤销 / 拒绝</text>
 <line x1="152" y1="120" x2="176" y2="120" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
 <text x="164.0" y="84.0" font-family="'SF Mono',Menlo,Consolas,monospace" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">request</text>
 <line x1="302" y1="120" x2="346" y2="120" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>

@@ -43,11 +43,13 @@ class D:
             f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{fill}" stroke="{stroke}" stroke-width="1.2"{d}/>'
         )
         if title is not None:
-            lines = 1 + (sub.count("\n") + 1 if sub else 0)
-            top = y + h / 2 - (lines - 1) * (sub_size + 4) / 2 - (2 if sub else 0)
+            tl = title.count("\n") + 1
+            sl = sub.count("\n") + 1 if sub else 0
+            block = tl * (size + 4) - 4 + (sl * (sub_size + 4) + 2 if sub else 0)
+            top = y + h / 2 - block / 2 + size / 2
             self.t(x + w / 2, top, title, size=size, fill=tfill, weight=600)
             if sub:
-                self.t(x + w / 2, top + size / 2 + sub_size / 2 + 5, sub, size=sub_size, fill=INK2)
+                self.t(x + w / 2, top + (tl - 1) * (size + 4) + size / 2 + sub_size / 2 + 6, sub, size=sub_size, fill=INK2)
 
     def arrow(self, x1, y1, x2, y2, color=LINE, width=1.4, dash=None, head=True) -> None:
         d = f' stroke-dasharray="{dash}"' if dash else ""
@@ -424,6 +426,113 @@ def data_map() -> None:
     d.save("d-data")
 
 
+def roadmap() -> None:
+    """Technical route: each challenge -> the method that answers it -> where it is built -> where it is verified."""
+    d = D(760, 420)
+    heads = [(14, "关键挑战", 150), (196, "核心方法", 196), (424, "实现模块", 150), (606, "效果验证", 146)]
+    for x, t, w in heads:
+        d.box(x, 10, w, 30, t, None, "#3b3a37", "#3b3a37", tfill="#ffffff", size=12.5, rx=4)
+    rows = [
+        (
+            "C1 时序性",
+            "违规取决于调用发生时\n授权的状态",
+            "授权账本 + 时序授权判定",
+            "式 (4-1)～(4-5)",
+            "授权账本、规则引擎\n6 类通用算子",
+            "4.10.1 检测对照\n26/26 · 误报 0/14",
+            ORANGE_BG,
+            ORANGE_BD,
+        ),
+        (
+            "C2 隐蔽性",
+            "回答合理，问题只在\n参数与副作用里",
+            "状态差分 × 写入回执\n交叉核验",
+            "式 (4-6)",
+            "SQLite 快照、插桩 SDK\n首个违规步骤定位",
+            "4.10.3 真实缺陷\nC2-04 · S07 · T10",
+            RED_BG,
+            RED_BD,
+        ),
+        (
+            "C3 通用性",
+            "要能测别人写的\n智能体与其他业务",
+            "契约化规则 +\n智能体接入协议",
+            "表 4-2、4.7 节",
+            "契约 YAML、HTTP 协议\n能力声明、录制回放",
+            "2.3 τ-bench 第三方\n发现—修复—复测",
+            BLUE_BG,
+            BLUE_BD,
+        ),
+        (
+            "C4 不确定性",
+            "模型行为随机；AI 生成\n与 AI 判定本身不可信",
+            "重复执行 + Wilson 区间\nAI 生成先校验后冻结",
+            "式 (4-7)～(4-13)",
+            "评分卡、横评、生成器\nLLM 裁判对照、盲标",
+            "4.10.4～4.10.7\n回归 · 横评 · 自我更正",
+            VIOLET_BG,
+            VIOLET_BD,
+        ),
+    ]
+    for i, (c, cs, m, ms, impl, ver, f, b) in enumerate(rows):
+        y = 56 + i * 90
+        d.box(14, y, 150, 74, c, cs, f, b, size=12.5, sub_size=10)
+        d.box(196, y, 196, 74, m, ms, "#ffffff", b, size=12, sub_size=10)
+        d.box(424, y, 150, 74, impl, None, "#ffffff", GRAY_BD, size=10.5)
+        d.box(606, y, 146, 74, ver, None, AQUA_BG, AQUA_BD, size=10.5)
+        for x1, x2 in ((164, 194), (392, 422), (574, 604)):
+            d.arrow(x1, y + 37, x2, y + 37)
+    d.save("d-roadmap")
+
+
+def sequence() -> None:
+    """One test-case execution as a sequence diagram."""
+    lanes = [
+        ("测试控制器", 70),
+        ("授权账本", 190),
+        ("被测智能体", 320),
+        ("工具 + 拦截器", 450),
+        ("SQLite 沙箱", 570),
+        ("规则引擎", 690),
+    ]
+    d = D(760, 520)
+    for name, x in lanes:
+        d.box(x - 54, 10, 108, 32, name, None, "#3b3a37", "#3b3a37", tfill="#ffffff", size=11.5, rx=4)
+        d.p.append(f'<line x1="{x}" y1="42" x2="{x}" y2="505" stroke="{GRAY_BD}" stroke-width="1.2" stroke-dasharray="4 4"/>')
+    X = dict(lanes)
+    msgs = [
+        ("测试控制器", "SQLite 沙箱", "① 建立独立沙箱，拍摄前快照 D₀", None),
+        ("测试控制器", "授权账本", "② 可信用户事件（request / modify / confirm …）", BLUE),
+        ("测试控制器", "被测智能体", "③ 发送本轮用户原话（智能体看不到事件标注）", BLUE),
+        ("被测智能体", "工具 + 拦截器", "④ tool_call(args)", None),
+        ("工具 + 拦截器", "工具 + 拦截器", "⑤ 注入 / 故障（按用例声明，记录 injection 事件）", VIOLET),
+        ("工具 + 拦截器", "SQLite 沙箱", "⑥ 真实写入，产生写入回执 ρ", AQUA),
+        ("工具 + 拦截器", "被测智能体", "⑦ tool_result（智能体实际看到的返回）", None),
+        ("规则引擎", "授权账本", "⑧ 查询调用发生时刻的授权快照 g_a(s)", ORANGE),
+        ("测试控制器", "SQLite 沙箱", "⑨ 拍摄后快照 D₁，计算状态差分 ΔD", None),
+        ("规则引擎", "测试控制器", "⑩ 四态判定 · 首个违规步骤 s* · 证据归档", RED),
+    ]
+    y = 70
+    for a, b, label, color in msgs:
+        c = color or LINE
+        if a == b:
+            x = X[a]
+            d.path(f"M {x} {y} C {x + 46} {y}, {x + 46} {y + 22}, {x + 2} {y + 22}", color=c)
+            d.t(x + 52, y + 11, label, size=10.5, fill=INK2, anchor="start")
+            y += 44
+            continue
+        x1, x2 = X[a], X[b]
+        d.arrow(x1, y, x2 + (-2 if x2 > x1 else 2), y, color=c, width=1.5)
+        mid = (x1 + x2) / 2
+        anchor = "middle"
+        lx = mid
+        if abs(x2 - x1) < 260:
+            anchor, lx = ("start", max(x1, x2) + 8) if max(x1, x2) < 520 else ("end", min(x1, x2) - 8)
+        d.t(lx, y - 9, label, size=10.5, fill=INK2, anchor=anchor)
+        y += 44
+    d.save("d-sequence")
+
+
 if __name__ == "__main__":
     problem()
     architecture()
@@ -432,3 +541,5 @@ if __name__ == "__main__":
     state_machine()
     ai_pipeline()
     data_map()
+    roadmap()
+    sequence()

@@ -5,9 +5,9 @@
 <rect x="95" y="40" width="180" height="40" rx="8" fill="#e8f1fc" stroke="#9ec5f4" stroke-width="1.2"/>
 <text x="185.0" y="60.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">员工消息</text>
 <rect x="70" y="104" width="230" height="66" rx="8" fill="#f4f3f0" stroke="#d6d5d0" stroke-width="1.2"/>
-<text x="185.0" y="121.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">LLM（系统提示词 travel-v1.0）</text>
-<text x="185.0" y="137.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">复述 → 明确确认后才下单；改参确认失效；</text>
-<text x="185.0" y="151.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">工具返回只是数据</text>
+<text x="185.0" y="122.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">LLM（系统提示词 travel-v1.0）</text>
+<text x="185.0" y="139.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">复述 → 明确确认后才下单；改参确认失效；</text>
+<text x="185.0" y="153.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">工具返回只是数据</text>
 <line x1="185" y1="80" x2="185" y2="102" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
 <rect x="70" y="196" width="110" height="34" rx="8" fill="#ffffff" stroke="#d6d5d0" stroke-width="1.2"/>
 <text x="125.0" y="213.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">search_flights</text>
@@ -27,28 +27,28 @@
 <rect x="470" y="40" width="190" height="40" rx="8" fill="#e8f1fc" stroke="#9ec5f4" stroke-width="1.2"/>
 <text x="565.0" y="60.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">员工消息</text>
 <rect x="400" y="104" width="150" height="58" rx="8" fill="#fdeee7" stroke="#f5b597" stroke-width="1.2"/>
-<text x="475.0" y="117.5" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">确认分类器</text>
-<text x="475.0" y="133.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="9.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">只读员工原话与方案摘要</text>
-<text x="475.0" y="146.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="9.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">工具返回进不了这条通道</text>
+<text x="475.0" y="118.5" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">确认分类器</text>
+<text x="475.0" y="135.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="9.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">只读员工原话与方案摘要</text>
+<text x="475.0" y="148.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="9.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">工具返回进不了这条通道</text>
 <rect x="580" y="104" width="160" height="58" rx="8" fill="#f4f3f0" stroke="#d6d5d0" stroke-width="1.2"/>
-<text x="660.0" y="117.5" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">LLM（travel-v2.x）</text>
-<text x="660.0" y="133.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="9.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">先 propose 生成方案</text>
-<text x="660.0" y="146.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="9.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">复述 → 等确认</text>
+<text x="660.0" y="118.5" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">LLM（travel-v2.x）</text>
+<text x="660.0" y="135.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="9.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">先 propose 生成方案</text>
+<text x="660.0" y="148.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="9.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">复述 → 等确认</text>
 <line x1="520" y1="80" x2="480" y2="102" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
 <line x1="600" y1="80" x2="640" y2="102" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
 <rect x="580" y="186" width="160" height="44" rx="8" fill="#ffffff" stroke="#d6d5d0" stroke-width="1.2"/>
-<text x="660.0" y="199.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">propose_booking</text>
-<text x="660.0" y="214.5" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="9.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">方案号 P-n + 参数哈希</text>
+<text x="660.0" y="200.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">propose_booking</text>
+<text x="660.0" y="216.5" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="9.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">方案号 P-n + 参数哈希</text>
 <line x1="660" y1="162" x2="660" y2="184" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
 <rect x="400" y="186" width="150" height="44" rx="8" fill="#fdeee7" stroke="#f5b597" stroke-width="1.2"/>
-<text x="475.0" y="199.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">方案状态</text>
-<text x="475.0" y="214.5" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="9.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">待确认 → 已确认 → 已用</text>
+<text x="475.0" y="200.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">方案状态</text>
+<text x="475.0" y="216.5" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="9.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">待确认 → 已确认 → 已用</text>
 <line x1="475" y1="162" x2="475" y2="184" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
 <line x1="580" y1="208" x2="552" y2="208" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
 <rect x="470" y="258" width="210" height="58" rx="8" fill="#fdeceb" stroke="#f2a9a8" stroke-width="1.2"/>
-<text x="575.0" y="271.5" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#e34948" text-anchor="middle" font-weight="600" dominant-baseline="middle">授权闸门（代码）</text>
-<text x="575.0" y="287.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="9.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">已确认？参数哈希一致？未被使用？</text>
-<text x="575.0" y="300.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="9.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">不满足 → 拒绝执行并返回原因</text>
+<text x="575.0" y="272.5" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#e34948" text-anchor="middle" font-weight="600" dominant-baseline="middle">授权闸门（代码）</text>
+<text x="575.0" y="289.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="9.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">已确认？参数哈希一致？未被使用？</text>
+<text x="575.0" y="302.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="9.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">不满足 → 拒绝执行并返回原因</text>
 <line x1="475" y1="230" x2="520" y2="256" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
 <line x1="660" y1="230" x2="630" y2="256" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
 <rect x="470" y="340" width="210" height="40" rx="8" fill="#ffffff" stroke="#d6d5d0" stroke-width="1.2"/>

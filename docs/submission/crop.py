@@ -37,6 +37,7 @@ CROPS = {  # name: (source, (left, top, right, bottom)); None = to the image edg
     "analysis": ("analysis", (SIDEBAR, 0, None, 2350)),
     "coverage": ("coverage", (SIDEBAR, 0, None, None)),
     "annotate": ("annotate", (SIDEBAR, 0, None, None)),
+    "running": ("running", (SIDEBAR, 1480, None, None)),
 }
 
 

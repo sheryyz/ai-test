@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 520" width="760" height="520"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#9b9a95"/></marker></defs><rect width="100%" height="100%" fill="#ffffff"/>
+<rect x="16" y="10" width="108" height="32" rx="4" fill="#3b3a37" stroke="#3b3a37" stroke-width="1.2"/>
+<text x="70.0" y="26.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">测试控制器</text>
+<line x1="70" y1="42" x2="70" y2="505" stroke="#d6d5d0" stroke-width="1.2" stroke-dasharray="4 4"/>
+<rect x="136" y="10" width="108" height="32" rx="4" fill="#3b3a37" stroke="#3b3a37" stroke-width="1.2"/>
+<text x="190.0" y="26.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">授权账本</text>
+<line x1="190" y1="42" x2="190" y2="505" stroke="#d6d5d0" stroke-width="1.2" stroke-dasharray="4 4"/>
+<rect x="266" y="10" width="108" height="32" rx="4" fill="#3b3a37" stroke="#3b3a37" stroke-width="1.2"/>
+<text x="320.0" y="26.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">被测智能体</text>
+<line x1="320" y1="42" x2="320" y2="505" stroke="#d6d5d0" stroke-width="1.2" stroke-dasharray="4 4"/>
+<rect x="396" y="10" width="108" height="32" rx="4" fill="#3b3a37" stroke="#3b3a37" stroke-width="1.2"/>
+<text x="450.0" y="26.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">工具 + 拦截器</text>
+<line x1="450" y1="42" x2="450" y2="505" stroke="#d6d5d0" stroke-width="1.2" stroke-dasharray="4 4"/>
+<rect x="516" y="10" width="108" height="32" rx="4" fill="#3b3a37" stroke="#3b3a37" stroke-width="1.2"/>
+<text x="570.0" y="26.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">SQLite 沙箱</text>
+<line x1="570" y1="42" x2="570" y2="505" stroke="#d6d5d0" stroke-width="1.2" stroke-dasharray="4 4"/>
+<rect x="636" y="10" width="108" height="32" rx="4" fill="#3b3a37" stroke="#3b3a37" stroke-width="1.2"/>
+<text x="690.0" y="26.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="600" dominant-baseline="middle">规则引擎</text>
+<line x1="690" y1="42" x2="690" y2="505" stroke="#d6d5d0" stroke-width="1.2" stroke-dasharray="4 4"/>
+<line x1="70" y1="70" x2="568" y2="70" stroke="#9b9a95" stroke-width="1.5" marker-end="url(#ah)"/>
+<text x="320.0" y="61.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">① 建立独立沙箱，拍摄前快照 D₀</text>
+<line x1="70" y1="114" x2="188" y2="114" stroke="#2a78d6" stroke-width="1.5" marker-end="url(#ah)"/>
+<text x="198.0" y="105.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">② 可信用户事件（request / modify / confirm …）</text>
+<line x1="70" y1="158" x2="318" y2="158" stroke="#2a78d6" stroke-width="1.5" marker-end="url(#ah)"/>
+<text x="328.0" y="149.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">③ 发送本轮用户原话（智能体看不到事件标注）</text>
+<line x1="320" y1="202" x2="448" y2="202" stroke="#9b9a95" stroke-width="1.5" marker-end="url(#ah)"/>
+<text x="458.0" y="193.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">④ tool_call(args)</text>
+<path d="M 450 246 C 496 246, 496 268, 452 268" fill="none" stroke="#4a3aa7" stroke-width="1.4" marker-end="url(#ah)"/>
+<text x="502.0" y="257.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">⑤ 注入 / 故障（按用例声明，记录 injection 事件）</text>
+<line x1="450" y1="290" x2="568" y2="290" stroke="#1baf7a" stroke-width="1.5" marker-end="url(#ah)"/>
+<text x="442.0" y="281.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="end" font-weight="400" dominant-baseline="middle">⑥ 真实写入，产生写入回执 ρ</text>
+<line x1="450" y1="334" x2="322" y2="334" stroke="#9b9a95" stroke-width="1.5" marker-end="url(#ah)"/>
+<text x="458.0" y="325.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="start" font-weight="400" dominant-baseline="middle">⑦ tool_result（智能体实际看到的返回）</text>
+<line x1="690" y1="378" x2="192" y2="378" stroke="#eb6834" stroke-width="1.5" marker-end="url(#ah)"/>
+<text x="440.0" y="369.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">⑧ 查询调用发生时刻的授权快照 g_a(s)</text>
+<line x1="70" y1="422" x2="568" y2="422" stroke="#9b9a95" stroke-width="1.5" marker-end="url(#ah)"/>
+<text x="320.0" y="413.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">⑨ 拍摄后快照 D₁，计算状态差分 ΔD</text>
+<line x1="690" y1="466" x2="72" y2="466" stroke="#e34948" stroke-width="1.5" marker-end="url(#ah)"/>
+<text x="380.0" y="457.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">⑩ 四态判定 · 首个违规步骤 s* · 证据归档</text>
+</svg>

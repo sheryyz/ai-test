@@ -6,17 +6,17 @@
 <text x="30.0" y="458.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#8a8984" text-anchor="middle" font-weight="600" dominant-baseline="middle">接入层</text>
 <text x="30.0" y="526.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#8a8984" text-anchor="middle" font-weight="600" dominant-baseline="middle">被测 Agent</text>
 <rect x="70" y="16" width="160" height="52" rx="8" fill="#e8f1fc" stroke="#9ec5f4" stroke-width="1.2"/>
-<text x="150.0" y="32.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">Web 控制台</text>
-<text x="150.0" y="49.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">React + TS · 自研 SVG 图表</text>
+<text x="150.0" y="33.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">Web 控制台</text>
+<text x="150.0" y="51.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">React + TS · 自研 SVG 图表</text>
 <rect x="242" y="16" width="160" height="52" rx="8" fill="#e8f1fc" stroke="#9ec5f4" stroke-width="1.2"/>
-<text x="322.0" y="32.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">命令行 CLI</text>
-<text x="322.0" y="49.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">consenttrace validate / run / …</text>
+<text x="322.0" y="33.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">命令行 CLI</text>
+<text x="322.0" y="51.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">consenttrace validate / run / …</text>
 <rect x="414" y="16" width="160" height="52" rx="8" fill="#e8f1fc" stroke="#9ec5f4" stroke-width="1.2"/>
-<text x="494.0" y="32.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">CI 门禁</text>
-<text x="494.0" y="49.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">JUnit · 按严重度阻断</text>
+<text x="494.0" y="33.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">CI 门禁</text>
+<text x="494.0" y="51.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">JUnit · 按严重度阻断</text>
 <rect x="586" y="16" width="160" height="52" rx="8" fill="#e8f1fc" stroke="#9ec5f4" stroke-width="1.2"/>
-<text x="666.0" y="32.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">离线静态报告</text>
-<text x="666.0" y="49.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">单个 HTML · 内嵌证据</text>
+<text x="666.0" y="33.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">离线静态报告</text>
+<text x="666.0" y="51.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">单个 HTML · 内嵌证据</text>
 <rect x="70" y="96" width="676" height="52" rx="8" fill="#f4f3f0" stroke="#d6d5d0" stroke-width="1.2"/>
 <text x="408.0" y="122.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">FastAPI 服务层：REST + SSE 实时事件 · 登录与会话（scrypt）· 只读证据 API —— 前端不写任何判定逻辑</text>
 <line x1="150" y1="68" x2="150" y2="94" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
@@ -26,29 +26,29 @@
 <rect x="70" y="176" width="676" height="156" rx="10" fill="#fbfbfa" stroke="#d6d5d0"/>
 <text x="408.0" y="190.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">consenttrace.core（与被测业务无关，不得 import targets/，由架构测试强制）</text>
 <rect x="84" y="204" width="150" height="50" rx="8" fill="#ffffff" stroke="#d6d5d0" stroke-width="1.2"/>
-<text x="159.0" y="219.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">契约与用例</text>
-<text x="159.0" y="236.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">YAML / JSONL 校验</text>
+<text x="159.0" y="220.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">契约与用例</text>
+<text x="159.0" y="238.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">YAML / JSONL 校验</text>
 <rect x="249" y="204" width="150" height="50" rx="8" fill="#ffffff" stroke="#d6d5d0" stroke-width="1.2"/>
-<text x="324.0" y="219.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">执行器 Runner</text>
-<text x="324.0" y="236.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">沙箱 · k 次 · 并发</text>
+<text x="324.0" y="220.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">执行器 Runner</text>
+<text x="324.0" y="238.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">沙箱 · k 次 · 并发</text>
 <rect x="414" y="204" width="150" height="50" rx="8" fill="#ffffff" stroke="#d6d5d0" stroke-width="1.2"/>
-<text x="489.0" y="219.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">注入与故障</text>
-<text x="489.0" y="236.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">工具返回 · 检索段</text>
+<text x="489.0" y="220.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">注入与故障</text>
+<text x="489.0" y="238.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">工具返回 · 检索段</text>
 <rect x="579" y="204" width="150" height="50" rx="8" fill="#ffffff" stroke="#d6d5d0" stroke-width="1.2"/>
-<text x="654.0" y="219.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">轨迹采集</text>
-<text x="654.0" y="236.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">TraceEvent · 回执</text>
+<text x="654.0" y="220.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">轨迹采集</text>
+<text x="654.0" y="238.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">TraceEvent · 回执</text>
 <rect x="84" y="270" width="150" height="50" rx="8" fill="#fdeee7" stroke="#f5b597" stroke-width="1.2"/>
-<text x="159.0" y="285.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">授权账本</text>
-<text x="159.0" y="302.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">可信用户事件驱动</text>
+<text x="159.0" y="286.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">授权账本</text>
+<text x="159.0" y="304.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">可信用户事件驱动</text>
 <rect x="249" y="270" width="150" height="50" rx="8" fill="#fdeee7" stroke="#f5b597" stroke-width="1.2"/>
-<text x="324.0" y="285.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">规则引擎</text>
-<text x="324.0" y="302.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">6 类算子 · 首个违规</text>
+<text x="324.0" y="286.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">规则引擎</text>
+<text x="324.0" y="304.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">6 类算子 · 首个违规</text>
 <rect x="414" y="270" width="150" height="50" rx="8" fill="#ffffff" stroke="#d6d5d0" stroke-width="1.2"/>
-<text x="489.0" y="285.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">状态差分</text>
-<text x="489.0" y="302.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">SQLite 前后快照</text>
+<text x="489.0" y="286.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">状态差分</text>
+<text x="489.0" y="304.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">SQLite 前后快照</text>
 <rect x="579" y="270" width="150" height="50" rx="8" fill="#ffffff" stroke="#d6d5d0" stroke-width="1.2"/>
-<text x="654.0" y="285.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">判定与证据</text>
-<text x="654.0" y="302.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">四态 · 缺陷 · 评分卡</text>
+<text x="654.0" y="286.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="12.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">判定与证据</text>
+<text x="654.0" y="304.2" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">四态 · 缺陷 · 评分卡</text>
 <line x1="234" y1="229" x2="247" y2="229" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
 <line x1="234" y1="295" x2="247" y2="295" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
 <line x1="399" y1="229" x2="412" y2="229" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
@@ -59,20 +59,20 @@
 <line x1="159" y1="254" x2="159" y2="268" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
 <line x1="408" y1="148" x2="408" y2="174" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
 <rect x="70" y="352" width="130" height="52" rx="8" fill="#eeecf8" stroke="#b4ace3" stroke-width="1.2"/>
-<text x="135.0" y="368.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">AI 起草契约</text>
-<text x="135.0" y="384.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">F09</text>
+<text x="135.0" y="369.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">AI 起草契约</text>
+<text x="135.0" y="386.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">F09</text>
 <rect x="210" y="352" width="130" height="52" rx="8" fill="#eeecf8" stroke="#b4ace3" stroke-width="1.2"/>
-<text x="275.0" y="368.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">用例生成与扩增</text>
-<text x="275.0" y="384.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">变体·场景·留出</text>
+<text x="275.0" y="369.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">用例生成与扩增</text>
+<text x="275.0" y="386.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">变体·场景·留出</text>
 <rect x="350" y="352" width="130" height="52" rx="8" fill="#eeecf8" stroke="#b4ace3" stroke-width="1.2"/>
-<text x="415.0" y="368.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">注入/越狱生成</text>
-<text x="415.0" y="384.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">校验后冻结</text>
+<text x="415.0" y="369.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">注入/越狱生成</text>
+<text x="415.0" y="386.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">校验后冻结</text>
 <rect x="490" y="352" width="130" height="52" rx="8" fill="#eeecf8" stroke="#b4ace3" stroke-width="1.2"/>
-<text x="555.0" y="368.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">LLM 裁判 · 模型标注</text>
-<text x="555.0" y="384.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">对照组</text>
+<text x="555.0" y="369.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">LLM 裁判 · 模型标注</text>
+<text x="555.0" y="386.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">对照组</text>
 <rect x="634" y="352" width="112" height="52" rx="8" fill="#e5f6ef" stroke="#8fd8bd" stroke-width="1.2"/>
-<text x="690.0" y="368.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">RAG 知识库体检</text>
-<text x="690.0" y="384.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">consenttrace.rag</text>
+<text x="690.0" y="369.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">RAG 知识库体检</text>
+<text x="690.0" y="386.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">consenttrace.rag</text>
 <line x1="408" y1="332" x2="408" y2="350" stroke="#9b9a95" stroke-width="1.4"/>
 <rect x="70" y="432" width="420" height="46" rx="8" fill="#f4f3f0" stroke="#d6d5d0" stroke-width="1.2"/>
 <text x="280.0" y="455.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">Agent 接入协议（HTTP + JSON）· 能力声明 · 接入检查 probe</text>
@@ -80,20 +80,20 @@
 <text x="623.0" y="455.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">ChatClient：录制 / 回放 · 预算 · token 计量</text>
 <line x1="280" y1="404" x2="280" y2="430" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
 <rect x="70" y="500" width="160" height="50" rx="8" fill="#ffffff" stroke="#d6d5d0" stroke-width="1.2"/>
-<text x="150.0" y="515.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">差旅 Agent</text>
-<text x="150.0" y="531.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">V1 / V2 / V2.1 · :9101</text>
+<text x="150.0" y="516.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">差旅 Agent</text>
+<text x="150.0" y="533.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">V1 / V2 / V2.1 · :9101</text>
 <line x1="150" y1="478" x2="150" y2="498" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
 <rect x="242" y="500" width="160" height="50" rx="8" fill="#ffffff" stroke="#d6d5d0" stroke-width="1.2"/>
-<text x="322.0" y="515.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">审批 Agent</text>
-<text x="322.0" y="531.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">v1 · :9102</text>
+<text x="322.0" y="516.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">审批 Agent</text>
+<text x="322.0" y="533.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">v1 · :9102</text>
 <line x1="322" y1="478" x2="322" y2="498" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
 <rect x="414" y="500" width="160" height="50" rx="8" fill="#fdf4dc" stroke="#f0cf7a" stroke-width="1.2"/>
-<text x="494.0" y="515.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">τ-bench 航空 Agent</text>
-<text x="494.0" y="531.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">第三方 · MIT · :9103</text>
+<text x="494.0" y="516.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">τ-bench 航空 Agent</text>
+<text x="494.0" y="533.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">第三方 · MIT · :9103</text>
 <line x1="494" y1="478" x2="494" y2="498" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
 <rect x="586" y="500" width="160" height="50" rx="8" fill="#ffffff" stroke="#d6d5d0" stroke-width="1.2"/>
-<text x="666.0" y="515.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">界面接入的 Agent</text>
-<text x="666.0" y="531.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">URL → 检查 → 保存</text>
+<text x="666.0" y="516.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="11.5" fill="#0b0b0b" text-anchor="middle" font-weight="600" dominant-baseline="middle">界面接入的 Agent</text>
+<text x="666.0" y="533.8" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#52514e" text-anchor="middle" font-weight="400" dominant-baseline="middle">URL → 检查 → 保存</text>
 <line x1="666" y1="478" x2="666" y2="498" stroke="#9b9a95" stroke-width="1.4" marker-end="url(#ah)"/>
 <text x="623.0" y="420.0" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" font-size="10.5" fill="#8a8984" text-anchor="middle" font-weight="400" dominant-baseline="middle">DeepSeek · 通义千问 · 智谱</text>
 </svg>
