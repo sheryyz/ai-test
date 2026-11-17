@@ -11,14 +11,16 @@ const POINTS: { icon: IconName; title: string; text: string }[] = [
 export function Login({ auth, onSignedIn }: { auth: AuthState; onSignedIn: (u: AuthUser) => void }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [registering, setRegistering] = useState(false);
+  const [confirmation, setConfirmation] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function signIn(u: string, p: string) {
+  async function signIn(u: string, p: string, create = false) {
     setBusy(true);
     setError(null);
     try {
-      const res = await api.login(u, p);
+      const res = await (create ? api.register(u, p) : api.login(u, p));
       onSignedIn(res.user);
     } catch (e) {
       setError((e as Error).message);
@@ -33,7 +35,19 @@ export function Login({ auth, onSignedIn }: { auth: AuthState; onSignedIn: (u: A
       setError("请输入用户名和密码");
       return;
     }
-    void signIn(username, password);
+    if (registering && !/^[A-Za-z0-9_-]{3,32}$/.test(username.trim())) {
+      setError("用户名须为 3–32 位字母、数字、下划线或短横线");
+      return;
+    }
+    if (registering && (password.length < 8 || password.length > 128)) {
+      setError("密码须为 8–128 位");
+      return;
+    }
+    if (registering && password !== confirmation) {
+      setError("两次输入的密码不一致");
+      return;
+    }
+    void signIn(username.trim(), password, registering);
   }
 
   return (
@@ -80,7 +94,7 @@ export function Login({ auth, onSignedIn }: { auth: AuthState; onSignedIn: (u: A
               <div className="text-xs text-muted">AI Agent 授权安全测试平台</div>
             </div>
           </div>
-          <h2 className="text-2xl font-semibold tracking-tight text-ink">登录</h2>
+          <h2 className="text-2xl font-semibold tracking-tight text-ink">{registering ? "创建账号" : "登录"}</h2>
           <p className="mt-1.5 text-sm text-ink-2">登录后即可接入你的 Agent、发起测试、查看报告。</p>
 
           <form onSubmit={submit} className="mt-7 space-y-4" noValidate>
@@ -99,24 +113,41 @@ export function Login({ auth, onSignedIn }: { auth: AuthState; onSignedIn: (u: A
                 <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
                   <Icon name="lock" size={16} />
                 </span>
-                <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className="field w-full pl-9" placeholder="输入密码" />
+                <input type="password" autoComplete={registering ? "new-password" : "current-password"} value={password} onChange={(e) => setPassword(e.target.value)} className="field w-full pl-9" placeholder={registering ? "设置 8–128 位密码" : "输入密码"} />
               </span>
             </label>
+            {registering && (
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-medium text-ink-2">确认密码</span>
+                <input aria-label="确认密码" type="password" autoComplete="new-password" value={confirmation} onChange={(e) => setConfirmation(e.target.value)} className="field w-full" placeholder="再次输入密码" />
+                <span className="mt-2 block text-xs text-muted">用户名为 3–32 位字母、数字、下划线或短横线，密码为 8–128 位。</span>
+              </label>
+            )}
             {error && (
               <p role="alert" className="rounded-lg px-3 py-2 text-xs" style={{ background: "var(--critical-wash)", color: "var(--ink)" }}>
                 {error}
               </p>
             )}
             <button type="submit" disabled={busy} className="btn btn-primary btn-lg w-full">
-              {busy ? "正在登录…" : "登录"}
+              {busy ? (registering ? "正在注册…" : "正在登录…") : (registering ? "注册并进入" : "登录")}
             </button>
           </form>
 
-          {auth.demo && (
+          <p className="mt-5 text-center text-sm text-ink-2">
+            {registering ? "已有账号？" : "还没有账号？"}
+            <button type="button" disabled={busy} className="ml-1 font-medium underline underline-offset-4" onClick={() => {
+              setRegistering(!registering);
+              setPassword("");
+              setConfirmation("");
+              setError(null);
+            }}>{registering ? "去登录" : "立即注册"}</button>
+          </p>
+
+          {auth.demo && !registering && (
             <>
               <div className="my-6 flex items-center gap-3 text-[11px] text-muted">
                 <span className="h-px flex-1" style={{ background: "var(--border)" }} />
-                还没有账号
+                或先体验
                 <span className="h-px flex-1" style={{ background: "var(--border)" }} />
               </div>
               <button type="button" disabled={busy} onClick={() => void signIn(auth.demo!.username, auth.demo!.password)} className="btn btn-secondary btn-lg w-full">
@@ -128,7 +159,6 @@ export function Login({ auth, onSignedIn }: { auth: AuthState; onSignedIn: (u: A
               </p>
             </>
           )}
-          <p className="mt-10 text-center text-[11px] text-muted">管理员可用 <span className="mono">consenttrace user add &lt;用户名&gt;</span> 添加账号</p>
         </div>
       </main>
     </div>

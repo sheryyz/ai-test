@@ -727,6 +727,7 @@ export const api = {
     return res.json();
   },
   login: (username: string, password: string) => post<{ user: AuthUser }>("/api/auth/login", { username, password }),
+  register: (username: string, password: string) => post<{ user: AuthUser }>("/api/auth/register", { username, password }),
   logout: () => post<{ ok: boolean }>("/api/auth/logout", {}),
   registerAgent: (body: { name: string; url: string; like: string; description: string }) =>
     post<{ name: string; versions: string[]; like: string; tools_checked: boolean }>("/api/agents/register", body),

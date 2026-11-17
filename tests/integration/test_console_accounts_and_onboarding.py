@@ -84,6 +84,40 @@ def test_without_accounts_the_api_stays_open(tmp_path: Path) -> None:
 # ------------------------------------------------------------------ connecting an agent from the console
 
 
+def test_registration_persists_without_replacing_existing_users(secured: TestClient, tmp_path: Path) -> None:
+    body = {"username": " alice ", "password": "password123"}
+    response = secured.post("/api/auth/register", json=body)
+    assert response.status_code == 201
+    assert response.json()["user"]["username"] == "alice"
+    assert "HttpOnly" in response.headers["set-cookie"]
+    assert secured.get("/api/targets").status_code == 200
+    assert secured.post("/api/auth/register", json=body).status_code == 409
+    assert secured.post("/api/auth/register", json={**body, "username": "demo"}).status_code == 409
+    assert "password123" not in (tmp_path / "runs/_workspace/users.yaml").read_text()
+    restarted = TestClient(
+        create_app(
+            targets_path=TARGETS,
+            runs_dir=tmp_path / "runs",
+            env_file=None,
+            web_dist=None,
+            users=UserStore(ROOT / "configs/users.yaml"),
+        )
+    )
+    assert restarted.post("/api/auth/login", json=body).status_code == 200
+    restarted.post("/api/auth/logout")
+    assert restarted.get("/api/targets").status_code == 401
+
+
+@pytest.mark.parametrize(
+    "username,password", [("ab", "password123"), ("a b", "password123"), ("alice", "short"), ("alice", "x" * 129)]
+)
+def test_invalid_registration_creates_no_session(secured: TestClient, username: str, password: str) -> None:
+    response = secured.post("/api/auth/register", json={"username": username, "password": password})
+    assert response.status_code == 422
+    assert "ct_session" not in response.cookies
+    assert secured.get("/api/targets").status_code == 401
+
+
 @pytest.fixture
 def console(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> TestClient:
     """The console, where every agent URL reaches an in-memory travel agent (a second deployment of it)."""

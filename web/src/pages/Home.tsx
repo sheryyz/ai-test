@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { OutcomeBar } from "../components/charts";
 import { Icon, type IconName } from "../components/icons";
 import { ErrorNote, Loading, Pill } from "../components/ui";
@@ -90,7 +91,7 @@ export function Home() {
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             {w.agents.map((a) => (
-              <AgentTile key={a.name} a={a} />
+                <AgentTile key={a.name} a={a} onRemoved={ws.reload} />
             ))}
           </div>
         </section>
@@ -250,7 +251,22 @@ function TeaserStep({ color, label, text }: { color: string; label: string; text
   );
 }
 
-function AgentTile({ a }: { a: WorkspaceAgent }) {
+function AgentTile({ a, onRemoved }: { a: WorkspaceAgent; onRemoved: () => void }) {
+  const [removing, setRemoving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  async function remove() {
+    if (!window.confirm(`删除 ${a.name} 的接入登记？删除后将从 Agent 列表移除，已有测试报告会保留，Agent 服务不会停止。需要时可以重新接入。`)) return;
+    setRemoving(true);
+    setError(null);
+    try {
+      await api.unregisterAgent(a.name);
+      onRemoved();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setRemoving(false);
+    }
+  }
   const last = a.last_run;
   const failed = last ? (last.counts.FAIL ?? 0) + (last.counts.ERROR ?? 0) : 0;
   const plan = a.suites.acceptance ? "acceptance" : Object.keys(a.suites)[0];
@@ -278,13 +294,19 @@ function AgentTile({ a }: { a: WorkspaceAgent }) {
           <p className="text-[11px] text-muted">还没有测试过</p>
         )}
       </div>
-      <div className="mt-3 flex gap-2">
+      {error && <p role="alert" className="mt-3 text-xs text-critical">{error}</p>}
+      <div className="mt-3 flex flex-wrap gap-2">
         <a href={href("console", a.name, a.versions[0], plan)} className="btn btn-primary btn-sm">
           开始测试
         </a>
         <a href={href("agents")} className="btn btn-secondary btn-sm">
           详情
         </a>
+        {a.like && (
+          <button type="button" onClick={() => void remove()} disabled={removing} aria-label={`删除 ${a.name}`} className="btn btn-secondary btn-sm ml-auto text-critical">
+            {removing ? "删除中…" : "删除"}
+          </button>
+        )}
       </div>
     </div>
   );

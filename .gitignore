@@ -9,6 +9,10 @@ htmlcov/
 
 # Secrets
 .env
+.env.*
+!.env.example
+*.pem
+*.key
 
 # Generated evidence (curated copies go into the submission ZIP, not git)
 runs/

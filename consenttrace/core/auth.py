@@ -12,9 +12,11 @@ page offers as "演示账号一键进入". It still logs in through the same pas
 from __future__ import annotations
 
 import base64
+import fcntl
 import hashlib
 import hmac
 import secrets
+import tempfile
 import threading
 import time
 from dataclasses import dataclass
@@ -26,6 +28,10 @@ import yaml
 SCRYPT_N, SCRYPT_R, SCRYPT_P = 2**14, 8, 1
 SESSION_TTL = 12 * 3600
 LOCAL_USERS_FILE = Path("_workspace") / "users.yaml"
+
+
+class UsernameTaken(ValueError):
+    pass
 
 
 def hash_password(password: str, *, salt: bytes | None = None) -> str:
@@ -94,23 +100,30 @@ class UserStore:
 _DUMMY_HASH = hash_password("not-a-real-account", salt=b"\0" * 16)
 
 
-def add_user(path: Path, username: str, password: str, display_name: str | None = None) -> None:
+def add_user(
+    path: Path, username: str, password: str, display_name: str | None = None, *, existing_paths: list[Path] | None = None
+) -> None:
     """Add or replace one account in a users file (used by `consenttrace user add`)."""
     if not username or any(c.isspace() for c in username):
         raise ValueError("用户名不能为空，也不能含空白字符")
     if len(password) < 8:
         raise ValueError("密码至少 8 位")
-    data: dict[str, Any] = {}
-    if path.exists():
-        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    users = data.setdefault("users", {})
-    users[username] = {"display_name": display_name or username, "password_hash": hash_password(password)}
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        "# Local console accounts (consenttrace user add). Passwords are scrypt hashes.\n"
-        + yaml.safe_dump(data, allow_unicode=True, sort_keys=False),
-        encoding="utf-8",
-    )
+    with path.with_suffix(".lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if existing_paths is not None and username in UserStore(*existing_paths, path).users():
+            raise UsernameTaken("用户名已被使用，请换一个")
+        data: dict[str, Any] = {}
+        if path.exists():
+            data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        data.setdefault("users", {})[username] = {
+            "display_name": display_name or username,
+            "password_hash": hash_password(password),
+        }
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent, delete=False) as tmp:
+            tmp.write("# Local console accounts. Passwords are scrypt hashes.\n")
+            tmp.write(yaml.safe_dump(data, allow_unicode=True, sort_keys=False))
+        Path(tmp.name).replace(path)
 
 
 class Sessions:

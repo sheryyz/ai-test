@@ -3,7 +3,7 @@
 面向多轮授权变更与工具注入的状态约束式 AI Agent 自动化测试平台
 （Contract-Guided Testing and State-Aware Auditing for Tool-Using Agents）
 
-产品需求基线：[ConsentTrace_路径二_V3_产品计划书_PRD.md](ConsentTrace_路径二_V3_产品计划书_PRD.md)
+作品介绍：[Word 文档](ConsentTrace-作品介绍文档.docx) · [PDF 文档](ConsentTrace-作品介绍文档.pdf)
 
 ConsentTrace 是**测试平台**，不是被测 Agent。被测 Agent 以独立进程运行，平台只通过 [Agent 接入协议](docs/agent_protocol.md) 拿到它的对话、工具轨迹和业务状态。三个被测 Agent 共用同一个测试内核：
 
@@ -23,7 +23,7 @@ uv run consenttrace serve        # 启动 Web 控制台，并把三个被测 Age
 # 浏览器打开 http://127.0.0.1:8765
 ```
 
-打开后是登录页。点「**使用演示账号一键进入**」（`demo` / `demo2026`），即可体验全部功能。账号密码只以加盐 scrypt 哈希保存（[configs/users.yaml](configs/users.yaml)）；添加自己的账号：`uv run consenttrace user add <用户名>`（写入本机的 `runs/_workspace/users.yaml`）；只在本机自用时可以 `serve --no-auth` 关闭登录。
+打开后是登录页。新用户点击「**立即注册**」，填写用户名、密码和确认密码，注册成功后自动登录。也可以点「**使用演示账号一键进入**」（`demo` / `demo2026`），即可体验全部功能。账号密码只以加盐 scrypt 哈希保存（[configs/users.yaml](configs/users.yaml)）；添加自己的账号：`uv run consenttrace user add <用户名>`（写入本机的 `runs/_workspace/users.yaml`）；只在本机自用时可以 `serve --no-auth` 关闭登录。
 
 控制台按普通用户的使用顺序组织：
 

@@ -27,7 +27,7 @@ from consenttrace.adapters.http import AgentProtocolError, HttpAgentAdapter
 from consenttrace.adapters.probe import probe_agent
 from consenttrace.core.agents import AgentProcesses
 from consenttrace.core.analysis import run_breakdown
-from consenttrace.core.auth import SESSION_TTL, Sessions, UserStore
+from consenttrace.core.auth import LOCAL_USERS_FILE, SESSION_TTL, Sessions, UsernameTaken, UserStore, add_user
 from consenttrace.core.defects import collect_defects, defect_summary, replay_sources, runs_in_force
 from consenttrace.core.evidence import load_results, load_summary, load_trace
 from consenttrace.core.experiments import experiment_summary
@@ -194,6 +194,8 @@ def create_app(
 ) -> FastAPI:
     """`users=None` serves without sign-in (tests, local scripts); `consenttrace serve` passes the accounts."""
     targets_path, runs_dir = Path(targets_path), Path(runs_dir)
+    if users is not None:
+        users = UserStore(*users.paths, runs_dir / LOCAL_USERS_FILE)
     manager = RunManager(targets_path, runs_dir, Path(env_file) if env_file else None)
     procs = agent_processes or AgentProcesses(targets_path.resolve().parent.parent, log_dir=runs_dir / "_agent_logs")
     app = FastAPI(title="ConsentTrace", version="0.1.0")
@@ -239,6 +241,24 @@ def create_app(
         token = sessions.create(user.username)
         response.set_cookie(SESSION_COOKIE, token, httponly=True, samesite="lax", max_age=int(SESSION_TTL), path="/")
         return {"user": user.public()}
+
+    @app.post("/api/auth/register", status_code=201)
+    def auth_register(body: LoginRequest, response: Response) -> dict[str, Any]:
+        if users is None:
+            raise HTTPException(404, "本服务未启用登录")
+        username = body.username.strip()
+        if not re.fullmatch(r"[A-Za-z0-9_-]{3,32}", username):
+            raise HTTPException(422, "用户名须为 3–32 位字母、数字、下划线或短横线")
+        if not 8 <= len(body.password) <= 128:
+            raise HTTPException(422, "密码须为 8–128 位")
+        try:
+            add_user(runs_dir / LOCAL_USERS_FILE, username, body.password, existing_paths=users.paths)
+        except UsernameTaken as exc:
+            raise HTTPException(409, str(exc)) from exc
+        response.set_cookie(
+            SESSION_COOKIE, sessions.create(username), httponly=True, samesite="lax", max_age=int(SESSION_TTL), path="/"
+        )
+        return {"user": users.users()[username].public()}
 
     @app.post("/api/auth/logout")
     def auth_logout(request: Request, response: Response) -> dict[str, Any]:
